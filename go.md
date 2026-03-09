@@ -4,7 +4,7 @@
 
 ---
 
-## Chapter 1 — Go Basics & Setup
+## Chapter 1 — [Go Basics & Setup](go/GoBasicsAndSetup.md)
 
 - [ ] Go history, philosophy, and design goals (simplicity, concurrency, fast compilation)
 - [ ] Installation, `GOPATH`, `GOROOT`, Go modules (`go mod init`, `go.sum`)
@@ -17,7 +17,7 @@
 
 ---
 
-## Chapter 2 — Data Types & Variables
+## Chapter 2 — [Data Types & Variables](go/DataTypesAndVariables.md)
 
 - [ ] Basic types: `int`, `int8/16/32/64`, `uint`, `uint8/16/32/64`, `uintptr`
 - [ ] Floating point: `float32`, `float64`
@@ -32,7 +32,7 @@
 
 ---
 
-## Chapter 3 — Control Flow
+## Chapter 3 — [Control Flow](go/ControlFlow.md)
 
 - [ ] `if` / `else if` / `else`
 - [ ] `if` with init statement (`if err := fn(); err != nil { }`)
@@ -47,7 +47,7 @@
 
 ---
 
-## Chapter 4 — Functions
+## Chapter 4 — [Functions](go/Functions.md)
 
 - [ ] Function declarations, parameters, return values
 - [ ] Multiple return values (`func f() (int, error)`)
@@ -64,7 +64,7 @@
 
 ---
 
-## Chapter 5 — Composite Types
+## Chapter 5 — [Composite Types](go/CompositeTypes.md)
 
 ### Arrays
 - [ ] Fixed-size, value semantics (copied on assignment)
@@ -97,7 +97,7 @@
 
 ---
 
-## Chapter 6 — Strings & Unicode
+## Chapter 6 — [Strings & Unicode](go/StringsAndUnicode.md)
 
 - [ ] String internals — immutable byte slice (`[]byte` underneath)
 - [ ] `rune` vs `byte` — rune is a Unicode code point
@@ -111,7 +111,7 @@
 
 ---
 
-## Chapter 7 — Pointers
+## Chapter 7 — [Pointers](go/Pointers.md)
 
 - [ ] Pointer basics: `*T` (pointer type), `&x` (address of), `*p` (dereference)
 - [ ] No pointer arithmetic in Go (safety by design)
@@ -126,7 +126,7 @@
 
 ---
 
-## Chapter 8 — Structs & Methods
+## Chapter 8 — [Structs & Methods](go/StructsAndMethods.md)
 
 - [ ] Defining methods: `func (s MyStruct) Method() {}`
 - [ ] Value receivers vs pointer receivers
@@ -139,7 +139,7 @@
 
 ---
 
-## Chapter 9 — Interfaces
+## Chapter 9 — [Interfaces](go/Interfaces.md)
 
 - [ ] Implicit interface satisfaction — no `implements` keyword
 - [ ] Interface definition: `type Reader interface { Read(p []byte) (n int, err error) }`
@@ -162,7 +162,7 @@
 
 ---
 
-## Chapter 10 — Error Handling
+## Chapter 10 — [Error Handling](go/ErrorHandling.md)
 
 - [ ] `error` interface: `type error interface { Error() string }`
 - [ ] Creating errors: `errors.New("msg")`, `fmt.Errorf("msg: %v", err)`
@@ -182,7 +182,7 @@
 
 ---
 
-## Chapter 11 — Goroutines & Concurrency
+## Chapter 11 — [Goroutines & Concurrency](go/GoroutinesAndConcurrency.md)
 
 - [ ] Goroutine basics: `go func() { ... }()`
 - [ ] Goroutines vs OS threads — lightweight, ~2KB initial stack
@@ -198,7 +198,7 @@
 
 ---
 
-## Chapter 12 — Channels
+## Chapter 12 — [Channels](go/Channels.md)
 
 - [ ] Unbuffered channels: `make(chan T)` — synchronous send/receive
 - [ ] Buffered channels: `make(chan T, cap)` — async up to capacity
@@ -223,7 +223,7 @@
 
 ---
 
-## Chapter 13 — Synchronization Primitives
+## Chapter 13 — [Synchronization Primitives](go/SynchronizationPrimitives.md)
 
 - [ ] `sync.Mutex` — `Lock()`, `Unlock()`
 - [ ] `sync.RWMutex` — `RLock()`, `RUnlock()`, `Lock()`, `Unlock()` (multiple readers, single writer)
@@ -240,7 +240,7 @@
 
 ---
 
-## Chapter 14 — Context Package
+## Chapter 14 — [Context Package](go/ContextPackage.md)
 
 - [ ] `context.Background()` — root context, top-level calls
 - [ ] `context.TODO()` — placeholder when unsure which context to use
@@ -260,7 +260,7 @@
 
 ---
 
-## Chapter 15 — Generics (Go 1.18+)
+## Chapter 15 — [Generics (Go 1.18+)](go/Generics.md)
 
 - [ ] Type parameters: `func Print[T any](val T) { }`
 - [ ] Type constraints — interfaces that restrict type parameters
@@ -276,7 +276,7 @@
 
 ---
 
-## Chapter 16 — Reflection
+## Chapter 16 — [Reflection](go/Reflection.md)
 
 - [ ] `reflect.TypeOf(x)` — returns `reflect.Type`
 - [ ] `reflect.ValueOf(x)` — returns `reflect.Value`
@@ -296,7 +296,7 @@
 
 ---
 
-## Chapter 17 — Testing
+## Chapter 17 — [Testing](go/Testing.md)
 
 - [ ] `testing` package, `go test`, `go test ./...`
 - [ ] Test functions: `func TestXxx(t *testing.T)`
@@ -321,7 +321,7 @@
 
 ---
 
-## Chapter 18 — Packages & Modules
+## Chapter 18 — [Packages & Modules](go/PackagesAndModules.md)
 
 - [ ] Modules: `go.mod` (module path, Go version, dependencies), `go.sum` (checksums)
 - [ ] `go mod init`, `go mod tidy`, `go mod download`, `go mod vendor`, `go mod graph`
@@ -338,7 +338,7 @@
 
 ---
 
-## Chapter 19 — I/O & File Handling
+## Chapter 19 — [I/O & File Handling](go/IOAndFileHandling.md)
 
 - [ ] `io.Reader` interface: `Read(p []byte) (n int, err error)`
 - [ ] `io.Writer` interface: `Write(p []byte) (n int, err error)`
@@ -359,7 +359,7 @@
 
 ---
 
-## Chapter 20 — Encoding & Serialization
+## Chapter 20 — [Encoding & Serialization](go/EncodingAndSerialization.md)
 
 - [ ] `encoding/json`:
   - `json.Marshal` / `json.Unmarshal`
@@ -377,7 +377,7 @@
 
 ---
 
-## Chapter 21 — Networking & HTTP
+## Chapter 21 — [Networking & HTTP](go/NetworkingAndHTTP.md)
 
 - [ ] `net/http` — HTTP server:
   - `http.HandleFunc`, `http.Handle`
@@ -398,7 +398,7 @@
 
 ---
 
-## Chapter 22 — Standard Library Highlights
+## Chapter 22 — [Standard Library Highlights](go/StandardLibraryHighlights.md)
 
 - [ ] `time` package:
   - `time.Now()`, `time.Since()`, `time.Until()`
@@ -423,7 +423,7 @@
 
 ---
 
-## Chapter 23 — Memory Management & Internals
+## Chapter 23 — [Memory Management & Internals](go/MemoryManagementAndInternals.md)
 
 - [ ] Stack vs heap allocation — Go compiler decides (escape analysis)
 - [ ] Escape analysis: `go build -gcflags="-m"` — see what escapes to heap
@@ -444,7 +444,7 @@
 
 ---
 
-## Chapter 24 — Concurrency Patterns
+## Chapter 24 — [Concurrency Patterns](go/ConcurrencyPatterns.md)
 
 - [ ] **Worker Pool** — fixed goroutines reading from shared job channel
 - [ ] **Fan-In** — merge results from multiple goroutines into one channel
@@ -462,7 +462,7 @@
 
 ---
 
-## Chapter 25 — Design Patterns in Go
+## Chapter 25 — [Design Patterns in Go](go/DesignPatternsInGo.md)
 
 - [ ] **Singleton** — `sync.Once` + package-level variable
 - [ ] **Factory** — constructor functions returning interface
@@ -478,7 +478,7 @@
 
 ---
 
-## Chapter 26 — Performance & Profiling
+## Chapter 26 — [Performance & Profiling](go/PerformanceAndProfiling.md)
 
 - [ ] `pprof` — CPU, memory, goroutine, block, mutex profiles
   - `import _ "net/http/pprof"` for HTTP server profiling
@@ -502,7 +502,7 @@
 
 ---
 
-## Chapter 27 — Common Interview Gotchas & Tricky Questions
+## Chapter 27 — [Common Interview Gotchas & Tricky Questions](go/InterviewGotchas.md)
 
 - [ ] **Slice append & capacity** — `append` may return a new underlying array; modifying a sub-slice can affect the original
 - [ ] **Map iteration order** — randomized by design, never rely on it
@@ -523,7 +523,7 @@
 
 ---
 
-## Chapter 28 — Go Toolchain & Build
+## Chapter 28 — [Go Toolchain & Build](go/GoToolchainAndBuild.md)
 
 - [ ] `go build`, `go run`, `go install`
 - [ ] `go fmt` / `gofmt` / `goimports` — formatting
@@ -540,7 +540,7 @@
 
 ---
 
-## Chapter 29 — Quick Reference: Keywords & Built-in Functions
+## Chapter 29 — [Quick Reference: Keywords & Built-in Functions](go/KeywordsAndBuiltins.md)
 
 ### 25 Go Keywords
 
@@ -590,6 +590,35 @@
 
 ---
 
+## Chapter 30 — [Garbage Collector (GC)](go/GarbageCollector.md)
+
+- [ ] GC overview — concurrent, tri-color mark-and-sweep, non-generational, non-compacting
+- [ ] Tri-color algorithm — white (unvisited), grey (discovered), black (scanned)
+- [ ] Tri-color invariant — black must never point to white; enforced by write barrier
+- [ ] GC phases:
+  - Mark Setup (STW — enable write barrier, identify roots)
+  - Concurrent Marking (runs alongside application, ~25% CPU)
+  - Mark Termination (STW — finish marking, disable write barrier)
+  - Concurrent Sweeping (reclaim unreachable memory)
+- [ ] Write barrier — intercepts pointer writes during concurrent marking
+- [ ] `GOGC` — GC trigger percentage (default 100 = GC when heap doubles)
+- [ ] `GOMEMLIMIT` (Go 1.19+) — soft memory limit, `GOGC=off` + `GOMEMLIMIT` pattern
+- [ ] GC pacing — how the GC decides when to start, mark assist for fast allocators
+- [ ] `runtime.GC()` — force GC (rarely needed)
+- [ ] `runtime.ReadMemStats()` — heap, GC, and allocation metrics
+- [ ] `GODEBUG=gctrace=1` — GC trace logging, reading trace output
+- [ ] Escape analysis — stack vs heap, `go build -gcflags="-m"`, common escape causes
+- [ ] `runtime.SetFinalizer` — caveats, prefer explicit `Close()` methods
+- [ ] GC tuning strategies:
+  - Reduce allocations (sync.Pool, pre-allocate, strings.Builder)
+  - Tune GOGC / GOMEMLIMIT
+  - Ballast technique (pre-GOMEMLIMIT)
+  - Off-heap / arena (experimental)
+- [ ] GC-friendly code patterns — value receivers, `[]T` vs `[]*T`, struct of arrays
+- [ ] Monitoring GC in production — expvar, Prometheus, alert thresholds
+
+---
+
 ## Quick Reference: Go Versions & Key Features
 
 | Version | Key Features |
@@ -614,32 +643,33 @@
 
 ## Study Checklist
 
-- [ ] Chapter 1: Go Basics & Setup
-- [ ] Chapter 2: Data Types & Variables
-- [ ] Chapter 3: Control Flow
-- [ ] Chapter 4: Functions
-- [ ] Chapter 5: Composite Types
-- [ ] Chapter 6: Strings & Unicode
-- [ ] Chapter 7: Pointers
-- [ ] Chapter 8: Structs & Methods
-- [ ] Chapter 9: Interfaces
-- [ ] Chapter 10: Error Handling
-- [ ] Chapter 11: Goroutines & Concurrency
-- [ ] Chapter 12: Channels
-- [ ] Chapter 13: Synchronization Primitives
-- [ ] Chapter 14: Context Package
-- [ ] Chapter 15: Generics
-- [ ] Chapter 16: Reflection
-- [ ] Chapter 17: Testing
-- [ ] Chapter 18: Packages & Modules
-- [ ] Chapter 19: I/O & File Handling
-- [ ] Chapter 20: Encoding & Serialization
-- [ ] Chapter 21: Networking & HTTP
-- [ ] Chapter 22: Standard Library Highlights
-- [ ] Chapter 23: Memory Management & Internals
-- [ ] Chapter 24: Concurrency Patterns
-- [ ] Chapter 25: Design Patterns in Go
-- [ ] Chapter 26: Performance & Profiling
-- [ ] Chapter 27: Common Interview Gotchas
-- [ ] Chapter 28: Go Toolchain & Build
-- [ ] Chapter 29: Keywords & Built-in Functions
+- [ ] Chapter 1: [Go Basics & Setup](go/GoBasicsAndSetup.md)
+- [ ] Chapter 2: [Data Types & Variables](go/DataTypesAndVariables.md)
+- [ ] Chapter 3: [Control Flow](go/ControlFlow.md)
+- [ ] Chapter 4: [Functions](go/Functions.md)
+- [ ] Chapter 5: [Composite Types](go/CompositeTypes.md)
+- [ ] Chapter 6: [Strings & Unicode](go/StringsAndUnicode.md)
+- [ ] Chapter 7: [Pointers](go/Pointers.md)
+- [ ] Chapter 8: [Structs & Methods](go/StructsAndMethods.md)
+- [ ] Chapter 9: [Interfaces](go/Interfaces.md)
+- [ ] Chapter 10: [Error Handling](go/ErrorHandling.md)
+- [ ] Chapter 11: [Goroutines & Concurrency](go/GoroutinesAndConcurrency.md)
+- [ ] Chapter 12: [Channels](go/Channels.md)
+- [ ] Chapter 13: [Synchronization Primitives](go/SynchronizationPrimitives.md)
+- [ ] Chapter 14: [Context Package](go/ContextPackage.md)
+- [ ] Chapter 15: [Generics](go/Generics.md)
+- [ ] Chapter 16: [Reflection](go/Reflection.md)
+- [ ] Chapter 17: [Testing](go/Testing.md)
+- [ ] Chapter 18: [Packages & Modules](go/PackagesAndModules.md)
+- [ ] Chapter 19: [I/O & File Handling](go/IOAndFileHandling.md)
+- [ ] Chapter 20: [Encoding & Serialization](go/EncodingAndSerialization.md)
+- [ ] Chapter 21: [Networking & HTTP](go/NetworkingAndHTTP.md)
+- [ ] Chapter 22: [Standard Library Highlights](go/StandardLibraryHighlights.md)
+- [ ] Chapter 23: [Memory Management & Internals](go/MemoryManagementAndInternals.md)
+- [ ] Chapter 24: [Concurrency Patterns](go/ConcurrencyPatterns.md)
+- [ ] Chapter 25: [Design Patterns in Go](go/DesignPatternsInGo.md)
+- [ ] Chapter 26: [Performance & Profiling](go/PerformanceAndProfiling.md)
+- [ ] Chapter 27: [Common Interview Gotchas](go/InterviewGotchas.md)
+- [ ] Chapter 28: [Go Toolchain & Build](go/GoToolchainAndBuild.md)
+- [ ] Chapter 29: [Keywords & Built-in Functions](go/KeywordsAndBuiltins.md)
+- [ ] Chapter 30: [Garbage Collector (GC)](go/GarbageCollector.md)

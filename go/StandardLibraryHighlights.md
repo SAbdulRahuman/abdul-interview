@@ -1,0 +1,381 @@
+# Chapter 22 — Standard Library Highlights
+
+Go's standard library is remarkably comprehensive — you can build production web servers, CLI tools, and system utilities without any third-party packages. Here are the most important packages beyond what's covered in dedicated chapters.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Key Standard Library Packages                  │
+│                                                          │
+│  time      → time operations, formatting, timers        │
+│  sort      → sorting slices, custom sort                │
+│  strings   → string manipulation, Builder               │
+│  strconv   → string ↔ number conversion                 │
+│  regexp    → regular expressions                        │
+│  sync      → mutexes, WaitGroup, Pool, Once             │
+│  log/slog  → structured logging (Go 1.21+)              │
+│  slices    → generic slice operations (Go 1.21+)        │
+│  maps      → generic map operations (Go 1.21+)          │
+│  cmp       → comparison utilities (Go 1.21+)            │
+│  math/rand → pseudo-random numbers                      │
+│  crypto/*  → SHA, AES, TLS, etc.                        │
+│                                                          │
+│  Go's time format reference date:                       │
+│  Mon Jan 2 15:04:05 MST 2006                            │
+│   ↑   ↑  ↑  ↑  ↑  ↑   ↑   ↑                            │
+│   1   1  2  3  4  5   -7  2006                          │
+│  (month=1, day=2, hour=3, min=4, sec=5, year=2006)     │
+└──────────────────────────────────────────────────────────┘
+```
+
+## time Package
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    // Current time
+    now := time.Now()
+    fmt.Println("Now:", now)
+
+    // Duration
+    fmt.Println("Since epoch:", time.Since(time.Time{}))
+    future := now.Add(2 * time.Hour)
+    fmt.Println("Until 2h from now:", time.Until(future))
+
+    // Sleep
+    fmt.Println("Sleeping 100ms...")
+    time.Sleep(100 * time.Millisecond)
+
+    // Timer — fires once
+    timer := time.NewTimer(200 * time.Millisecond)
+    <-timer.C
+    fmt.Println("Timer fired!")
+
+    // Ticker — fires repeatedly
+    ticker := time.NewTicker(100 * time.Millisecond)
+    count := 0
+    for range ticker.C {
+        count++
+        fmt.Println("Tick", count)
+        if count >= 3 {
+            ticker.Stop()
+            break
+        }
+    }
+
+    // Formatting — Go uses a REFERENCE TIME: Mon Jan 2 15:04:05 MST 2006
+    // (1/2 3:04:05 PM 2006, timezone MST = -0700)
+    fmt.Println(now.Format("2006-01-02"))           // 2026-03-09
+    fmt.Println(now.Format("2006-01-02 15:04:05"))  // 2026-03-09 14:30:00
+    fmt.Println(now.Format(time.RFC3339))            // 2026-03-09T14:30:00Z
+    fmt.Println(now.Format("Mon, 02 Jan 2006"))      // Mon, 09 Mar 2026
+
+    // Parsing
+    t, err := time.Parse("2006-01-02", "2026-03-09")
+    if err != nil {
+        fmt.Println("Parse error:", err)
+    }
+    fmt.Println("Parsed:", t)
+
+    // Duration arithmetic
+    d := 2*time.Hour + 30*time.Minute
+    fmt.Println("Duration:", d)           // 2h30m0s
+    fmt.Println("In minutes:", d.Minutes()) // 150
+}
+```
+
+---
+
+## sort Package
+
+```go
+package main
+
+import (
+    "cmp"
+    "fmt"
+    "slices"
+    "sort"
+)
+
+type Person struct {
+    Name string
+    Age  int
+}
+
+func main() {
+    // sort.Slice — sort with custom less function
+    people := []Person{
+        {"Charlie", 25},
+        {"Alice", 30},
+        {"Bob", 20},
+    }
+
+    sort.Slice(people, func(i, j int) bool {
+        return people[i].Age < people[j].Age
+    })
+    fmt.Println("By age:", people)
+    // [{Bob 20} {Charlie 25} {Alice 30}]
+
+    // sort.SliceStable — preserves original order of equal elements
+    sort.SliceStable(people, func(i, j int) bool {
+        return people[i].Name < people[j].Name
+    })
+    fmt.Println("By name (stable):", people)
+
+    // sort.Search — binary search (slice must be sorted)
+    nums := []int{1, 3, 5, 7, 9, 11}
+    idx := sort.Search(len(nums), func(i int) bool {
+        return nums[i] >= 7
+    })
+    fmt.Println("Index of 7:", idx) // 3
+
+    // slices.Sort (Go 1.21+) — generic, simpler API
+    ints := []int{5, 3, 1, 4, 2}
+    slices.Sort(ints)
+    fmt.Println("Sorted:", ints) // [1 2 3 4 5]
+
+    // slices.SortFunc — custom comparison
+    slices.SortFunc(people, func(a, b Person) int {
+        return cmp.Compare(a.Age, b.Age)
+    })
+    fmt.Println("SortFunc by age:", people)
+}
+```
+
+---
+
+## regexp Package
+
+```go
+package main
+
+import (
+    "fmt"
+    "regexp"
+)
+
+func main() {
+    // Compile pattern (returns error if invalid)
+    re, err := regexp.Compile(`\d+`)
+    if err != nil {
+        fmt.Println("Bad regex:", err)
+        return
+    }
+
+    // MustCompile — panics on error (use for known-good patterns)
+    emailRe := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+
+    // FindString — first match
+    fmt.Println(re.FindString("abc 123 def 456")) // 123
+
+    // FindAllString — all matches
+    fmt.Println(re.FindAllString("abc 123 def 456", -1)) // [123 456]
+
+    // MatchString — check if matches
+    fmt.Println(emailRe.MatchString("alice@test.com"))  // true
+    fmt.Println(emailRe.MatchString("not-an-email"))    // false
+
+    // ReplaceAllString
+    result := re.ReplaceAllString("Call 123-456-7890", "X")
+    fmt.Println(result) // Call X-X-X
+
+    // FindStringSubmatch — capture groups
+    dateRe := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})`)
+    matches := dateRe.FindStringSubmatch("Date: 2026-03-09")
+    fmt.Println("Full:", matches[0])  // 2026-03-09
+    fmt.Println("Year:", matches[1])  // 2026
+    fmt.Println("Month:", matches[2]) // 03
+    fmt.Println("Day:", matches[3])   // 09
+}
+```
+
+---
+
+## log and log/slog (Go 1.21+)
+
+```go
+package main
+
+import (
+    "log"
+    "log/slog"
+    "os"
+)
+
+func main() {
+    // Basic log package
+    log.Println("Standard log message")
+    log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+    log.Println("With file and line") // 2026/03/09 14:30:00 main.go:12: With file and line
+
+    // log.Fatal — log and os.Exit(1)
+    // log.Fatal("Critical error!") // exits program
+
+    // slog — structured logging (Go 1.21+)
+    slog.Info("User logged in",
+        "user_id", 42,
+        "ip", "192.168.1.1",
+    )
+    // 2026/03/09 14:30:00 INFO User logged in user_id=42 ip=192.168.1.1
+
+    slog.Warn("Rate limit approaching",
+        "current", 90,
+        "max", 100,
+    )
+
+    slog.Error("Database connection failed",
+        "host", "db.example.com",
+        "port", 5432,
+    )
+
+    // JSON handler for structured output
+    jsonLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+    jsonLogger.Info("Request processed",
+        "method", "GET",
+        "path", "/api/users",
+        "status", 200,
+    )
+    // {"time":"2026-03-09T14:30:00Z","level":"INFO","msg":"Request processed","method":"GET","path":"/api/users","status":200}
+}
+```
+
+---
+
+## flag Package
+
+```go
+package main
+
+import (
+    "flag"
+    "fmt"
+)
+
+func main() {
+    // Define flags
+    port := flag.Int("port", 8080, "server port")
+    host := flag.String("host", "localhost", "server host")
+    debug := flag.Bool("debug", false, "enable debug mode")
+
+    // Parse command line arguments
+    flag.Parse()
+
+    fmt.Printf("Server: %s:%d (debug=%v)\n", *host, *port, *debug)
+
+    // Remaining non-flag arguments
+    fmt.Println("Args:", flag.Args())
+
+    // Usage: go run main.go -port=9090 -host=0.0.0.0 -debug arg1 arg2
+    // Output: Server: 0.0.0.0:9090 (debug=true)
+    //         Args: [arg1 arg2]
+}
+```
+
+---
+
+## container Packages
+
+```go
+package main
+
+import (
+    "container/heap"
+    "container/list"
+    "container/ring"
+    "fmt"
+)
+
+// Priority Queue using container/heap
+type IntHeap []int
+
+func (h IntHeap) Len() int           { return len(h) }
+func (h IntHeap) Less(i, j int) bool { return h[i] < h[j] } // min-heap
+func (h IntHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+
+func (h *IntHeap) Push(x any) { *h = append(*h, x.(int)) }
+func (h *IntHeap) Pop() any {
+    old := *h
+    n := len(old)
+    x := old[n-1]
+    *h = old[:n-1]
+    return x
+}
+
+func main() {
+    // Heap (Priority Queue)
+    h := &IntHeap{5, 3, 1, 4, 2}
+    heap.Init(h)
+    heap.Push(h, 0)
+
+    fmt.Print("Heap (min first): ")
+    for h.Len() > 0 {
+        fmt.Print(heap.Pop(h), " ") // 0 1 2 3 4 5
+    }
+    fmt.Println()
+
+    // Doubly Linked List
+    l := list.New()
+    l.PushBack("a")
+    l.PushBack("b")
+    l.PushFront("z")
+
+    fmt.Print("List: ")
+    for e := l.Front(); e != nil; e = e.Next() {
+        fmt.Print(e.Value, " ") // z a b
+    }
+    fmt.Println()
+
+    // Ring (Circular List)
+    r := ring.New(5)
+    for i := 0; i < r.Len(); i++ {
+        r.Value = i
+        r = r.Next()
+    }
+
+    fmt.Print("Ring: ")
+    r.Do(func(v any) {
+        fmt.Print(v, " ") // 0 1 2 3 4
+    })
+    fmt.Println()
+}
+```
+
+---
+
+## Interview Questions
+
+1. **What are the most important packages in Go's standard library?**
+   - `fmt`, `io`, `os`, `net/http`, `encoding/json`, `sync`, `context`, `testing`, `strings`, `strconv`, `sort`, `time`, `log`, `errors`, `crypto`. Go's stdlib is production-grade—often no third-party libraries needed.
+
+2. **How does the `time` package work?**
+   - `time.Now()`, `time.Since()`, `time.Duration`, `time.After()`, `time.Ticker`. Go uses a reference time `Mon Jan 2 15:04:05 MST 2006` for formatting. Use `time.Parse` / `time.Format` with this layout.
+
+3. **What is the `sort` package and how do you use it?**
+   - `sort.Ints()`, `sort.Strings()`, `sort.Slice(s, less)` for custom sorting. For stable sort: `sort.SliceStable()`. Implement `sort.Interface` (Len, Less, Swap) for complex types.
+
+4. **How does `strings.Builder` differ from string concatenation?**
+   - `strings.Builder` uses an internal `[]byte` buffer—O(n) for building strings. Concatenation with `+` creates new strings each time—O(n²). Always use `Builder` in loops.
+
+5. **What is `sync.Pool` and when should you use it?**
+   - A cache of temporary objects to reduce GC pressure. Objects may be evicted at any GC cycle. Use for frequently allocated/deallocated objects like buffers. Not for connection pools.
+
+6. **How does `log` package work and what are its limitations?**
+   - `log.Println()`, `log.Fatalf()` (logs + os.Exit), `log.Panicf()` (logs + panic). Limited: no log levels, no structured logging. Production apps use `slog` (Go 1.21+), `zap`, or `zerolog`.
+
+7. **What is `crypto/rand` vs `math/rand`?**
+   - `crypto/rand` provides cryptographically secure random bytes (for keys, tokens). `math/rand` is a pseudo-random generator for non-security use (simulations, shuffling). Since Go 1.20, `math/rand` auto-seeds.
+
+8. **How do you use `regexp` in Go?**
+   - `regexp.MustCompile(pattern)` compiles a regex (panics on error). `re.FindString()`, `re.FindAllString()`, `re.ReplaceAllString()`. Go uses RE2 syntax—no backreferences, guaranteed linear time.
+
+9. **What is the `flag` package?**
+   - Parses command-line flags: `flag.String("name", "default", "usage")`. Call `flag.Parse()` in main. Supports `-flag=value`, `-flag value`. For complex CLI, use third-party like `cobra` or `cli`.
+
+10. **What is `slog` (structured logging) in Go 1.21+?**
+    - `slog.Info("msg", "key", value)` provides structured, leveled logging. Supports JSON and text handlers. Replaceable backend. Context-aware via `slog.InfoContext(ctx, ...)`.

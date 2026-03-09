@@ -1,0 +1,543 @@
+# Phase 25: Advanced Sliding Window — Multi-Pointer Techniques
+
+## Overview
+
+Multi-pointer extends two-pointer to **three or more pointers**, enabling complex traversal patterns. Key applications include k-way merge, partitioning, and multi-dimensional problems.
+
+### When to Use Multi-Pointer
+- **k-Sum**: fix k-2 elements, two-pointer on rest
+- **Partitioning**: Dutch National Flag uses 3 pointers
+- **k-Way Merge**: one pointer per sorted source
+- **Multi-condition windows**: maintain multiple boundaries
+
+---
+
+## Example 1: Dutch National Flag — 3 Pointers (LC 75)
+
+```go
+package main
+
+import "fmt"
+
+// Sort array of 0s, 1s, 2s using 3 pointers
+
+func sortColors(nums []int) {
+	low, mid, high := 0, 0, len(nums)-1
+
+	for mid <= high {
+		switch nums[mid] {
+		case 0:
+			nums[low], nums[mid] = nums[mid], nums[low]
+			low++
+			mid++
+		case 1:
+			mid++
+		case 2:
+			nums[mid], nums[high] = nums[high], nums[mid]
+			high--
+			// Don't advance mid — swapped value needs checking
+		}
+	}
+}
+
+func main() {
+	tests := [][]int{
+		{2, 0, 2, 1, 1, 0},
+		{2, 0, 1},
+		{0, 0, 2, 1, 2, 1, 0},
+	}
+
+	for _, nums := range tests {
+		original := append([]int{}, nums...)
+		sortColors(nums)
+		fmt.Printf("%v → %v\n", original, nums)
+	}
+
+	fmt.Println("\n3 pointers: low (0s boundary), mid (scanner), high (2s boundary)")
+}
+```
+
+---
+
+## Example 2: Three Way Partition
+
+```go
+package main
+
+import "fmt"
+
+// Partition array around a pivot into three sections:
+// [< pivot] [== pivot] [> pivot]
+
+func threeWayPartition(arr []int, pivot int) {
+	low, mid, high := 0, 0, len(arr)-1
+
+	for mid <= high {
+		if arr[mid] < pivot {
+			arr[low], arr[mid] = arr[mid], arr[low]
+			low++
+			mid++
+		} else if arr[mid] > pivot {
+			arr[mid], arr[high] = arr[high], arr[mid]
+			high--
+		} else {
+			mid++
+		}
+	}
+}
+
+func main() {
+	arr := []int{4, 9, 4, 2, 7, 4, 1, 8, 4, 3}
+	pivot := 4
+	fmt.Printf("Before: %v (pivot=%d)\n", arr, pivot)
+	threeWayPartition(arr, pivot)
+	fmt.Printf("After:  %v\n", arr)
+	fmt.Println("[< 4 | == 4 | > 4]")
+}
+```
+
+---
+
+## Example 3: K-Way Merge with Pointers
+
+```go
+package main
+
+import (
+	"container/heap"
+	"fmt"
+)
+
+// Merge k sorted arrays — one pointer per array
+
+type Item struct {
+	val, arrayIdx, elemIdx int
+}
+type MinHeap []Item
+
+func (h MinHeap) Len() int            { return len(h) }
+func (h MinHeap) Less(i, j int) bool  { return h[i].val < h[j].val }
+func (h MinHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *MinHeap) Push(x interface{}) { *h = append(*h, x.(Item)) }
+func (h *MinHeap) Pop() interface{} {
+	old := *h; n := len(old); x := old[n-1]; *h = old[:n-1]; return x
+}
+
+func mergeKSorted(arrays [][]int) []int {
+	h := &MinHeap{}
+
+	// Initialize: one pointer (element) per array
+	for i, arr := range arrays {
+		if len(arr) > 0 {
+			heap.Push(h, Item{arr[0], i, 0})
+		}
+	}
+
+	var result []int
+	for h.Len() > 0 {
+		item := heap.Pop(h).(Item)
+		result = append(result, item.val)
+
+		// Advance pointer for this array
+		nextIdx := item.elemIdx + 1
+		if nextIdx < len(arrays[item.arrayIdx]) {
+			heap.Push(h, Item{arrays[item.arrayIdx][nextIdx], item.arrayIdx, nextIdx})
+		}
+	}
+	return result
+}
+
+func main() {
+	arrays := [][]int{
+		{1, 4, 7, 10},
+		{2, 5, 6, 8},
+		{3, 9, 11, 12},
+	}
+
+	fmt.Println("Arrays:")
+	for _, a := range arrays { fmt.Println(" ", a) }
+	fmt.Println("Merged:", mergeKSorted(arrays))
+}
+```
+
+---
+
+## Example 4: Trapping Rain Water — 2 Pointers (LC 42)
+
+```go
+package main
+
+import "fmt"
+
+func trap(height []int) int {
+	left, right := 0, len(height)-1
+	leftMax, rightMax := 0, 0
+	water := 0
+
+	for left < right {
+		if height[left] < height[right] {
+			if height[left] >= leftMax {
+				leftMax = height[left]
+			} else {
+				water += leftMax - height[left]
+			}
+			left++
+		} else {
+			if height[right] >= rightMax {
+				rightMax = height[right]
+			} else {
+				water += rightMax - height[right]
+			}
+			right--
+		}
+	}
+	return water
+}
+
+func main() {
+	tests := [][]int{
+		{0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1},
+		{4, 2, 0, 3, 2, 5},
+	}
+
+	for _, h := range tests {
+		fmt.Printf("height=%v → water=%d\n", h, trap(h))
+	}
+}
+```
+
+---
+
+## Example 5: Intersection of Three Sorted Arrays (LC 1213)
+
+```go
+package main
+
+import "fmt"
+
+// Three pointers — one per array
+
+func intersection3(a, b, c []int) []int {
+	i, j, k := 0, 0, 0
+	var result []int
+
+	for i < len(a) && j < len(b) && k < len(c) {
+		if a[i] == b[j] && b[j] == c[k] {
+			result = append(result, a[i])
+			i++; j++; k++
+		} else {
+			// Advance the smallest
+			minVal := a[i]
+			if b[j] < minVal { minVal = b[j] }
+			if c[k] < minVal { minVal = c[k] }
+
+			if a[i] == minVal { i++ }
+			if b[j] == minVal { j++ }
+			if c[k] == minVal { k++ }
+		}
+	}
+	return result
+}
+
+func main() {
+	a := []int{1, 2, 3, 4, 5}
+	b := []int{1, 2, 5, 7, 9}
+	c := []int{1, 3, 4, 5, 8}
+
+	fmt.Printf("a=%v\nb=%v\nc=%v\n", a, b, c)
+	fmt.Printf("Intersection: %v\n", intersection3(a, b, c))
+}
+```
+
+---
+
+## Example 6: Smallest Range Covering Elements from K Lists (LC 632)
+
+```go
+package main
+
+import (
+	"container/heap"
+	"fmt"
+	"math"
+)
+
+// One pointer per list + min-heap to track current min
+
+type Entry struct {
+	val, listIdx, elemIdx int
+}
+type MinHeap []Entry
+
+func (h MinHeap) Len() int            { return len(h) }
+func (h MinHeap) Less(i, j int) bool  { return h[i].val < h[j].val }
+func (h MinHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *MinHeap) Push(x interface{}) { *h = append(*h, x.(Entry)) }
+func (h *MinHeap) Pop() interface{} {
+	old := *h; n := len(old); x := old[n-1]; *h = old[:n-1]; return x
+}
+
+func smallestRange(nums [][]int) []int {
+	h := &MinHeap{}
+	curMax := math.MinInt64
+
+	// Initialize: first element from each list
+	for i, list := range nums {
+		heap.Push(h, Entry{list[0], i, 0})
+		if list[0] > curMax { curMax = list[0] }
+	}
+
+	bestRange := []int{(*h)[0].val, curMax}
+
+	for {
+		minEntry := heap.Pop(h).(Entry)
+		nextIdx := minEntry.elemIdx + 1
+
+		if nextIdx >= len(nums[minEntry.listIdx]) { break }
+
+		nextVal := nums[minEntry.listIdx][nextIdx]
+		heap.Push(h, Entry{nextVal, minEntry.listIdx, nextIdx})
+		if nextVal > curMax { curMax = nextVal }
+
+		curMin := (*h)[0].val
+		if curMax-curMin < bestRange[1]-bestRange[0] {
+			bestRange = []int{curMin, curMax}
+		}
+	}
+	return bestRange
+}
+
+func main() {
+	nums := [][]int{
+		{4, 10, 15, 24, 26},
+		{0, 9, 12, 20},
+		{5, 18, 22, 30},
+	}
+
+	fmt.Println("Lists:")
+	for _, l := range nums { fmt.Println(" ", l) }
+	result := smallestRange(nums)
+	fmt.Printf("Smallest range: [%d, %d]\n", result[0], result[1])
+}
+```
+
+---
+
+## Example 7: Move Zeroes — Read/Write Pointers (LC 283)
+
+```go
+package main
+
+import "fmt"
+
+// Two pointers: read (scans) and write (places non-zeros)
+
+func moveZeroes(nums []int) {
+	write := 0
+
+	// Pass 1: write non-zero elements
+	for read := 0; read < len(nums); read++ {
+		if nums[read] != 0 {
+			nums[write] = nums[read]
+			write++
+		}
+	}
+
+	// Pass 2: fill remaining with zeros
+	for write < len(nums) {
+		nums[write] = 0
+		write++
+	}
+}
+
+// One pass version with swap
+func moveZeroesOnePass(nums []int) {
+	write := 0
+	for read := 0; read < len(nums); read++ {
+		if nums[read] != 0 {
+			nums[write], nums[read] = nums[read], nums[write]
+			write++
+		}
+	}
+}
+
+func main() {
+	a := []int{0, 1, 0, 3, 12}
+	b := append([]int{}, a...)
+	moveZeroes(a)
+	moveZeroesOnePass(b)
+	fmt.Printf("Two-pass: %v\n", a)
+	fmt.Printf("One-pass: %v\n", b)
+}
+```
+
+---
+
+## Example 8: Partition Labels (LC 763)
+
+```go
+package main
+
+import "fmt"
+
+// Track last occurrence of each character → greedy multi-pointer
+
+func partitionLabels(s string) []int {
+	// Find last index of each character
+	lastIdx := [26]int{}
+	for i := 0; i < len(s); i++ {
+		lastIdx[s[i]-'a'] = i
+	}
+
+	var result []int
+	start, end := 0, 0
+
+	for i := 0; i < len(s); i++ {
+		if lastIdx[s[i]-'a'] > end {
+			end = lastIdx[s[i]-'a']
+		}
+		if i == end {
+			result = append(result, end-start+1)
+			start = end + 1
+		}
+	}
+	return result
+}
+
+func main() {
+	tests := []string{
+		"ababcbacadefegdehijhklij",
+		"eccbbbbdec",
+	}
+
+	for _, s := range tests {
+		fmt.Printf("%q → %v\n", s, partitionLabels(s))
+	}
+}
+```
+
+---
+
+## Example 9: Sort Array by Parity — Partition Variant (LC 905)
+
+```go
+package main
+
+import "fmt"
+
+// Two pointers: even from left, odd from right
+
+func sortArrayByParity(nums []int) []int {
+	left, right := 0, len(nums)-1
+
+	for left < right {
+		if nums[left]%2 == 0 {
+			left++
+		} else if nums[right]%2 == 1 {
+			right--
+		} else {
+			nums[left], nums[right] = nums[right], nums[left]
+			left++
+			right--
+		}
+	}
+	return nums
+}
+
+// Sort by Parity II (LC 922): even indices get even, odd get odd
+func sortArrayByParityII(nums []int) []int {
+	even, odd := 0, 1
+
+	for even < len(nums) && odd < len(nums) {
+		for even < len(nums) && nums[even]%2 == 0 { even += 2 }
+		for odd < len(nums) && nums[odd]%2 == 1 { odd += 2 }
+
+		if even < len(nums) && odd < len(nums) {
+			nums[even], nums[odd] = nums[odd], nums[even]
+			even += 2
+			odd += 2
+		}
+	}
+	return nums
+}
+
+func main() {
+	a := []int{3, 1, 2, 4}
+	fmt.Printf("By parity: %v → %v\n", []int{3, 1, 2, 4}, sortArrayByParity(a))
+
+	b := []int{4, 2, 5, 7}
+	fmt.Printf("By parity II: %v → %v\n", []int{4, 2, 5, 7}, sortArrayByParityII(b))
+}
+```
+
+---
+
+## Example 10: Multi-Pointer Patterns Summary
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("=== Multi-Pointer Patterns Summary ===\n")
+
+	fmt.Println("--- Pattern Categories ---")
+	patterns := []struct{ name, pointers, example string }{
+		{"Opposite ends", "left→ ←right", "Two Sum, Container Water"},
+		{"Same direction", "slow→ fast→", "Remove dupls, Floyd's cycle"},
+		{"3-way partition", "low→ mid→ ←high", "Dutch National Flag"},
+		{"Read/Write", "read→, write→", "Move zeros, compress"},
+		{"K-way merge", "p1, p2, ..., pk", "Merge k sorted lists"},
+		{"Multi-condition", "start, end, boundary", "Partition labels"},
+	}
+	for _, p := range patterns {
+		fmt.Printf("  %-18s [%-17s] %s\n", p.name, p.pointers, p.example)
+	}
+
+	fmt.Println("\n--- Choosing the Right Approach ---")
+	tips := []struct{ scenario, technique string }{
+		{"Find pair with target sum", "Opposite ends on sorted"},
+		{"Partition into 2 groups", "Two pointers (swap)"},
+		{"Partition into 3 groups", "Three pointers (DNF)"},
+		{"Merge sorted sources", "One pointer per source + heap"},
+		{"Remove/compress in-place", "Read/write pointers"},
+		{"Cycle in sequence", "Fast/slow (Floyd)"},
+		{"K-sum for any k", "Fix k-2, two-pointer on rest"},
+	}
+	for _, t := range tips {
+		fmt.Printf("  %-35s → %s\n", t.scenario, t.technique)
+	}
+
+	fmt.Println("\n--- Complexity ---")
+	fmt.Println("  Two pointer: O(n)")
+	fmt.Println("  K-way merge: O(N log k) with heap")
+	fmt.Println("  K-sum: O(n^(k-1)) with sorting")
+
+	fmt.Println("\n--- All 25 Phases Complete! ---")
+	fmt.Println("  You've covered the full DSA preparation roadmap.")
+	fmt.Println("  Review, practice, and good luck with interviews!")
+}
+```
+
+---
+
+## Key Takeaways
+
+1. **Dutch National Flag** (3-pointer): the classic partitioning pattern — low/mid/high
+2. **K-way merge**: one pointer per source + min-heap for efficient extraction
+3. **Read/Write pointers**: scan with read, write only valid elements → in-place transform
+4. **Trapping rain water**: converge from both ends, track max heights
+5. **Multi-pointer is just an extension** of two-pointer — identify how many boundaries you need
+6. **Practice the fundamental patterns** — most multi-pointer problems reduce to a known template
+
+---
+
+## 🎉 All 25 Phases Complete!
+
+Congratulations! You've covered the full DSA preparation roadmap:
+- **217+ concept files** across 25 phases
+- **2100+ Go examples** with runnable code
+- From algorithm complexity basics to advanced techniques
+
+**Review strategy**: revisit 2-3 files per day, implement from memory, and practice on LeetCode.
