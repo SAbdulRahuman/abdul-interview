@@ -50,6 +50,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Brute Force vs Hash Map:**
+
+```
+  Brute Force: Check every pair O(n²)     Hash Map: Single pass O(n)
+  ─────────────────────────────────        ─────────────────────────────
+  nums = [2, 7, 11, 15]  target=9         nums = [2, 7, 11, 15]  target=9
+
+  i=0: (2,7)✓ found!                      i=0: need 9-2=7 → not in map
+  i=0: (2,11) ✗                                 map: {2:0}
+  i=0: (2,15) ✗                            i=1: need 9-7=2 → found at 0! ✓
+  i=1: (7,11) ✗                                 return (0, 1)
+  i=1: (7,15) ✗
+  i=2: (11,15) ✗                          Total lookups: 2
+  Total comparisons: up to n(n-1)/2
+
+  ┌─────────────────────────────────────────────────────┐
+  │  Tradeoff:  O(n) space  ──→  O(n²) time drops to   │
+  │             (hash map)       O(n) time              │
+  │                                                     │
+  │  Time ▲                                             │
+  │       │  ·                                          │
+  │  n²   │    · Brute                                  │
+  │       │      ·                                      │
+  │       │        ·                                    │
+  │  n    │──────────── Hash ─────                      │
+  │       │                                             │
+  │       └──────────────────────▶ n                    │
+  └─────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Fibonacci — Three Tradeoff Levels
@@ -103,6 +133,43 @@ func main() {
 | Memoization | O(n) | O(n) | Trade space for time |
 | Iterative | O(n) | O(1) | Optimal |
 
+**Textual Figure — Three Levels of Tradeoff for fib(5):**
+
+```
+ Level 1: Naive O(2ⁿ) time, O(n) space — redundant recomputation
+ ─────────────────────────────────────────────────────────────
+              fib(5)
+             /      \
+         fib(4)     fib(3)        ← fib(3) computed TWICE
+        /    \      /    \
+    fib(3) fib(2) fib(2) fib(1)  ← fib(2) computed THREE times
+    /   \
+ fib(2) fib(1)  ...explosive growth...
+
+ Level 2: Memoization O(n) time, O(n) space — cache results
+ ─────────────────────────────────────────────────────────────
+  memo[] = [-1, -1, -1, -1, -1, -1]
+
+  fib(5) → fib(4) → fib(3) → fib(2) → fib(1)=1, fib(0)=0
+                                        memo[2]=1 ✓
+                              memo[3]=2 ✓
+                    memo[4]=3 ✓
+           memo[5]=5 ✓
+
+  memo[] = [ 0,  1,  1,  2,  3,  5 ]   ← each computed ONCE
+
+ Level 3: Iterative O(n) time, O(1) space — two variables
+ ─────────────────────────────────────────────────────────────
+  prev=0, curr=1
+
+  i=2: prev=1, curr=0+1=1    [0, 1, 1]
+  i=3: prev=1, curr=1+1=2    [0, 1, 1, 2]
+  i=4: prev=2, curr=1+2=3    [0, 1, 1, 2, 3]
+  i=5: prev=3, curr=2+3=5    [0, 1, 1, 2, 3, 5]  ✓
+
+  Only 2 variables at any time — no array needed!
+```
+
 ---
 
 ## Example 3: Lookup Table vs Computation
@@ -147,6 +214,43 @@ func main() {
         fmt.Printf("%d: %v\n", n, sieve[n]) // O(1) per lookup!
     }
 }
+```
+
+**Textual Figure — Compute vs Lookup Table:**
+
+```
+  Compute on demand: O(√n) per call, O(1) space
+  ──────────────────────────────────────────────
+  isPrime(17)?
+    check 2: 17%2 ≠ 0
+    check 3: 17%3 ≠ 0
+    check 4: 4² = 16 < 17, 17%4 ≠ 0
+    check 5: 5² = 25 > 17, STOP → true
+    Cost: √17 ≈ 4 checks
+
+  Sieve precomputation: O(n) space, O(1) per lookup
+  ──────────────────────────────────────────────────
+  Build once:  idx: 0  1  2  3  4  5  6  7  8  9 10 11 12 13 ...
+             sieve: F  F  T  T  F  T  F  T  F  F  F  T  F  T ...
+                         ↑  ↑     ↑     ↑              ↑     ↑
+                        primes: 2,3,5,7,11,13,...
+
+  Lookup: sieve[17] → true   (instant!)
+  Lookup: sieve[100] → false (instant!)
+
+  ┌──────────────────────────────────────────────────────┐
+  │ Break-even analysis:                                 │
+  │                                                      │
+  │  Cost ▲                                              │
+  │       │       · Compute: q × O(√n)                   │
+  │       │      ·                                       │
+  │       │     ·                                        │
+  │       │    · ────── Break-even                       │
+  │       │  ·─────────── Sieve: O(n) + q × O(1)        │
+  │       │·                                             │
+  │       └──────────────────────────▶ q (queries)       │
+  │  Few queries → compute    Many queries → sieve       │
+  └──────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -207,6 +311,39 @@ func main() {
     quickSortInPlace(nums2, 0, len(nums2)-1)
     fmt.Println("Quick sort (in-place, O(1) space):", nums2)
 }
+```
+
+**Textual Figure — Stability vs Space Tradeoff:**
+
+```
+  Stability test: sort by value, preserving original order for ties
+  Input: [(3,"a"), (1,"b"), (3,"c"), (2,"d")]
+
+  Quick Sort (in-place, O(1) space, UNSTABLE):
+  ┌───────────────────────────────────────────────┐
+  │ (3,"a") (1,"b") (3,"c") (2,"d")             │
+  │    ↓ partition around pivot                   │
+  │ (1,"b") (2,"d") (3,"c") (3,"a")             │
+  │                       ↑       ↑               │
+  │              3,"c" before 3,"a" → UNSTABLE    │
+  │              (original: "a" came before "c")  │
+  └───────────────────────────────────────────────┘
+
+  Merge Sort (O(n) space, STABLE):
+  ┌───────────────────────────────────────────────┐
+  │ (3,"a") (1,"b") (3,"c") (2,"d")             │
+  │    ↓ split + merge with ≤ (preserves order)   │
+  │ (1,"b") (2,"d") (3,"a") (3,"c")             │
+  │                       ↑       ↑               │
+  │              3,"a" before 3,"c" → STABLE ✓    │
+  └───────────────────────────────────────────────┘
+
+  ┌──────────────┬──────────┬─────────┬──────────┐
+  │  Algorithm   │  Time    │  Space  │  Stable? │
+  ├──────────────┼──────────┼─────────┼──────────┤
+  │  Quick Sort  │ O(n lg n)│  O(1)   │    No    │
+  │  Merge Sort  │ O(n lg n)│  O(n)   │   Yes    │
+  └──────────────┴──────────┴─────────┴──────────┘
 ```
 
 ---
@@ -273,6 +410,46 @@ func main() {
 }
 ```
 
+**Textual Figure — Four Approaches on the Tradeoff Spectrum:**
+
+```
+  Input: s = "abcdefa"  (duplicate 'a')
+
+  1. Brute O(n²) time, O(1) space — compare every pair:
+     a-b a-c a-d a-e a-f a-a ✓ found!
+     ────  6 comparisons to find it
+
+  2. Hash  O(n) time, O(n) space — set lookup:
+     seen={}  → 'a' add → 'b' add → ... → 'a' FOUND ✓
+     seen={a,b,c,d,e,f}  ← up to 26 entries
+
+  3. Sort  O(n lg n) time, O(1) space — sort then scan:
+     "abcdefa" → sort → "aabcdef"
+      ↑↑ adjacent match → found ✓
+
+  4. Bit   O(n) time, O(1) space — bit vector (a-z only):
+     checker: 00000000000000000000000000  (26 bits)
+     'a' → set bit 0:  00000000000000000000000001
+     'b' → set bit 1:  00000000000000000000000011
+     ...
+     'a' → bit 0 already set → FOUND ✓
+
+  Tradeoff Map:
+  ┌─────────────────────────────────────────────┐
+  │  Time ▲                                     │
+  │       │                                     │
+  │  n²   │  ● Brute                            │
+  │       │                                     │
+  │ n lg n│     ● Sort                           │
+  │       │                                     │
+  │  n    │        ● Hash    ● Bit (best!)      │
+  │       │                                     │
+  │       └────────────────────────────▶ Space   │
+  │           O(1)     O(n)    O(1)*            │
+  │                          *only for a-z      │
+  └─────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Caching — Classic Time-Space Tradeoff
@@ -333,6 +510,37 @@ func main() {
 }
 ```
 
+**Textual Figure — Cache Hit/Miss Flow:**
+
+```
+  Without Cache:                     With Cache:
+  ────────────────────────          ────────────────────────────
+  Query(1000)                        Query(1000)
+    │                                  │
+    ▼                                  ▼
+  ┌───────────────┐                 ┌──────────────┐
+  │  Compute O(n²) │                 │ Cache lookup │
+  │  1,000,000    │                 │    O(1)      │
+  │  iterations   │                 └──────┬───────┘
+  └───────┬───────┘                     │
+          │                           Hit? ────────────┐
+          ▼                        Yes ▼              No ▼
+       result                     return val    ┌───────────┐
+                                    O(1)        │ Compute  │
+  Query(1000) again:                            │   O(n²)  │
+    │                                          └────┬──────┘
+    ▼                                               │
+  ┌───────────────┐                            cache.Set()
+  │  Compute O(n²) │                                │
+  │  AGAIN!        │                              result
+  └───────────────┘
+                                   Next call: O(1) from cache!
+
+  Cost over Q queries:
+  No cache:   Q × O(n²) = O(Q·n²)
+  With cache: O(n²) + (Q-1) × O(1) ≈ O(n²)
+```
+
 ---
 
 ## Example 7: Matrix Path — DP Space Optimization
@@ -380,6 +588,37 @@ func main() {
     fmt.Println(uniquePathsOptimized(m, n)) // 28 — O(n) space
     // Same time O(m×n), but 7x less memory!
 }
+```
+
+**Textual Figure — Full DP Grid vs Space-Optimized Row:**
+
+```
+  Full DP: O(m×n) space — 3×7 grid
+  ┌──────────────────────────────────────┐
+  │      j=0  j=1  j=2  j=3  j=4  j=5  j=6  │
+  │ i=0 [ 1    1    1    1    1    1    1  ] │
+  │ i=1 [ 1    2    3    4    5    6    7  ] │
+  │ i=2 [ 1    3    6   10   15   21   28 ] │
+  │                                    ↑↑    │
+  │                               answer=28  │
+  │      Total cells stored: 3×7 = 21         │
+  └──────────────────────────────────────┘
+
+  Space-Optimized: O(n) — reuse single row
+  ┌──────────────────────────────────────┐
+  │ Init:   dp = [1, 1, 1, 1, 1, 1, 1]       │
+  │                                           │
+  │ i=1:    dp = [1, 2, 3, 4, 5, 6, 7]       │
+  │         dp[j] += dp[j-1]                   │
+  │         dp[1] = 1+1=2                      │
+  │         dp[2] = 1+2=3  ...                 │
+  │                                           │
+  │ i=2:    dp = [1, 3, 6, 10, 15, 21, 28]   │
+  │         dp[j] already has prev row value!   │
+  │                                     ↑↑     │
+  │                                answer=28   │
+  │      Total cells stored: 7 (not 21!)       │
+  └──────────────────────────────────────┘
 ```
 
 ---
@@ -431,6 +670,37 @@ func main() {
 
     // For 1 million queries: brute=O(n×q), prefix=O(n+q)
 }
+```
+
+**Textual Figure — Prefix Sum Construction and Query:**
+
+```
+  nums:     [1,  2,  3,  4,  5,  6,  7,  8,  9, 10]
+  index:     0   1   2   3   4   5   6   7   8   9
+
+  Build prefix sum array (one-time O(n)):
+  prefix: [0,  1,  3,  6, 10, 15, 21, 28, 36, 45, 55]
+  index:   0   1   2   3   4   5   6   7   8   9  10
+           ↑                                       ↑
+         dummy                                    sum(all)
+
+  Query: RangeSum(2, 7) = sum of indices 2..7
+  ┌────────────────────────────────────────────────┐
+  │  Brute: loop from 2 to 7                          │
+  │    3 + 4 + 5 + 6 + 7 + 8 = 33     O(n) per query  │
+  │                                                   │
+  │  Prefix Sum: prefix[8] - prefix[2]                │
+  │    = 36 - 3 = 33                   O(1) per query  │
+  │                                                   │
+  │  nums:   [ 1  2 |3  4  5  6  7  8| 9  10]         │
+  │                  └───────────────┘                   │
+  │                   sum = 33                        │
+  │  prefix[right+1] - prefix[left] = instant!         │
+  └────────────────────────────────────────────────┘
+
+  Cost comparison for Q queries:
+  Brute:      O(n × Q)
+  Prefix Sum: O(n) build + O(Q) queries = O(n + Q)
 ```
 
 ---
@@ -494,6 +764,47 @@ func main() {
 }
 ```
 
+**Textual Figure — Matrix vs List Representation:**
+
+```
+  Graph: 5 nodes, edges: 0-1, 1-2
+
+  Adjacency Matrix: O(V²) space
+  ┌─────────────────────────────────┐
+  │      0   1   2   3   4        │
+  │  0 [ 0   1   0   0   0 ]      │
+  │  1 [ 1   0   1   0   0 ]      │
+  │  2 [ 0   1   0   0   0 ]      │
+  │  3 [ 0   0   0   0   0 ]      │
+  │  4 [ 0   0   0   0   0 ]      │
+  │                               │
+  │  Total cells: 5×5 = 25        │
+  │  HasEdge(0,1) → matrix[0][1]  │
+  │                = 1 → O(1) ✓   │
+  └─────────────────────────────────┘
+
+  Adjacency List: O(V+E) space
+  ┌─────────────────────────────────┐
+  │  0: [1]                       │
+  │  1: [0, 2]                    │
+  │  2: [1]                       │
+  │  3: []                        │
+  │  4: []                        │
+  │                               │
+  │  Total entries: 5 + 4 = 9     │
+  │  HasEdge(0,1) → scan list[0]  │
+  │              = O(degree) = O(1)│
+  └─────────────────────────────────┘
+
+  When to use which:
+  ┌──────────────┬────────────────┬────────────────┐
+  │  Graph Type  │    Matrix      │      List      │
+  ├──────────────┼────────────────┼────────────────┤
+  │ Dense E≈V²  │  ✓ Efficient  │  Wasteful       │
+  │ Sparse E≪V² │  Wasteful     │  ✓ Efficient   │
+  └──────────────┴────────────────┴────────────────┘
+```
+
 ---
 
 ## Example 10: Frequency Count — Precompute vs On-Demand
@@ -533,6 +844,33 @@ func main() {
         fmt.Printf("Count of %d: %d\n", target, freq[target])
     }
 }
+```
+
+**Textual Figure — On-Demand vs Precomputed Frequency:**
+
+```
+  nums = [1, 3, 2, 3, 1, 3, 4, 2, 1, 3, 5, 3]
+
+  On-Demand: Count of 3? → scan entire array
+  ┌───────────────────────────────────────┐
+  │  [1, 3, 2, 3, 1, 3, 4, 2, 1, 3, 5, 3] │
+  │       ↑     ↑     ↑              ↑     ↑  │
+  │      match match match          match match│
+  │   count = 5              O(n) per query │
+  └───────────────────────────────────────┘
+
+  Precomputed: Build freq map once O(n), then O(1) lookups
+  ┌───────────────────────────────────────┐
+  │  freq = {1:3, 2:2, 3:5, 4:1, 5:1}      │
+  │                                         │
+  │  freq[3] = 5      O(1) ✓                │
+  │  freq[1] = 3      O(1) ✓                │
+  │  freq[6] = 0      O(1) ✓ (not found)    │
+  └───────────────────────────────────────┘
+
+  Cost for Q queries on n elements:
+    On-demand:   O(n × Q)     ← scan for each query
+    Precomputed: O(n + Q)     ← build once, lookup many
 ```
 
 ---

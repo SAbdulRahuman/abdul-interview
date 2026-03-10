@@ -56,6 +56,24 @@ func main() {
 
 **Why O(1)?** — We perform exactly **1 operation** regardless of whether the slice has 5 elements or 5 million. Array index access is a direct memory offset calculation.
 
+```
+  Operations
+  ▲
+  │
+4 ┤
+  │
+3 ┤
+  │
+2 ┤
+  │  ● ─ ─ ─ ● ─ ─ ─ ● ─ ─ ─ ● ─ ─ ─ ●   ← O(1) constant
+1 ┤
+  │
+  └──────────────────────────────────────────▶ Input size (n)
+     10      100    1000   10000  100000
+
+  No matter how large n grows, operations stay at 1.
+```
+
 **More O(1) examples:**
 - Map lookup: `val := m["key"]`
 - Stack push/pop
@@ -90,6 +108,37 @@ func main() {
 
 **Why O(n)?** — The loop runs `n` times (once per element). If the array doubles in size, the runtime roughly doubles.
 
+```
+  Operations
+  ▲
+  │                                         ╱ O(n)
+  │                                       ╱
+  │                                     ╱
+  │                                   ╱
+  │                                 ╱
+  │                               ╱
+  │                             ╱
+  │                           ╱
+  │                         ╱
+  │                       ╱
+  │                     ╱
+  │                   ╱
+  │                 ╱
+  │               ╱
+  │             ╱
+  │           ╱
+  │         ╱
+  │       ╱
+  │     ╱
+  │   ╱
+  │ ╱
+  └──────────────────────────────────────────▶ n
+
+  Double the input → double the work.
+  n=5: visit [1] [2] [3] [4] [5] → 5 ops
+  n=10: visit all 10 → 10 ops
+```
+
 ---
 
 ## Example 3: O(n) — Linear Search
@@ -118,6 +167,21 @@ func main() {
 ```
 
 **Why O(n)?** — Best case is O(1) (found at index 0), but **Big O measures worst case**. The target might be at the end or not exist, requiring us to check all `n` elements.
+
+```
+  Searching for target = 7 in [5, 3, 8, 1, 9, 2, 7]
+
+  Index:  0    1    2    3    4    5    6
+        ┌────┬────┬────┬────┬────┬────┬────┐
+        │ 5  │ 3  │ 8  │ 1  │ 9  │ 2  │ 7  │
+        └────┴────┴────┴────┴────┴────┴────┘
+          ↑                              ↑
+  Step 1: 5≠7                     Step 7: 7=7 ✓ FOUND!
+          ✗    ✗    ✗    ✗    ✗    ✗    ✓
+
+  Best case:  target at index 0  → 1 check   → O(1)
+  Worst case: target at end/missing → n checks → O(n)
+```
 
 ---
 
@@ -159,6 +223,37 @@ Outer loop runs: n times
 Drop constant → O(n²)
 ```
 
+```
+  Bubble Sort — Comparison Grid (n=5)
+
+  Pass 1:  [5  3  8  1  2]    comparisons: 4
+            ↕  ↕  ↕  ↕
+  Pass 2:  [3  5  1  2  8]    comparisons: 3
+            ↕  ↕  ↕
+  Pass 3:  [3  1  2  5  8]    comparisons: 2
+            ↕  ↕
+  Pass 4:  [1  2  3  5  8]    comparisons: 1
+                                           ──
+                              Total:       10 = n(n-1)/2
+
+  Operations
+  ▲
+  │                                    ·  O(n²)
+  │                                 ·
+  │                              ·
+  │                          ·
+  │                      ·
+  │                 ·
+  │            ·
+  │        ·
+  │     · ╱ O(n)
+  │   ·╱
+  │  ╱
+  │╱
+  └──────────────────────────────────────▶ n
+  O(n²) grows MUCH faster than O(n)
+```
+
 ---
 
 ## Example 5: O(log n) — Logarithmic Time
@@ -198,6 +293,35 @@ func main() {
 ```
 
 **Why O(log n)?** — Each iteration cuts the search space in half.
+
+```
+  Binary Search for target=7 in [1, 3, 5, 7, 9, 11, 13, 15]
+
+  Step 1: Search [1, 3, 5, 7, 9, 11, 13, 15]   mid=9 → 7<9, go left
+          ├─────────────────┤
+          ▲       mid       ▲
+         left              right
+
+  Step 2: Search [1, 3, 5, 7]                   mid=5 → 7>5, go right
+          ├────────┤
+          ▲  mid   ▲
+         left    right
+
+  Step 3: Search [7]                            mid=7 → FOUND!
+                  ├┤
+                  ▲
+                 mid ✓
+
+  Search space halved each step:
+  ┌────────────────────────────────┐  n = 8
+  └────────────────────────────────┘
+  ┌────────────────┐                  n/2 = 4
+  └────────────────┘
+  ┌────────┐                          n/4 = 2
+  └────────┘
+  ┌────┐                              n/8 = 1  → 3 steps = log₂(8)
+  └────┘
+```
 
 ```
 n = 16 → 8 → 4 → 2 → 1  (4 steps = log₂(16))
@@ -368,6 +492,27 @@ func main() {
 
 **Why O(n³)?** — Three nested loops → n × n × n. For `n = 100` → 1,000,000 operations. For `n = 1000` → 1,000,000,000 — very slow.
 
+```
+  Triple Nested Loops — Checking all triplets (i, j, k)
+
+  Array: [1, 2, 3, 4]
+
+  i=0: j=1: k=2 → (1,2,3)  k=3 → (1,2,4)
+       j=2: k=3 → (1,3,4)
+       j=3: (no k)
+  i=1: j=2: k=3 → (2,3,4)
+       j=3: (no k)
+  i=2: j=3: (no k)
+
+  Total triplets = C(n,3) = n(n-1)(n-2)/6 ≈ n³/6 → O(n³)
+
+       n  │  n³        │ Time at 10⁸ ops/sec
+  ────────┼────────────┼───────────────────
+      10  │      1,000 │ instant
+     100  │  1,000,000 │ 0.01 sec
+    1000  │  10⁹       │ 10 sec ← too slow
+```
+
 > **Interview tip:** 3Sum can be solved in O(n²) using sorting + two pointers!
 
 ---
@@ -465,6 +610,29 @@ func main() {
 
 **Why O(√n)?** — The loop runs from 2 to √n. For `n = 1,000,000`, we only check ~1,000 numbers instead of 1,000,000.
 
+```
+  Checking if 36 is prime:
+
+  Factors of 36: 1×36, 2×18, 3×12, 4×9, 6×6, 9×4, 12×3...
+                                              ↑
+                                            √36 = 6
+
+  ┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬─ ─ ─ ─┬──┐
+  │2 │3 │4 │5 │6 │  │  │  │  │  │       │36│
+  └──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴─ ─ ─ ─┴──┘
+  ├─ check ─┤     ├── skip (mirror of left) ──┤
+    √n = 6         No need to check beyond √n
+
+  If a factor exists above √n, its pair must be below √n.
+  So checking up to √n is sufficient!
+
+     n        │ √n (checks needed)
+  ────────────┼───────────────────
+     100      │   10
+   10,000     │  100
+  1,000,000   │ 1,000
+```
+
 ---
 
 ## Example 11: O(n + m) — Two Independent Inputs
@@ -506,6 +674,29 @@ func main() {
 
 **Why O(n + m)?** — We iterate through both arrays once. Each element is visited exactly once. This is **NOT** O(n) because the arrays can be different sizes.
 
+```
+  Merging two sorted arrays:
+
+  a: [1, 3, 5, 7]       (n=4)
+      ↑
+      i
+
+  b: [2, 4, 6, 8, 10]   (m=5)
+      ↑
+      j
+
+  Step 1: a[0]=1 < b[0]=2 → take 1, i++      result: [1]
+  Step 2: a[1]=3 > b[0]=2 → take 2, j++      result: [1,2]
+  Step 3: a[1]=3 < b[1]=4 → take 3, i++      result: [1,2,3]
+  Step 4: a[2]=5 > b[1]=4 → take 4, j++      result: [1,2,3,4]
+  Step 5: a[2]=5 < b[2]=6 → take 5, i++      result: [1,2,3,4,5]
+  Step 6: a[3]=7 > b[2]=6 → take 6, j++      result: [1,2,3,4,5,6]
+  Step 7: a[3]=7 < b[3]=8 → take 7, i++      result: [1,2,3,4,5,6,7]
+  Step 8: append remaining b → [8, 10]       result: [1,2,3,4,5,6,7,8,10]
+
+  Total steps: n + m = 4 + 5 = 9  → O(n + m)
+```
+
 ---
 
 ## Example 12: O(n × m) — Nested Loops with Different Inputs
@@ -537,6 +728,22 @@ func main() {
 ```
 
 **Why O(n × m)?** — The outer loop runs `n` times, the inner loop runs `m` times for each outer iteration. If rows ≠ cols, it's O(n × m), not O(n²).
+
+```
+  Traversal pattern (3 rows × 4 cols = 12 visits):
+
+  ┌─────┬─────┬─────┬─────┐
+  │ 1→  │ 2→  │ 3→  │ 4   │  row 0: m=4 visits
+  ├─────┼─────┼─────┼─────┤
+  │ 5→  │ 6→  │ 7→  │ 8   │  row 1: m=4 visits
+  ├─────┼─────┼─────┼─────┤
+  │ 9→  │ 10→ │ 11→ │ 12  │  row 2: m=4 visits
+  └─────┴─────┴─────┴─────┘
+                              ─────────────────
+                              n rows × m cols = n×m total
+
+  O(n × m) ≠ O(n²) unless n = m
+```
 
 ---
 

@@ -56,6 +56,30 @@ func main() {
 - Total copies: 1 + 2 + 4 + ... + n ≈ 2n
 - Amortized cost: 2n / n = O(1)
 
+```
+  Dynamic Array Append — Cost Per Operation:
+
+  Operation:  1  2  3  4  5  6  7  8  9  10 ...
+  Cost:       1  2  3  1  5  1  1  9  1   1 ...
+                 ↑  ↑     ↑        ↑
+              resize! (copy all elements + insert)
+
+  Cost
+  ▲
+ 9┤                        │
+  │                        │
+ 5┤            │           │
+  │      │     │           │
+ 3┤      │     │           │
+  │   │  │     │           │
+ 1┤│  │  │  │  │  │  │  │  │  │
+  └────────────────────────────▶ operation #
+   1  2  3  4  5  6  7  8  9  10
+
+  Most operations cost 1, occasional spike costs n.
+  Average over all operations: ≈ 2 = O(1) amortized.
+```
+
 ---
 
 ## Example 2: Accounting Method for Dynamic Array
@@ -159,9 +183,29 @@ func main() {
 // So any sequence of n operations does at most 2n work → O(1) amortized
 ```
 
----
+```
+  Stack Multipop — Why Amortized O(1):
 
-## Example 4: Binary Counter — Amortized O(1)
+  Push 10 elements:           Pop all at once:
+  ┌───┐                         ┌───┐
+  │10 │ ← push O(1)           │10 │ → pop
+  ├───┤                         ├───┤
+  │ 9 │ ← push O(1)           │ 9 │ → pop
+  ├───┤                         ├───┤
+  │ 8 │ ← push O(1)           │ 8 │ → pop
+  ├───┤                         │...│
+  │...│                         ├───┤
+  ├───┤                         │ 1 │ → pop
+  │ 1 │ ← push O(1)           └───┘
+  └───┘
+  10 pushes @ O(1) = 10       1 multipop(10) = 10
+
+  Total work: 10 + 10 = 20 over 11 operations
+  Amortized: 20/11 ≈ 1.8 → O(1)
+
+  Key: each element pushed once, popped AT MOST once.
+  Total pops ≤ total pushes = n → O(1) amortized.
+```
 
 ```go
 package main
@@ -209,6 +253,30 @@ func main() {
 - Bit 2 flips every 4 increments: n/4 times
 - Total flips: n + n/2 + n/4 + ... ≤ 2n
 - Per increment: 2n / n = 2 = O(1)
+
+```
+  Binary Counter Increments:
+
+  Count  Binary   Flips
+    0    0000       -
+    1    0001       1    (bit 0: 0→1)
+    2    0010       2    (bit 0: 1→0, bit 1: 0→1)
+    3    0011       1    (bit 0: 0→1)
+    4    0100       3    (bit 0,1: 1→0, bit 2: 0→1)
+    5    0101       1
+    6    0110       2
+    7    0111       1
+    8    1000       4    (bits 0,1,2: 1→0, bit 3: 0→1)
+
+  Flip frequency per bit:
+  Bit 0: ████████  flips n times
+  Bit 1: ████      flips n/2 times
+  Bit 2: ██        flips n/4 times
+  Bit 3: █         flips n/8 times
+
+  Total = n + n/2 + n/4 + n/8 + ... < 2n
+  Amortized = 2n/n = 2 = O(1) ✓
+```
 
 ---
 
@@ -293,9 +361,26 @@ func main() {
 }
 ```
 
----
+```
+  Hash Map Resizing:
 
-## Example 6: Potential Method — Formal Analysis
+  Load factor = size / capacity
+  Resize when load factor > 0.75
+
+  ┌──────────┬──────────┬────────┬───────────────┐
+  │ Capacity │ Trigger  │ Rehash │ Cost           │
+  ├──────────┼──────────┼────────┼───────────────┤
+  │    4     │  3 items │   3    │ O(3)           │
+  │    8     │  6 items │   6    │ O(6)           │
+  │   16     │ 12 items │  12    │ O(12)          │
+  │   32     │ 24 items │  24    │ O(24)          │
+  └──────────┴──────────┴────────┴───────────────┘
+
+  Rehash cost = 3 + 6 + 12 + 24 = 45
+  Inserts between rehashes: 3 + 3 + 6 + 12 = 24
+  Total inserts: 24, total work ≈ 24 + 45 = 69
+  Amortized: 69/24 ≈ 2.9 → O(1)
+```
 
 ```go
 package main
@@ -446,9 +531,27 @@ func main() {
 }
 ```
 
----
+```
+  Queue with Two Stacks:
 
-## Example 9: Fibonacci Heap — Amortized O(1) Insert
+  Enqueue 1,2,3,4,5:              Dequeue (transfer + pop):
+
+  inStack:                         outStack:
+  ┌───┐                              ┌───┐
+  │ 5 │ top                        │ 1 │ top → dequeue 1
+  ├───┤                              ├───┤
+  │ 4 │                              │ 2 │
+  ├───┤   transfer             ├───┤
+  │ 3 │   ───────────────▶    │ 3 │
+  ├───┤   pop all from in,       ├───┤
+  │ 2 │   push to out (O(n))     │ 4 │
+  ├───┤                              ├───┤
+  │ 1 │ bottom                     │ 5 │ bottom
+  └───┘                              └───┘
+
+  Each element: enqueued once (O(1)) + transferred once (O(1)) = O(2)
+  Over n operations: total = 2n → amortized O(1)
+```
 
 ```go
 package main

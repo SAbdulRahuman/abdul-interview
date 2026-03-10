@@ -54,6 +54,29 @@ func main() {
 - Reverse first k: fixes the rotated portion
 - Reverse rest: fixes the remaining portion
 
+**Textual Figure — Right Rotate Using Triple Reverse:**
+
+```
+  nums = [1, 2, 3, 4, 5, 6, 7]   k = 3
+
+  Step 1: Reverse entire array
+  [1, 2, 3, 4, 5, 6, 7]  →  [7, 6, 5, 4, 3, 2, 1]
+
+  Step 2: Reverse first k=3 elements
+  [7, 6, 5, 4, 3, 2, 1]  →  [5, 6, 7, 4, 3, 2, 1]
+  └─reverse─┘
+
+  Step 3: Reverse remaining elements
+  [5, 6, 7, 4, 3, 2, 1]  →  [5, 6, 7, 1, 2, 3, 4]
+            └──reverse──┘
+
+  Result: [5, 6, 7, 1, 2, 3, 4]  ✓
+
+  Visual:
+  Before: |1 2 3 4|5 6 7|    k=3 from end
+  After:  |5 6 7|1 2 3 4|    moved to front!
+```
+
 ---
 
 ## Example 2: Left Rotate Using Reverse
@@ -94,6 +117,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Left Rotate Using Triple Reverse:**
+
+```
+  nums = [1, 2, 3, 4, 5]   k = 2 (left rotate)
+
+  Step 1: Reverse first k=2 elements
+  [1, 2, 3, 4, 5]  →  [2, 1, 3, 4, 5]
+  └─rev─┘
+
+  Step 2: Reverse remaining elements
+  [2, 1, 3, 4, 5]  →  [2, 1, 5, 4, 3]
+         └──rev──┘
+
+  Step 3: Reverse entire array
+  [2, 1, 5, 4, 3]  →  [3, 4, 5, 1, 2]
+  └────reverse────┘
+
+  Result: [3, 4, 5, 1, 2]  ✓
+
+  Comparison:
+  Right rotate: rev ALL → rev first k → rev rest
+  Left rotate:  rev first k → rev rest → rev ALL
+
+  Left rotate by k = Right rotate by (n-k)
+```
+
 ---
 
 ## Example 3: Rotate Using Extra Array
@@ -119,6 +168,32 @@ func main() {
     fmt.Println("Right 1:", rotateWithCopy(nums, 1)) // [5 1 2 3 4]
     fmt.Println("Right 5:", rotateWithCopy(nums, 5)) // [1 2 3 4 5] (full cycle)
 }
+```
+
+**Textual Figure — Rotate Using Extra Array:**
+
+```
+  nums = [1, 2, 3, 4, 5]   k = 2 (right rotate)
+
+  Formula: result[(i + k) % n] = nums[i]
+
+  i=0: result[(0+2)%5] = result[2] = 1
+  i=1: result[(1+2)%5] = result[3] = 2
+  i=2: result[(2+2)%5] = result[4] = 3
+  i=3: result[(3+2)%5] = result[0] = 4
+  i=4: result[(4+2)%5] = result[1] = 5
+
+  result: [4, 5, 1, 2, 3]  ✓
+
+  nums:   ┌─┬─┬─┬─┬─┐
+          │1│2│3│4│5│
+          └─┴─┴─┴─┴─┘
+           │││↓↓     each shifts right by k=2
+  result: ┌─┬─┬─┬─┬─┐
+          │4│5│1│2│3│
+          └─┴─┴─┴─┴─┘
+
+  Simple O(n) time but O(n) extra space.
 ```
 
 ---
@@ -166,6 +241,30 @@ func main() {
 
 **Why?** Each element is moved exactly once. O(n) time, O(1) space.
 
+**Textual Figure — Cyclic Replacement Rotation:**
+
+```
+  nums = [1, 2, 3, 4, 5, 6]   k = 2
+
+  Start at index 0, follow the cycle:
+  ┌───────────────────────┐
+  │ idx 0 → idx 2 → idx 4 → idx 0 (cycle!)
+  │  1→3   3→5   5→1
+  └───────────────────────┘
+  After cycle 1: [5, 2, 1, 4, 3, 6]
+  count = 3 (moved 3 elements)
+
+  Start at index 1, follow cycle:
+  ┌───────────────────────┐
+  │ idx 1 → idx 3 → idx 5 → idx 1 (cycle!)
+  │  2→4   4→6   6→2
+  └───────────────────────┘
+  After cycle 2: [5, 6, 1, 2, 3, 4]
+  count = 6 (all moved!) ✓
+
+  Number of cycles = GCD(n, k) = GCD(6,2) = 2
+```
+
 ---
 
 ## Example 5: Juggling Algorithm (GCD-based Rotation)
@@ -211,6 +310,35 @@ func main() {
     rotateLeftJuggling(nums2, 2)
     fmt.Println(nums2) // [3 4 5 6 1 2]
 }
+```
+
+**Textual Figure — Juggling Algorithm (GCD-Based):**
+
+```
+  nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]   d = 3
+  n = 12,  GCD(12, 3) = 3  →  3 cycles
+
+  Cycle 0 (start=0): 0→3→6→9→0
+    save temp=nums[0]=1
+    nums[0]=nums[3]=4
+    nums[3]=nums[6]=7
+    nums[6]=nums[9]=10
+    nums[9]=temp=1
+
+  Cycle 1 (start=1): 1→4→7→10→1
+    save temp=nums[1]=2
+    nums[1]=nums[4]=5
+    nums[4]=nums[7]=8
+    nums[7]=nums[10]=11
+    nums[10]=temp=2
+
+  Cycle 2 (start=2): 2→5→8→11→2
+    (similar...)
+
+  Result: [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3]  ✓
+
+  Each element moves exactly once!
+  Total cycles = GCD(n, d)
 ```
 
 ---
@@ -261,6 +389,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Search in Rotated Sorted Array:**
+
+```
+  nums = [4, 5, 6, 7, 0, 1, 2]   target = 0
+
+  Iteration 1: left=0, right=6, mid=3
+    nums[mid]=7, not target
+    nums[left]=4 ≤ nums[mid]=7 → left half [4,5,6,7] sorted
+    target=0 NOT in [4..7] → go right
+    left = 4
+
+  Iteration 2: left=4, right=6, mid=5
+    nums[mid]=1, not target
+    nums[left]=0 ≤ nums[mid]=1 → left half [0,1] sorted
+    target=0 in [0..1] → go left
+    right = 4
+
+  Iteration 3: left=4, right=4, mid=4
+    nums[mid]=0 == target! → return 4  ✓
+
+  Key Insight:
+  ┌─────sorted─────┐ ┌──sorted──┐
+  [4, 5, 6, 7,  |  0, 1, 2]
+   left half    pivot  right half
+  One half is ALWAYS sorted → check if target is in sorted half.
+```
+
 ---
 
 ## Example 7: Find Minimum in Rotated Sorted Array
@@ -290,6 +445,38 @@ func main() {
     fmt.Println(findMin([]int{11, 13, 15, 17}))       // 11 (not rotated)
     fmt.Println(findMin([]int{2, 1}))                  // 1
 }
+```
+
+**Textual Figure — Find Minimum in Rotated Sorted Array:**
+
+```
+  nums = [4, 5, 6, 7, 0, 1, 2]
+
+  Binary Search for Minimum:
+
+  Iter 1: left=0, right=6, mid=3
+    nums[mid]=7 > nums[right]=2 → min in RIGHT half
+    left = 4
+
+  Iter 2: left=4, right=6, mid=5
+    nums[mid]=1 ≤ nums[right]=2 → min could be mid or LEFT
+    right = 5
+
+  Iter 3: left=4, right=5, mid=4
+    nums[mid]=0 ≤ nums[right]=1 → right = 4
+
+  left == right == 4 → return nums[4] = 0  ✓
+
+  Visual Pattern:
+       7
+      / \
+     6   \
+    /     0         Sorted-rotated = two ascending segments.
+   5       \        The min is the "drop-off" point.
+  /         \       
+  4          1
+              \
+               2
 ```
 
 ---
@@ -326,6 +513,31 @@ func main() {
     fmt.Println(findRotationCount([]int{7, 9, 11, 12, 5}))     // 4
     fmt.Println(findRotationCount([]int{7, 9, 11, 12, 15}))    // 0 (not rotated)
 }
+```
+
+**Textual Figure — Find Rotation Count:**
+
+```
+  Rotation count = Index of minimum element
+
+  Original sorted: [2, 3, 6, 12, 15, 18]
+  After 2 rotations (right): [15, 18, 2, 3, 6, 12]
+                               0   1  2  3  4   5
+                                      ↑
+                              min at index 2 = rotation count
+
+  Example: nums = [7, 9, 11, 12, 5]
+
+  Iter 1: left=0, right=4, mid=2
+    nums[0]=7 > nums[4]=5 → it IS rotated
+    nums[mid]=11 > nums[right]=5 → left = 3
+
+  Iter 2: left=3, right=4, mid=3
+    nums[mid]=12 > nums[right]=5 → left = 4
+
+  left == right == 4 → rotation count = 4  ✓
+
+  [7, 9, 11, 12, 5]  was rotated 4 times from [5, 7, 9, 11, 12]
 ```
 
 ---
@@ -379,6 +591,35 @@ func main() {
 }
 ```
 
+**Textual Figure — Rotate 2D Matrix Ring (Layer by Layer):**
+
+```
+  4×4 Matrix:
+  ┌───┬───┬───┬───┐
+  │ 1 │ 2 │ 3 │ 4 │  ← Outer ring (ring=0)
+  ├───┼───┼───┼───┤
+  │ 5 │ 6 │ 7 │ 8 │
+  ├───┼───┼───┼───┤
+  │ 9 │10 │11 │12 │
+  ├───┼───┼───┼───┤
+  │13 │14 │15 │16 │
+  └───┴───┴───┴───┘
+
+  Step 1: Extract outer ring (clockwise):
+  ┌ → → → ┐
+  ↑         ↓     Elements: [1,2,3,4,8,12,16,15,14,13,9,5]
+  ↑         ↓
+  └ ← ← ← ┘
+
+  Step 2: Rotate by k=2 positions:
+  [1,2,3,4,8,12,16,15,14,13,9,5]
+  → [9,5,1,2,3,4,8,12,16,15,14,13]
+
+  Step 3: Place back in ring positions.
+
+  This rotates just one ring without affecting inner elements.
+```
+
 ---
 
 ## Example 10: Block Swap Algorithm for Rotation
@@ -425,6 +666,35 @@ func main() {
     blockSwapRotate(arr2, 3)
     fmt.Println(arr2) // [4 5 6 7 8 1 2 3]
 }
+```
+
+**Textual Figure — Block Swap Algorithm:**
+
+```
+  arr = [1, 2, 3, 4, 5, 6, 7]   d = 2 (left rotate)
+
+  Split into A=[1,2] and B=[3,4,5,6,7]
+  A.len=2 (i=2), B.len=5 (j=5)
+
+  Since i < j: swap A with rightmost part of B
+  [1, 2, | 3, 4, 5, | 6, 7]
+   A(2)      B             swap A with [6,7]
+  [6, 7, | 3, 4, 5, | 1, 2]   j = j-i = 3
+   done✓     new A          placed✓
+
+  Now i=2, j=3: still i < j
+  [6, 7, | 3, | 4, 5, | 1, 2]
+  swap [6,7] with [4,5]
+  [4, 5, | 3, | 6, 7, | 1, 2]   j = j-i = 1
+
+  Now i=2, j=1: i > j
+  swap B=[3] with leftmost of A=[4]
+  [3, 5, | 4, | 6, 7, | 1, 2]   i = i-j = 1
+
+  Now i=1, j=1: equal! Final swap.
+  [3, 4, 5, 6, 7, 1, 2]  ✓
+
+  Key: Recursively swap blocks until equal size, then one last swap.
 ```
 
 ---

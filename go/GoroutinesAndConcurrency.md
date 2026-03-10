@@ -34,6 +34,28 @@ Concurrency is Go's killer feature. Goroutines are **lightweight user-space thre
 
 ## Goroutine Basics
 
+**Tutorial: Starting Goroutines — The go Keyword**
+
+This example shows how to launch concurrent goroutines using the `go` keyword before a function call. Each `go` call spawns a new lightweight goroutine that runs concurrently with the caller. Note that the main goroutine does not wait for spawned goroutines — if `main()` returns, all goroutines are killed immediately, so coordination (via WaitGroup or channels) is essential.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Goroutine Launching with go Keyword             │
+│                                                          │
+│  main()                                                  │
+│    │                                                     │
+│    ├── go sayHello("goroutine-1") ──► G1 runs concurrently│
+│    ├── go sayHello("goroutine-2") ──► G2 runs concurrently│
+│    ├── go func(){...}()           ──► G3 runs concurrently│
+│    │                                                     │
+│    ▼                                                     │
+│  sayHello("main")  ← main goroutine continues            │
+│    │                                                     │
+│    ▼                                                     │
+│  main() returns → ALL goroutines killed                  │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -70,6 +92,31 @@ func main() {
 ---
 
 ## Goroutines vs OS Threads
+
+**Tutorial: Spawning Thousands of Goroutines**
+
+This example demonstrates goroutines' lightweight nature by spawning 1000 of them in a loop. Each goroutine uses only ~2KB of stack, so this is trivial for the Go runtime. A `sync.WaitGroup` coordinates completion, and `runtime.GOMAXPROCS(0)` reveals how many OS threads were actually used — far fewer than 1000.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     Spawning 1000 Goroutines on Few OS Threads           │
+│                                                          │
+│  for i := 0..999 → wg.Add(1) + go func(id)              │
+│                                                          │
+│  ┌─────┐ ┌─────┐ ┌─────┐       ┌─────┐                  │
+│  │ G0  │ │ G1  │ │ G2  │ . . . │G999 │  1000 goroutines │
+│  └──┬──┘ └──┬──┘ └──┬──┘       └──┬──┘                  │
+│     └───────┴───────┴────...──────┘                      │
+│               │  multiplexed onto                        │
+│       ┌───────┼────────┐                                 │
+│       ▼       ▼        ▼                                 │
+│     ┌───┐  ┌───┐   ┌───┐                                │
+│     │ M1│  │ M2│   │ Mn│   ~GOMAXPROCS OS threads       │
+│     └───┘  └───┘   └───┘                                │
+│                                                          │
+│  wg.Wait() blocks until counter → 0                     │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -108,6 +155,31 @@ func main() {
 
 ## Go Scheduler: M:N Model
 
+**Tutorial: Exploring the Go Runtime Scheduler**
+
+This example inspects the Go scheduler's configuration at runtime. The M:N scheduler multiplexes many goroutines (G) onto fewer OS threads (M) via logical processors (P). `GOMAXPROCS` controls the number of P's (defaulting to CPU cores), and work-stealing balances load across processors.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│            M:N Scheduler Internals                       │
+│                                                          │
+│  G = Goroutine    P = Processor    M = OS Thread         │
+│                                                          │
+│  ┌──── P0 ─────┐     ┌──── P1 ─────┐                    │
+│  │Local RunQueue│     │Local RunQueue│                   │
+│  │ G1  G2  G3  │     │ G4  G5  G6  │                    │
+│  └──────┬──────┘     └──────┬──────┘                    │
+│         ▼                   ▼                            │
+│       ┌───┐              ┌───┐                           │
+│       │ M0│              │ M1│    OS Threads             │
+│       └───┘              └───┘                           │
+│                                                          │
+│  GOMAXPROCS(0) → returns current P count                 │
+│  GOMAXPROCS(n) → sets P count to n                       │
+│  NumCPU()      → number of CPU cores                     │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -141,6 +213,30 @@ func main() {
 ---
 
 ## sync.WaitGroup
+
+**Tutorial: Coordinating Goroutines with WaitGroup**
+
+This example demonstrates the standard pattern for waiting on multiple goroutines. Call `wg.Add(1)` before each `go` statement (never inside the goroutine), use `defer wg.Done()` to decrement the counter when the goroutine finishes, and `wg.Wait()` blocks until all goroutines complete. Always pass `*sync.WaitGroup` by pointer.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          sync.WaitGroup Counter Flow                     │
+│                                                          │
+│  wg.Add(1)  wg.Add(1)  wg.Add(1)  wg.Add(1)  wg.Add(1) │
+│  counter:  1 → 2 → 3 → 4 → 5                           │
+│                                                          │
+│   go worker(1)  go worker(2) ... go worker(5)            │
+│      │              │              │                     │
+│      ▼              ▼              ▼                     │
+│   wg.Done()      wg.Done()     wg.Done()                │
+│  counter: 5 → 4 → 3 → 2 → 1 → 0                       │
+│                                                          │
+│  wg.Wait()  ◄── blocks here until counter == 0          │
+│      │                                                   │
+│      ▼                                                   │
+│  "All workers completed!"                                │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -180,6 +276,29 @@ func main() {
 ---
 
 ## Race Conditions
+
+**Tutorial: Data Races and the Mutex Fix**
+
+This example first shows the classic data race: 1000 goroutines incrementing a shared counter without synchronization, producing an unpredictable result below 1000. The fix wraps the read-modify-write operation in `mu.Lock()` / `mu.Unlock()`, ensuring only one goroutine accesses the counter at a time.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Data Race: Unsynchronized counter++              │
+│                                                          │
+│  G1: READ counter (0) ─┐                                │
+│  G2: READ counter (0) ─┤  Both read same value!         │
+│  G1: WRITE counter = 1 │                                │
+│  G2: WRITE counter = 1 ◄─ Lost update!                  │
+│                                                          │
+│  Fix with Mutex:                                         │
+│  G1: Lock() → READ (0) → WRITE (1) → Unlock()          │
+│                                        G2: Lock() →     │
+│                                         READ (1) →      │
+│                                         WRITE (2) →     │
+│                                         Unlock()        │
+│  Result: counter == 1000 ✓                               │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -226,6 +345,31 @@ func main() {
 
 ## Race Detector
 
+**Tutorial: Using Go's Built-In Race Detector**
+
+Go ships with a powerful runtime race detector that instruments memory accesses to find unsynchronized concurrent reads/writes. Enable it with `-race` on any Go command. It reports exact source locations of conflicting accesses. Run it in CI pipelines — it adds ~2-10x overhead, so it's for development and testing, not production.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Go Race Detector Usage                          │
+│                                                          │
+│  Build/Run                  Test                         │
+│  ┌──────────────────┐       ┌───────────────────┐        │
+│  │ go run  -race .  │       │ go test -race ./..│        │
+│  │ go build -race . │       └───────────────────┘        │
+│  └──────────────────┘                                    │
+│            │                                             │
+│            ▼                                             │
+│  ┌──────────────────────────────────┐                    │
+│  │  WARNING: DATA RACE              │                    │
+│  │  Read at 0x... by goroutine 7    │                    │
+│  │  Previous write at 0x... by G8   │                    │
+│  └──────────────────────────────────┘                    │
+│  Instruments memory accesses at runtime                  │
+│  ~2-10x slower — use in dev/CI, not production           │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -254,6 +398,28 @@ package main
 ---
 
 ## Goroutine Leaks
+
+**Tutorial: Preventing Goroutine Leaks with Context**
+
+A goroutine that blocks forever and can never exit is a "leak" — it consumes memory indefinitely. This example contrasts a leaky goroutine (blocked on a channel nobody writes to) with the proper fix using `context.Context` for cancellation. Always ensure every goroutine has an exit path via context, done channels, or timeouts.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Goroutine Leak vs Proper Cancellation            │
+│                                                          │
+│  LEAK:                         FIX:                      │
+│  ┌────────────┐                ┌────────────┐            │
+│  │ goroutine  │                │ goroutine  │            │
+│  │  val := <-ch│               │  select {  │            │
+│  │  (blocks   │                │  case <-ch │            │
+│  │   forever!)│                │  case <-ctx│            │
+│  └────────────┘                │  }         │            │
+│  ch never receives             └─────┬──────┘            │
+│  → goroutine LEAKS                   │                   │
+│                                ctx.Done() ──► goroutine  │
+│                                  fires        exits ✓    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -317,6 +483,30 @@ func main() {
 
 ## runtime Utilities
 
+**Tutorial: Key runtime Package Functions**
+
+This example showcases essential functions from the `runtime` package. `Gosched()` yields the processor to let other goroutines run, `NumGoroutine()` reports the count of active goroutines (useful for leak detection), and `LockOSThread()` pins a goroutine to a specific OS thread — required for some C libraries and GUI frameworks.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          runtime Package Utilities                       │
+│                                                          │
+│  Gosched()         Yield to let others run               │
+│  ┌──────┐ yield ┌──────┐ yield ┌──────┐                  │
+│  │ main │──────►│ G1   │──────►│ main │ ...              │
+│  └──────┘       └──────┘       └──────┘                  │
+│                                                          │
+│  NumGoroutine()  → count of active goroutines            │
+│  GOMAXPROCS(0)   → get current parallelism               │
+│  NumCPU()        → number of CPU cores                   │
+│                                                          │
+│  LockOSThread()  → pin goroutine to OS thread            │
+│  ┌──────────┐ pinned ┌──────────┐                        │
+│  │goroutine │═══════►│ OS Thread│  (for CGo, GUI, TLS)  │
+│  └──────────┘        └──────────┘                        │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -357,6 +547,28 @@ func main() {
 ---
 
 ## Data Race vs Race Condition
+
+**Tutorial: Understanding Data Race vs Race Condition**
+
+This example clarifies the critical distinction: a **data race** is unsynchronized concurrent memory access (undefined behavior, caught by `-race`), while a **race condition** is a logic bug where correctness depends on timing. Fixing a data race with atomics removes undefined behavior, but the program may still have race conditions if the logic is wrong.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Data Race vs Race Condition                        │
+│                                                          │
+│  DATA RACE (UB, detectable):                             │
+│  G1: counter++  ─┐  unsynchronized writes to             │
+│  G2: counter++  ─┘  same memory → undefined behavior    │
+│  Fix: atomic.AddInt64(&counter, 1)                       │
+│                                                          │
+│  RACE CONDITION (logic bug, NOT detectable):             │
+│  G1: if balance≥100 → withdraw(100) ─┐ both see         │
+│  G2: if balance≥100 → withdraw(100) ─┘ balance=150      │
+│  Result: balance = -50 (overdraft!)                      │
+│  Even with locks around each check+act, interleaving     │
+│  between check and act causes incorrect logic.           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -413,6 +625,31 @@ func main() {
 ---
 
 ## Runtime Deadlock Detection
+
+**Tutorial: How Go Detects Deadlocks at Runtime**
+
+Go's runtime automatically detects total deadlocks — when ALL goroutines are blocked with no way to proceed. It reports "fatal error: all goroutines are asleep - deadlock!" However, partial deadlocks (where only some goroutines are stuck but at least one is still running) are NOT detected. Use `pprof` goroutine profiles to diagnose those.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Go Runtime Deadlock Detection                      │
+│                                                          │
+│  Total Deadlock (detected ✓):                            │
+│  ┌──────┐ send ┌────────┐                                │
+│  │ main │─────►│ ch (0) │  no receiver → main blocks    │
+│  └──────┘      └────────┘  ALL goroutines asleep         │
+│  → "fatal error: all goroutines are asleep - deadlock!" │
+│                                                          │
+│  Partial Deadlock (NOT detected ✗):                      │
+│  ┌──────┐ running    ┌──────┐ blocked                    │
+│  │ HTTP │            │  G1  │◄──┐                        │
+│  │server│            └──────┘   │ waiting on each other  │
+│  └──────┘            ┌──────┐   │                        │
+│  (still alive)       │  G2  │───┘                        │
+│                      └──────┘                            │
+│  Use pprof to detect partial deadlocks                   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

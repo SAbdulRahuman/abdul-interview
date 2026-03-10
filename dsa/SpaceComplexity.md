@@ -61,6 +61,24 @@ func main() {
 
 **Why O(1)?** — We only use `total` and `i` — two variables. Whether the slice has 10 elements or 10 million, we still use the same 2 variables. The input slice itself doesn't count as auxiliary space.
 
+```
+  Memory Layout:
+
+  INPUT (not counted as auxiliary):
+  ┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+  │ 1  │ 2  │ 3  │ 4  │ 5  │ 6  │ 7  │ 8  │ 9  │ 10 │  ← nums (given)
+  └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘
+
+  AUXILIARY (this is what we count):
+  ┌──────────┐  ┌──────┐
+  │ total=55 │  │ i=10 │   ← always exactly 2 variables
+  └──────────┘  └──────┘
+
+  n=10       → 2 variables (O(1))
+  n=1,000    → 2 variables (O(1))
+  n=1,000,000 → 2 variables (O(1))  ← same!
+```
+
 ---
 
 ## Example 2: O(1) — In-Place Swap / Reverse
@@ -91,6 +109,31 @@ func main() {
 
 **Why O(1)?** — We modify the original array directly. No matter how big the array is, we only ever use `left` and `right` — constant extra space.
 
+```
+  In-Place Reverse of [1, 2, 3, 4, 5]:
+
+  Step 1: left=0, right=4 → swap 1↔5
+  ┌───┬───┬───┬───┬───┐
+  │ 5 │ 2 │ 3 │ 4 │ 1 │
+  └───┴───┴───┴───┴───┘
+    ↑               ↑
+   left           right
+
+  Step 2: left=1, right=3 → swap 2↔4
+  ┌───┬───┬───┬───┬───┐
+  │ 5 │ 4 │ 3 │ 2 │ 1 │
+  └───┴───┴───┴───┴───┘
+        ↑       ↑
+       left   right
+
+  Step 3: left=2, right=2 → left ≥ right, DONE
+  ┌───┬───┬───┬───┬───┐
+  │ 5 │ 4 │ 3 │ 2 │ 1 │  ← reversed, no extra array!
+  └───┴───┴───┴───┴───┘
+
+  Extra memory: only 2 index variables = O(1)
+```
+
 **Key insight:** "In-place" algorithms are O(1) space because they don't create new data structures.
 
 ---
@@ -119,6 +162,24 @@ func main() {
 ```
 
 **Why O(n)?** — We allocate a new slice `result` with `n` elements. If `n` doubles, the memory used doubles.
+
+```
+  Memory: O(1) in-place  vs  O(n) new array
+
+  ┌─────────── O(n) approach ───────────┐
+  │                                     │
+  │  nums:    [1] [2] [3] [4] [5]       │  ← input
+  │  result:  [2] [4] [6] [8] [10]      │  ← NEW array (O(n) extra)
+  │                                     │
+  └─────────────────────────────────────┘
+
+  ┌─────────── O(1) approach ───────────┐
+  │                                     │
+  │  nums:    [2] [4] [6] [8] [10]      │  ← modified in place
+  │  (no extra array!)                  │
+  │                                     │
+  └─────────────────────────────────────┘
+```
 
 **Compare with in-place version (O(1) space):**
 
@@ -164,6 +225,29 @@ func main() {
 
 **Why O(n)?** — The map `freq` could store up to `n` unique keys in the worst case (when all characters are different). The map grows proportionally to the input.
 
+```
+  Hash Map growth for "leetcode":
+
+  Input: l  e  e  t  c  o  d  e
+
+  Map after processing:
+  ┌─────┬───────┐
+  │ key │ count │
+  ├─────┼───────┤
+  │  l  │   1   │  ← first unique!
+  │  e  │   3   │
+  │  t  │   1   │
+  │  c  │   1   │
+  │  o  │   1   │
+  │  d  │   1   │
+  └─────┴───────┘
+  Map size = 6 unique chars
+
+  Worst case: all different → map size = n
+  Best case:  all same     → map size = 1
+  Bounded input (a-z only) → map size ≤ 26 → O(1)!
+```
+
 > **Note:** If the input is limited (e.g., only lowercase English letters), the map is bounded at 26 entries → O(1) space. **Always clarify constraints!**
 
 ---
@@ -193,11 +277,24 @@ func main() {
 **Why O(n)?** — Each call to `factorial` waits for the next one to return, stacking frames:
 
 ```
-factorial(5)  ← frame 5 (waiting)
-  factorial(4)  ← frame 4 (waiting)
-    factorial(3)  ← frame 3 (waiting)
-      factorial(2)  ← frame 2 (waiting)
-        factorial(1)  ← frame 1 (returns 1)
+  Call Stack for factorial(5):
+
+  ┌─────────────────────────────────┐
+  │ factorial(1)  → returns 1       │  ← top of stack (base case)
+  ├─────────────────────────────────┤
+  │ factorial(2)  → 2 * factorial(1)│
+  ├─────────────────────────────────┤
+  │ factorial(3)  → 3 * factorial(2)│
+  ├─────────────────────────────────┤
+  │ factorial(4)  → 4 * factorial(3)│
+  ├─────────────────────────────────┤
+  │ factorial(5)  → 5 * factorial(4)│  ← bottom of stack (first call)
+  └─────────────────────────────────┘
+
+  Stack depth = n = 5 frames → O(n) space
+
+  Each frame stores: function args + local vars + return address
+  n frames × constant per frame = O(n)
 ```
 
 Maximum depth = `n` frames on the stack → O(n) space.
@@ -249,6 +346,24 @@ func main() {
 ```
 
 **Why O(log n)?** — Each recursive call halves the search space. The maximum recursion depth is log₂(n).
+
+```
+  Recursive Binary Search — Call Stack:
+
+  Searching for 7 in [1,3,5,7,9,11,13,15]
+
+  ┌──────────────────────────────────────┐
+  │ search([7], 7)          → FOUND!  │  ← frame 3
+  ├──────────────────────────────────────┤
+  │ search([1,3,5,7], 7)    → go right│  ← frame 2
+  ├──────────────────────────────────────┤
+  │ search([1..15], 7)      → go left │  ← frame 1
+  └──────────────────────────────────────┘
+
+  Stack depth = log₂(8) = 3 frames → O(log n)
+
+  Compare: iterative version uses 0 stack frames → O(1) space!
+```
 
 ```
 n = 16: depth = 4 (16 → 8 → 4 → 2 → 1)
@@ -318,6 +433,32 @@ func main() {
 
 **Why O(n)?** — In the worst case (e.g., a strictly decreasing array like `[5, 4, 3, 2, 1]`), all `n` elements are pushed onto the stack before any are popped. The `result` array also takes O(n).
 
+```
+  Monotonic Stack for [4, 5, 2, 25]:
+
+  i=0: push 4       stack: [4]           result: [-1,-1,-1,-1]
+  i=1: 5>4, pop 4   stack: []            result: [5,-1,-1,-1]
+       push 5       stack: [5]
+  i=2: 2<5          stack: [5,2]         result: [5,-1,-1,-1]
+       push 2
+  i=3: 25>2, pop 2  stack: [5]           result: [5,-1,25,-1]
+       25>5, pop 5  stack: []            result: [5,25,25,-1]
+       push 25      stack: [25]
+
+  Worst case memory (descending input [5,4,3,2,1]):
+  ┌─────┐
+  │  1  │  ← top
+  ├─────┤
+  │  2  │
+  ├─────┤
+  │  3  │
+  ├─────┤
+  │  4  │
+  ├─────┤
+  │  5  │  ← bottom     All n elements on stack = O(n)
+  └─────┘
+```
+
 **Total:** O(n) for result + O(n) for stack = O(2n) → **O(n)**
 
 ---
@@ -358,6 +499,31 @@ func main() {
 ```
 
 **Why O(n²)?** — We create `n` rows, each with `n` columns = n × n cells total.
+
+```
+  Memory layout for n=4:
+
+  matrix[0] → [1] [2] [3] [4]     ← 4 ints
+  matrix[1] → [2] [4] [6] [8]     ← 4 ints
+  matrix[2] → [3] [6] [9] [12]    ← 4 ints
+  matrix[3] → [4] [8] [12] [16]   ← 4 ints
+                                    ────────
+                                    16 cells = n² = 4²
+
+  Space
+  ▲
+  │                    · O(n²)
+  │                ·
+  │            ·
+  │        ·
+  │     · ╱ O(n)
+  │   ·╱
+  │  ╱
+  │╱
+  └────────────────────────▶ n
+
+  O(n²) grows much faster than O(n).
+```
 
 ```
 n = 10    → 100 cells
@@ -429,6 +595,30 @@ func main() {
 ```
 
 **Why O(n)?** — The queue holds at most one full level at a time. In a complete binary tree, the last level has ~n/2 nodes → O(n/2) → **O(n)**.
+
+```
+  BFS Queue State at Each Level:
+
+  Tree:        1
+              / \
+             2   3
+            / \   \
+           4   5   6
+
+  Level 0: queue = [1]       → 1 node in queue
+  Level 1: queue = [2, 3]    → 2 nodes in queue
+  Level 2: queue = [4, 5, 6] → 3 nodes in queue  ← maximum!
+
+  Complete binary tree with n nodes:
+  Last level ≈ n/2 nodes
+
+  Level 0:        ●                  → 1 node
+  Level 1:      ●   ●                → 2 nodes
+  Level 2:    ● ● ● ●               → 4 nodes
+  Level 3:  ●●●●●●●●                 → 8 nodes  ← n/2
+                                      ──────────
+  Queue max = n/2 at last level → O(n)
+```
 
 The `result` also stores all `n` nodes → O(n).
 
@@ -548,6 +738,29 @@ func main() {
 - `result`: stores all `n` nodes → O(n)
 - Total: O(n) + O(n) + O(n) = **O(n)**
 
+```
+  Graph DFS — Stack and Visited State:
+
+  Graph:  0 ── 1 ── 3
+          │
+          2 ── 4 ── 5
+
+  Step 1: stack=[0]      visited={}          result=[]
+  Step 2: stack=[1,2]    visited={0}         result=[0]
+  Step 3: stack=[1,4]    visited={0,2}       result=[0,2]
+  Step 4: stack=[1,5]    visited={0,2,4}     result=[0,2,4]
+  Step 5: stack=[1]      visited={0,2,4,5}   result=[0,2,4,5]
+  Step 6: stack=[3]      visited={0,2,4,5,1} result=[0,2,4,5,1]
+  Step 7: stack=[]       visited={all}       result=[0,2,4,5,1,3]
+
+  Memory breakdown:
+  ┌──────────────┤
+  │ visited: 6  │  O(n)
+  │ stack:  ≤2  │  O(n) worst case
+  │ result:  6  │  O(n)
+  └──────────────┘
+```
+
 ---
 
 ## Example 12: O(2ⁿ) — Generating All Subsets
@@ -594,6 +807,28 @@ func main() {
 - There are 2ⁿ subsets of a set with `n` elements
 - Each subset can be up to size `n`
 - Storing all subsets: 2ⁿ × n
+
+```
+  Subset Generation Tree for [1, 2, 3]:
+
+                        []
+                      /    \
+                 include 1   exclude 1
+                  /             \
+               [1]              []
+              /   \            /   \
+         inc 2   exc 2    inc 2   exc 2
+          /       \        /       \
+       [1,2]     [1]     [2]      []
+       /  \     /  \    /  \    /  \
+  [1,2,3][1,2][1,3][1][2,3][2] [3]  []
+
+  8 subsets = 2³  (each stored in result)
+
+  Memory used:
+  Output: 2ⁿ subsets × avg size n/2 ≈ O(2ⁿ × n)
+  Stack:  max recursion depth = n   ≈ O(n)
+```
 
 ```
 n = 3  → 8 subsets

@@ -88,6 +88,30 @@ go vet ./...
 # - Lost cancel function from context
 ```
 
+**Tutorial: Detecting Bugs with go vet**
+
+`go vet` performs static analysis beyond what the compiler catches. It detects bugs like printf format mismatches, copying sync primitives, unreachable code, and invalid struct tags. This example demonstrates a common `go vet` finding: using the `%s` format verb with an `int` argument, and copying a `sync.Mutex` by value.
+
+```
+┌──────────────────────────────────────────┐
+│        go vet Static Analysis           │
+│                                          │
+│  Source Code                             │
+│       │                                  │
+│       ▼                                  │
+│  ┌─────────────────────────────┐         │
+│  │  go vet checks:             │         │
+│  │  ✗ Printf("%s", int)       │         │
+│  │  ✗ mu2 := mu (copies lock) │         │
+│  │  ✗ unreachable code        │         │
+│  │  ✗ invalid struct tags     │         │
+│  └─────────────────────────────┘         │
+│       │                                  │
+│       ▼                                  │
+│  Reports warnings (not compile errors)   │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -106,6 +130,30 @@ func main() {
 ---
 
 ## go generate — Code Generation
+
+**Tutorial: Automating Code Generation with go generate**
+
+`//go:generate` directives embed shell commands in Go source files that run when you execute `go generate`. They're commonly used for creating string methods for enums, generating mocks, or compiling protobuf definitions. The directives are NOT run automatically during `go build` — you must invoke `go generate` explicitly.
+
+```
+┌──────────────────────────────────────────┐
+│     go generate Workflow                │
+│                                          │
+│  Source file:                            │
+│  //go:generate stringer -type=Color     │
+│       │                                  │
+│       ▼  (go generate ./...)              │
+│  ┌────────────────────────────┐         │
+│  │  Runs: stringer -type=Color │         │
+│  └────────────┬───────────────┘         │
+│               │                          │
+│               ▼                          │
+│  Generated file: color_string.go        │
+│  func (c Color) String() string { ... } │
+│                                          │
+│  ⚠ Not run by go build automatically    │
+└──────────────────────────────────────────┘
+```
 
 ```go
 // main.go
@@ -250,6 +298,30 @@ go tool dist list
 
 ## Build Constraints / Tags
 
+**Tutorial: Platform-Specific Compilation with Build Constraints**
+
+Build constraints (build tags) control which files are included during compilation based on the target OS, architecture, or custom tags. The `//go:build` directive at the top of a file tells the compiler when to include it. Files named with OS/arch suffixes (e.g., `_linux.go`, `_darwin.go`) also use implicit build constraints.
+
+```
+┌──────────────────────────────────────────────┐
+│      Build Constraints File Selection       │
+│                                              │
+│  GOOS=linux go build                        │
+│       │                                      │
+│       ▼                                      │
+│  ┌────────────────────┬──────────┐           │
+│  │ server_linux.go    │ ✓ BUILD  │           │
+│  │ //go:build linux   │          │           │
+│  ├────────────────────┼──────────┤           │
+│  │ server_darwin.go   │ ✗ SKIP   │           │
+│  │ //go:build darwin  │          │           │
+│  ├────────────────────┼──────────┤           │
+│  │ common.go          │ ✓ BUILD  │           │
+│  │ (no constraint)    │          │           │
+│  └────────────────────┴──────────┘           │
+└──────────────────────────────────────────────┘
+```
+
 ```go
 // file: server_linux.go
 //go:build linux
@@ -261,6 +333,26 @@ func platformSpecific() string {
 }
 ```
 
+**Tutorial: macOS-Specific Build Variant**
+
+This companion file provides the macOS implementation of the same function. When building for `darwin` (macOS), the compiler selects this file instead of `server_linux.go`. Both files define the same function signature, ensuring the package compiles on both platforms with platform-specific behavior.
+
+```
+┌──────────────────────────────────────┐
+│   Platform-Specific Compilation     │
+│                                      │
+│  GOOS=darwin go build               │
+│       │                              │
+│       ▼                              │
+│  server_darwin.go ──► compiled       │
+│  server_linux.go  ──► skipped        │
+│                                      │
+│  Both define:                        │
+│  func platformSpecific() string      │
+│       └──► only ONE is compiled      │
+└──────────────────────────────────────┘
+```
+
 ```go
 // file: server_darwin.go
 //go:build darwin
@@ -270,6 +362,29 @@ package main
 func platformSpecific() string {
     return "Running on macOS"
 }
+```
+
+**Tutorial: Custom Build Tags for Feature Flags**
+
+Beyond OS and architecture, you can define custom build tags for conditional compilation. This is commonly used for separating integration tests from unit tests or for feature flags. Files with `//go:build integration` are only compiled when you explicitly pass `-tags=integration` to `go build` or `go test`.
+
+```
+┌──────────────────────────────────────────┐
+│        Custom Build Tags                │
+│                                          │
+│  //go:build integration                  │
+│                                          │
+│  go test ./...                           │
+│  └──► this file SKIPPED                  │
+│                                          │
+│  go test -tags=integration ./...         │
+│  └──► this file INCLUDED                 │
+│                                          │
+│  Tag combinations:                       │
+│  linux && amd64    → both required       │
+│  linux || darwin   → either suffices     │
+│  !windows          → everything except   │
+└──────────────────────────────────────────┘
 ```
 
 ```go
@@ -295,6 +410,31 @@ go test -tags=integration ./...
 ---
 
 ## ldflags — Inject Values at Build Time
+
+**Tutorial: Setting Variables at Compile Time with ldflags**
+
+The `-ldflags` flag passes instructions to the Go linker at build time. The `-X` flag sets string variables in your code to specific values — commonly used for injecting version numbers, build timestamps, and git commit hashes. Flags `-s` and `-w` strip debug information to produce smaller binaries.
+
+```
+┌──────────────────────────────────────────────┐
+│      ldflags Build-Time Injection           │
+│                                              │
+│  Source code:                                │
+│  var version = "dev"                         │
+│  var gitCommit = "none"                      │
+│                                              │
+│  Build command:                              │
+│  go build -ldflags "-X main.version=1.2.3   │
+│            -X main.gitCommit=abc123"         │
+│       │                                      │
+│       ▼                                      │
+│  Binary contains:                            │
+│  version   = "1.2.3"   (replaced)            │
+│  gitCommit = "abc123"  (replaced)            │
+│                                              │
+│  Size flags: -s (no symbols) -w (no DWARF)  │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 // main.go

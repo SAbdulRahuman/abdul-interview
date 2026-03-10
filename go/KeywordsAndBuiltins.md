@@ -43,6 +43,29 @@ Go has exactly **25 keywords** — intentionally minimal compared to Java (67) o
 
 ### Flow Control
 
+**Tutorial: Loop and Branch Control Keywords**
+
+Go provides `break`, `continue`, `goto`, `return`, and `fallthrough` to control execution flow. `break` exits a loop or switch, `continue` skips to the next iteration, and `goto` jumps to a labeled statement (rarely used). Notice that `fallthrough` in a `switch` is unconditional — it always enters the next case body, which differs from C where fall-through is the default.
+
+```
+┌─────────────────────────────────────────────┐
+│        Flow Control Keywords                │
+│                                             │
+│  for i := 0; i < 10; i++                   │
+│    ├── if i==5 ──► break    ──► exit loop   │
+│    └── if i%2==0 ► continue ──► next iter   │
+│                                             │
+│  switch val {                               │
+│    case 1: ──► fallthrough ──┐              │
+│    case 2: ◄─────────────────┘ (runs too)   │
+│    case 3: (not reached)                    │
+│  }                                          │
+│                                             │
+│  goto label ──► jumps to label:             │
+│  return val ──► exits function              │
+└─────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -100,6 +123,35 @@ func add(a, b int) int {
 
 ### Conditionals
 
+**Tutorial: Branching with if/else and switch**
+
+Go's `if/else` chain works like other languages but requires braces (no single-line bodies). The `switch` statement is more powerful than C's: cases don't fall through by default, each case can list multiple values, and you can switch on expressions or even use a tagless switch for boolean conditions. The `default` case handles unmatched values.
+
+```
+┌────────────────────────────────────────┐
+│            if / else chain             │
+│                                        │
+│  x = 42                                │
+│    │                                   │
+│    ▼                                   │
+│  x > 50? ──yes──► "big"                │
+│    │no                                 │
+│    ▼                                   │
+│  x > 20? ──yes──► "medium" ◄── chosen  │
+│    │no                                 │
+│    ▼                                   │
+│  else ──────────► "small"              │
+│                                        │
+│         switch x {                     │
+│  ┌──────┬──────┬──────────┐            │
+│  │1,2,3 │  42  │ default  │            │
+│  │tiny  │answer│something │            │
+│  └──────┴──┬───┴──────────┘            │
+│            ▼                           │
+│         matched                        │
+└────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -130,6 +182,32 @@ func main() {
 ```
 
 ### Loops
+
+**Tutorial: Go's Single Loop Keyword — for**
+
+Go has only one loop keyword: `for`. It covers all loop patterns — classic three-clause loops, while-style loops (`for condition {}`), and infinite loops (`for {}`). The `range` keyword iterates over slices (index + value), maps (key + value), strings (index + rune), channels (values), and integers (Go 1.22+). Note that map iteration order is intentionally randomized.
+
+```
+┌──────────────────────────────────────────────┐
+│  for — Go's only loop construct              │
+│                                              │
+│  Classic:   for i:=0; i<5; i++ { ... }       │
+│  While:     for condition { ... }            │
+│  Infinite:  for { ... }                      │
+│                                              │
+│  range over slice:                           │
+│  ┌───┬───┬───┐                               │
+│  │ a │ b │ c │  ──► i=0,v="a"  i=1,v="b" ... │
+│  └───┴───┴───┘                               │
+│                                              │
+│  range over map:                             │
+│  { "a":1, "b":2 } ──► k="a",v=1  k="b",v=2  │
+│                        (random order!)       │
+│                                              │
+│  range over int (Go 1.22+):                  │
+│  range 5 ──► 0, 1, 2, 3, 4                  │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -165,6 +243,32 @@ func main() {
 
 ### Functions
 
+**Tutorial: Function Declaration and Multiple Returns**
+
+The `func` keyword declares functions. Go functions can return multiple values, which is the idiomatic way to handle errors — the last return value is typically an `error`. Parameters of the same type can share a type annotation (`a, b float64`). Functions are first-class values and can be assigned to variables, passed as arguments, or returned from other functions.
+
+```
+┌───────────────────────────────────────────────┐
+│  func declaration                             │
+│                                               │
+│  func greet(name string) string               │
+│       │        │              │                │
+│       │        └─ parameter   └─ return type   │
+│       └─ function name                        │
+│                                               │
+│  Multiple returns (idiomatic error handling):  │
+│  func divide(a, b float64) (float64, error)   │
+│       │                       │        │      │
+│       │                       │        └─ err │
+│       │                       └─ result       │
+│       └─ shared param type                    │
+│                                               │
+│  Caller:                                      │
+│  result, err := divide(10, 3)                 │
+│  if err != nil { handle... }                  │
+└───────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -194,6 +298,31 @@ func main() {
 ```
 
 ### Declarations
+
+**Tutorial: Variables, Constants, and Custom Types**
+
+Go uses `var` for variable declarations (with optional type inference), `:=` for short declarations inside functions, and `const` for compile-time constants. The `type` keyword defines new named types, enabling method sets — here `Celsius` is a distinct type from `float64` with its own `ToF()` method. This provides type safety: you can't accidentally mix Celsius and Fahrenheit values.
+
+```
+┌──────────────────────────────────────────────────┐
+│  Declaration Keywords                            │
+│                                                  │
+│  var globalVar = "I'm global"   ◄── package-level│
+│  const Pi = 3.14159             ◄── compile-time │
+│                                                  │
+│  Inside func:                                    │
+│    var x int = 10               ◄── explicit type│
+│    y := 20                      ◄── short decl   │
+│                                                  │
+│  type Celsius float64           ◄── new type     │
+│    │                                             │
+│    └─► func (c Celsius) ToF() Fahrenheit         │
+│              │                                   │
+│              └─ method on Celsius                │
+│                                                  │
+│  Celsius(100).ToF() ──► 212.0°F                  │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -226,6 +355,30 @@ func main() {
 
 ### Organization
 
+**Tutorial: Package and Import System**
+
+Every Go file begins with a `package` declaration, which groups related files. The `import` keyword brings in external packages — grouped imports use parentheses. Package `main` with `func main()` defines an executable entry point. All other packages are libraries. Unused imports cause compilation errors, enforcing clean dependency trees.
+
+```
+┌──────────────────────────────────────────────┐
+│  Go File Structure                           │
+│                                              │
+│  ┌────────────────────────────┐              │
+│  │ package main               │ ◄── 1st line│
+│  │                            │              │
+│  │ import (                   │ ◄── deps    │
+│  │     "fmt"                  │              │
+│  │     "strings"              │              │
+│  │ )                          │              │
+│  │                            │              │
+│  │ func main() { ... }        │ ◄── entry   │
+│  └────────────────────────────┘              │
+│                                              │
+│  package main ──► executable                 │
+│  package foo  ──► library (importable)       │
+└──────────────────────────────────────────────┘
+```
+
 ```go
 // package — every Go file starts with a package declaration
 package main
@@ -242,6 +395,28 @@ func main() {
 ```
 
 ### Types
+
+**Tutorial: Structs and Interfaces**
+
+The `struct` keyword defines composite types with named fields — Go's primary way to model data. The `interface` keyword defines behavior contracts as sets of method signatures. Interfaces are satisfied implicitly: any type that implements all the methods automatically satisfies the interface, with no `implements` keyword needed. This enables loose coupling and powerful polymorphism.
+
+```
+┌───────────────────────────────────────────────┐
+│  struct + interface (implicit satisfaction)    │
+│                                               │
+│  ┌──────────────┐   ┌───────────────────────┐ │
+│  │ struct Person │   │ interface Greeter     │ │
+│  │  Name string  │   │  Greet() string       │ │
+│  │  Age  int     │   └───────────┬───────────┘ │
+│  └──────┬───────┘               │             │
+│         │                       │ satisfies   │
+│         └─► func (p Person)     │ implicitly  │
+│               Greet() string ───┘             │
+│                                               │
+│  var g Greeter = Person{...}  ◄── works!      │
+│  g.Greet() ──► "Hi, I'm Alice!"              │
+└───────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -272,6 +447,33 @@ func main() {
 
 ### Data Structure
 
+**Tutorial: Maps — Built-in Hash Tables**
+
+The `map` keyword creates hash tables with typed keys and values. Maps must be initialized with `make` or a literal before use (a nil map panics on write). Keys must be comparable types (no slices or maps as keys). Map lookups return a zero value for missing keys, so use the comma-ok idiom (`val, ok := m[key]`) to distinguish missing entries from zero values.
+
+```
+┌─────────────────────────────────────────────┐
+│  map[string]int — hash table                │
+│                                             │
+│  scores := map[string]int{                  │
+│    "Alice":   95,                           │
+│    "Bob":     87,                           │
+│  }                                          │
+│                                             │
+│  Bucket layout (conceptual):                │
+│  ┌────────┬───────┐                         │
+│  │  Key   │ Value │                         │
+│  ├────────┼───────┤                         │
+│  │"Alice" │  95   │                         │
+│  │"Bob"   │  87   │                         │
+│  │"Charlie│  92   │ ◄── added later         │
+│  └────────┴───────┘                         │
+│                                             │
+│  scores["Charlie"] = 92  ──► insert/update  │
+│  delete(scores, "Bob")   ──► remove entry   │
+└─────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -289,6 +491,30 @@ func main() {
 ```
 
 ### Concurrency
+
+**Tutorial: Goroutines, Channels, and Select**
+
+The `go` keyword launches a goroutine — a lightweight concurrent function (initial stack ~2KB). The `chan` keyword creates typed channels for safe communication between goroutines. The `select` keyword multiplexes on multiple channel operations, blocking until one is ready. Here a goroutine sends a message through a channel, and `select` either receives it or times out after 1 second.
+
+```
+┌──────────────────────────────────────────────────┐
+│  Goroutine + Channel + Select                    │
+│                                                  │
+│  main goroutine              spawned goroutine   │
+│  ┌──────────────┐            ┌────────────────┐  │
+│  │ ch := make() │            │                │  │
+│  │ go func()    │──launch──►│ ch <- "hello"   │  │
+│  │              │            └───────┬────────┘  │
+│  │ select {     │                    │           │
+│  │   case <-ch ◄├────────────────────┘           │
+│  │   case <-timeout                              │
+│  │ }            │                                │
+│  └──────────────┘                                │
+│                                                  │
+│  select picks whichever case is ready first      │
+│  (random if multiple ready simultaneously)       │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -319,6 +545,30 @@ func main() {
 
 ### Deferred Execution
 
+**Tutorial: defer — LIFO Cleanup Scheduling**
+
+The `defer` keyword schedules a function call to execute when the enclosing function returns, regardless of how it returns (normal return, panic, etc.). Multiple defers stack in LIFO (Last In, First Out) order. Arguments to deferred calls are evaluated immediately at the `defer` statement, not when the deferred function runs. `defer` is the standard pattern for cleanup: closing files, unlocking mutexes, releasing resources.
+
+```
+┌──────────────────────────────────────────┐
+│  defer — LIFO execution order            │
+│                                          │
+│  func main() {                           │
+│    defer Println("third")  ──► push ─┐   │
+│    defer Println("second") ──► push ─┤   │
+│    defer Println("first")  ──► push ─┤   │
+│    Println("start")                  │   │
+│  } ◄── function returns              │   │
+│                                      │   │
+│  Defer Stack (LIFO):      Output:    │   │
+│  ┌──────────┐             start      │   │
+│  │ "first"  │ ◄── pop 1   first    ◄─┤   │
+│  │ "second" │ ◄── pop 2   second   ◄─┤   │
+│  │ "third"  │ ◄── pop 3   third    ◄─┘   │
+│  └──────────┘                            │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -338,6 +588,35 @@ func main() {
 ---
 
 ## Built-in Functions
+
+**Tutorial: Predeclared Built-in Functions**
+
+Go's built-in functions are predeclared identifiers, not keywords — they can be shadowed (though you shouldn't). `make` creates slices/maps/channels with initial state, while `new` allocates zeroed memory and returns a pointer. `append` grows slices, `copy` transfers elements, `delete` removes map entries, and `close` shuts a channel. `panic`/`recover` provide emergency error handling. Go 1.21+ added `clear`, `min`, and `max`.
+
+```
+┌──────────────────────────────────────────────────┐
+│  Built-in Functions — Data Flow                  │
+│                                                  │
+│  Creation:                                       │
+│  make([]int, 5, 10) ──► [0 0 0 0 0] len=5 cap=10│
+│  make(map[K]V)      ──► {} empty map             │
+│  make(chan int, 3)   ──► buffered channel cap=3   │
+│  new(int)            ──► *int → 0                │
+│                                                  │
+│  Mutation:                                       │
+│  append(s, 1,2) ──► s grows                      │
+│  copy(dst, src) ──► elements copied              │
+│  delete(m, key) ──► entry removed                │
+│  close(ch)      ──► channel closed               │
+│                                                  │
+│  Inspection:                                     │
+│  len(x) ──► current length                       │
+│  cap(x) ──► current capacity                     │
+│                                                  │
+│  Error:                                          │
+│  panic(v)   ──► unwind stack ──► recover()       │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -413,6 +692,35 @@ func main() {
 ---
 
 ## Predeclared Types
+
+**Tutorial: Go's Type System and Memory Sizes**
+
+Go has a fixed set of predeclared types: `bool`, signed/unsigned integers of various sizes, `float32/64`, `complex64/128`, `string`, `byte` (alias for `uint8`), `rune` (alias for `int32` for Unicode code points), `any` (alias for `interface{}`), and `error`. The `int` and `uint` types are platform-dependent (32 or 64 bits). Use `unsafe.Sizeof` to inspect actual memory sizes at runtime.
+
+```
+┌─────────────────────────────────────────────────┐
+│  Predeclared Types — Memory Layout              │
+│                                                 │
+│  bool     ──► 1 byte                            │
+│  int8     ──► 1 byte   [-128, 127]              │
+│  int16    ──► 2 bytes  [-32768, 32767]          │
+│  int32    ──► 4 bytes  (alias: rune)            │
+│  int64    ──► 8 bytes                           │
+│  int      ──► 4 or 8 bytes (platform)           │
+│                                                 │
+│  uint8    ──► 1 byte   [0, 255] (alias: byte)   │
+│  uint16   ──► 2 bytes                           │
+│  uint32   ──► 4 bytes                           │
+│  uint64   ──► 8 bytes                           │
+│                                                 │
+│  float32  ──► 4 bytes                           │
+│  float64  ──► 8 bytes                           │
+│                                                 │
+│  string   ──► 16 bytes header (ptr + len)       │
+│  any      ──► interface{} (Go 1.18+)            │
+│  error    ──► interface { Error() string }      │
+└─────────────────────────────────────────────────┘
+```
 
 ```go
 package main

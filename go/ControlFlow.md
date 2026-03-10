@@ -22,6 +22,24 @@ Go's control flow is minimal by design: one loop keyword (`for`), no parentheses
 
 ## if / else if / else
 
+**Tutorial: Basic Conditional Branching**
+
+Go's `if` statement requires no parentheses around the condition — the braces `{}` are always mandatory. The conditions are evaluated top-to-bottom; the first truthy branch executes and the rest are skipped. Since `age` is `25`, it fails `< 13`, fails `< 20`, passes `< 65`, so `"Adult"` prints. There is no ternary operator in Go — use `if/else` instead.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        if/else if — Evaluation Flow (age=25)             │
+│                                                          │
+│  age < 13?  ──► NO (25 ≥ 13)                            │
+│       │                                                  │
+│  age < 20?  ──► NO (25 ≥ 20)                            │
+│       │                                                  │
+│  age < 65?  ──► YES ──► print "Adult" ──► DONE          │
+│       │                                                  │
+│  (else never reached)                                    │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -47,7 +65,30 @@ func main() {
 
 ## if with Init Statement
 
-Go allows a short statement before the condition. The variable is scoped to the `if` block.
+**Tutorial: Scoped Initialization in if**
+
+Go allows a short statement before the `if` condition, separated by `;`. The variable declared in the init statement is scoped to the entire `if/else` block — it doesn't leak into the surrounding function. This is heavily used with error checks (`if err := ...; err != nil`) and map lookups (`if val, ok := m[key]; ok`). The comma-ok pattern is idiomatic Go for distinguishing "key not found" from "key has zero value."
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     if-init Scope Visualization                          │
+│                                                          │
+│  func main() {                                           │
+│  │                                                       │
+│  │  if err := os.Setenv(...); err != nil {               │
+│  │  │  ┌─────────────────────────────────┐               │
+│  │  │  │ err is accessible here          │               │
+│  │  │  └─────────────────────────────────┘               │
+│  │  } else {                                             │
+│  │  │  ┌─────────────────────────────────┐               │
+│  │  │  │ err is still accessible here    │               │
+│  │  │  └─────────────────────────────────┘               │
+│  │  }                                                    │
+│  │                                                       │
+│  │  // err is NOT accessible here ← out of scope         │
+│  }                                                       │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -108,21 +149,11 @@ Go has only one looping construct: `for`. It covers all cases that other languag
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: All 5 Forms of the for Loop**
+
+This example demonstrates every looping pattern Go supports — all using the single `for` keyword. Form 1 (classic) is for counted iteration. Form 2 (while-style) loops while a condition holds. Form 3 (infinite) runs forever until `break` or `return`. Form 4 (range) iterates collections — yielding both index and value. Form 5 (skip index/value) uses `_` to discard the unwanted variable.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // 1. Classic three-component for loop
-    for i := 0; i < 5; i++ {
-        fmt.Print(i, " ")
-    }
-    fmt.Println() // 0 1 2 3 4
-
-    // 2. While-style loop (condition only)
-    count := 0
-    for count < 3 {
         fmt.Print(count, " ")
         count++
     }
@@ -182,17 +213,11 @@ The `range` keyword iterates over different data structures. What it yields depe
 └────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: range Over Different Data Structures**
+
+The `range` keyword adapts its behavior based on the collection type. For slices and arrays, it yields (index, value). For maps, it yields (key, value) in random order — this randomization is intentional to prevent code from depending on iteration order. For strings, it iterates over **runes** (Unicode code points), not bytes — the byte index may skip for multi-byte characters. For channels, it blocks until the channel is closed.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // Range over slice
-    nums := []int{10, 20, 30}
-    for i, v := range nums {
-        fmt.Printf("nums[%d] = %d\n", i, v)
-    }
 
     // Range over map
     capitals := map[string]string{
@@ -265,15 +290,11 @@ Go's `switch` is more powerful than in C/Java: cases don't fall through by defau
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Switch Statement — Three Variants**
+
+Go's switch has three forms. The expression switch matches a value against cases. The tagless switch (no expression after `switch`) evaluates each case as a boolean — replacing long `if-else` chains. Switch with `fallthrough` explicitly continues into the next case body regardless of that case's condition — this is the opposite of C where fallthrough is the default.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // 1. Expression switch
-    day := "Tuesday"
-    switch day {
     case "Monday":
         fmt.Println("Start of work week")
     case "Tuesday", "Wednesday", "Thursday": // multiple values in one case
@@ -328,6 +349,32 @@ func main() {
 ---
 
 ## Type Switch
+
+**Tutorial: Dynamic Type Inspection**
+
+A type switch inspects the concrete type stored inside an interface. The syntax `v := i.(type)` extracts the value with its real type. Each case branch has `v` already typed correctly — inside `case int:`, `v` is an `int` and you can do `v*2` without any casting. This is critical for handling generic data (e.g., JSON parsing, plugin systems, event handlers).
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Type Switch — Runtime Type Extraction              │
+│                                                          │
+│  interface{} value = 42                                  │
+│  ┌──────────────────────────────────┐                    │
+│  │ type info: *int                  │                    │
+│  │ data:      42                    │                    │
+│  └──────────────────────────────────┘                    │
+│                                                          │
+│  switch v := i.(type) {                                  │
+│    case int:    → v is int, v=42        ← MATCHES        │
+│    case string: → v is string           ← skipped        │
+│    case bool:   → v is bool             ← skipped        │
+│    default:     → v is interface{}      ← skipped        │
+│  }                                                       │
+│                                                          │
+│  Inside the matching case, v has the concrete type!      │
+│  v*2 = 84 (int multiplication, not interface)            │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -390,22 +437,11 @@ func main() {
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: select for Channel Multiplexing**
+
+This example creates two channels and two goroutines that send messages at different delays. The `select` statement waits until one of its channel operations can proceed — whichever channel receives data first gets handled. The `time.After` pattern provides timeouts. Adding a `default` case makes `select` non-blocking — it immediately returns if no channel is ready.
+
 ```go
-package main
-
-import (
-    "fmt"
-    "time"
-)
-
-func main() {
-    ch1 := make(chan string)
-    ch2 := make(chan string)
-
-    go func() {
-        time.Sleep(100 * time.Millisecond)
-        ch1 <- "message from channel 1"
-    }()
 
     go func() {
         time.Sleep(200 * time.Millisecond)
@@ -447,6 +483,25 @@ func main() {
 
 ## goto and Labels
 
+**Tutorial: goto — The Rarely Used Jump**
+
+`goto` unconditionally jumps to a labeled statement within the same function. Go restricts `goto` to prevent jumping over variable declarations or into different scopes. In modern Go, `defer` replaces most use cases where `goto` was historically used for cleanup. This example simulates a while loop using `goto` — purely for illustration.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        goto Control Flow                                 │
+│                                                          │
+│  i := 0                                                  │
+│  loop: ◄─────────┐   ← label (target of goto)          │
+│    if i < 5       │                                      │
+│      print i      │                                      │
+│      i++          │                                      │
+│      goto loop ───┘   ← jumps back to label             │
+│    (end if)                                              │
+│  Println()   ← reached when i >= 5                       │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -471,6 +526,26 @@ loop:
 ---
 
 ## break / continue with Labels
+
+**Tutorial: Escaping Nested Loops**
+
+Labels are essential when you need to break out of or continue and outer loop from within an inner loop. Without a label, `break` only exits the innermost loop. `break outer` exits both loops entirely. `continue outerLoop` skips the rest of the inner loop AND the rest of the current outer iteration, jumping directly to the next iteration of the outer loop.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     break outer vs continue outerLoop                    │
+│                                                          │
+│  break outer (at i=1, j=1):                              │
+│  i=0: j=0 ✓  j=1 ✓  j=2 ✓                              │
+│  i=1: j=0 ✓  j=1 ✗ BREAK → exits BOTH loops            │
+│  i=2: (never reached)                                    │
+│                                                          │
+│  continue outerLoop (at j=1):                            │
+│  i=0: j=0 ✓  j=1 → SKIP rest, go to i=1                │
+│  i=1: j=0 ✓  j=1 → SKIP rest, go to i=2                │
+│  i=2: j=0 ✓  j=1 → SKIP rest, loop ends                │
+└──────────────────────────────────────────────────────────┘
+```
 
 Labels are useful for **exiting nested loops**.
 
@@ -544,19 +619,11 @@ outerLoop:
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: LIFO Defer Order**
+
+This example shows that three `defer` calls stack up in LIFO order. `"Start"` and `"End"` print normally during execution. When `main()` returns, the defer stack unwinds: the last deferred call (`"Deferred 3"`) runs first, then `"Deferred 2"`, then `"Deferred 1"`.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Start")
-
-    defer fmt.Println("Deferred 1")
-    defer fmt.Println("Deferred 2")
-    defer fmt.Println("Deferred 3")
-
-    fmt.Println("End")
 
     // Output:
     // Start
@@ -568,6 +635,29 @@ func main() {
 ```
 
 ### Arguments evaluated immediately at defer site
+
+**Tutorial: Defer Argument Capture**
+
+This is a critical subtlety: `defer fmt.Println("Deferred x =", x)` evaluates `x` immediately when the `defer` statement is reached — capturing the value `10`. Even though `x` is later changed to `20`, the deferred call still prints `10`. This is because function arguments are evaluated eagerly, not lazily. To capture the final value, use a closure: `defer func() { fmt.Println(x) }()`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        defer Argument Evaluation Timeline                │
+│                                                          │
+│  Time ──────────────────────────────────────────►        │
+│                                                          │
+│  x := 10                                                 │
+│  ──► defer Println(x)  ← x=10 captured NOW              │
+│       ┌──────────┐                                       │
+│       │ saved: 10│  (stored on defer stack)               │
+│       └──────────┘                                       │
+│  x = 20                                                  │
+│  ──► Println("Current x =", 20)  ← prints 20            │
+│  ──► function returns                                    │
+│  ──► deferred call runs: Println("Deferred x =", 10)    │
+│       └── uses the SAVED value 10, not current 20        │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -587,6 +677,27 @@ func main() {
 ```
 
 ### Common cleanup pattern
+
+**Tutorial: defer for Resource Cleanup**
+
+The `defer file.Close()` pattern is the most common use of `defer` in Go. By placing `defer` immediately after a successful `os.Open()`, you guarantee the file handle is released when the function returns — regardless of whether it returns normally, early via `return`, or even during a panic. This prevents resource leaks.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Resource Cleanup Pattern                           │
+│                                                          │
+│  file, err := os.Open(filename)                          │
+│  if err != nil { return }     ← early return, no leak   │
+│  defer file.Close()           ← registered immediately  │
+│                                                          │
+│  // ... use file ...                                     │
+│  // ... maybe return early ...                           │
+│  // ... maybe panic ...                                  │
+│                                                          │
+│  } ← function exits here                                 │
+│    └─► defer fires: file.Close() ← ALWAYS runs          │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

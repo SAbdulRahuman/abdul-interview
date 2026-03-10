@@ -37,6 +37,25 @@ Go handles errors as **values**, not exceptions. Functions that might fail retur
 
 ## The error Interface
 
+**Tutorial: Creating Basic Errors**
+
+Go's `error` is a simple built-in interface with one method: `Error() string`. Use `errors.New` for static error messages and `fmt.Errorf` for dynamic formatted messages. Every function that can fail returns `error` as its last return value — this is Go's explicit error-handling philosophy, in contrast to exception-based languages.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         The error Interface                               │
+│                                                          │
+│  type error interface {                                  │
+│      Error() string                                      │
+│  }                                                       │
+│                                                          │
+│  errors.New("msg")          ─► simple static error       │
+│  fmt.Errorf("x: %d", val)  ─► formatted error           │
+│                                                          │
+│  Both return a value satisfying the error interface      │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -63,6 +82,31 @@ func main() {
 ---
 
 ## Error Wrapping (Go 1.13+)
+
+**Tutorial: Wrapping Errors with Context Using %w**
+
+Error wrapping adds context at each call layer using `fmt.Errorf("context: %w", err)`. The `%w` verb (not `%v`) preserves the original error in a chain so callers can inspect it with `errors.Is` and `errors.As`. Each function wraps the error it receives, building a descriptive chain like `initApp: readConfig: open ...: no such file`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Error Wrapping Chain                             │
+│                                                          │
+│  main()                                                  │
+│    │                                                     │
+│    ▼                                                     │
+│  initApp()                                               │
+│    │  wraps ──► "initApp: ..."                           │
+│    ▼                                                     │
+│  readConfig()                                            │
+│    │  wraps ──► "readConfig: ..."                        │
+│    ▼                                                     │
+│  os.Open()                                               │
+│       returns ► "open /path: no such file or directory"  │
+│                                                          │
+│  Final: "initApp: readConfig: open /path: no such file" │
+│  errors.Unwrap() peels one layer at a time               │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -107,6 +151,28 @@ func main() {
 ---
 
 ## errors.Is — Check Error Chain
+
+**Tutorial: Matching Sentinel Errors Across the Wrapping Chain**
+
+`errors.Is(err, target)` traverses the entire wrapped error chain looking for a match by value. Direct `==` comparison only checks the outermost error and fails on wrapped errors. In this example, even though the error is wrapped twice (by `processFile` and `openFile`), `errors.Is` still finds `os.ErrNotExist` at the bottom of the chain.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         errors.Is Chain Traversal                        │
+│                                                          │
+│  errors.Is(err, os.ErrNotExist)                          │
+│      │                                                   │
+│      ├─ check top ─── "processFile: ..."      ✗          │
+│      │       │                                           │
+│      │       ▼ Unwrap()                                  │
+│      ├─ check next ── "openFile: ..."         ✗          │
+│      │       │                                           │
+│      │       ▼ Unwrap()                                  │
+│      └─ check next ── os.ErrNotExist          ✓ MATCH!   │
+│                                                          │
+│  err == os.ErrNotExist → false (top level only)         │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -153,6 +219,31 @@ func main() {
 ---
 
 ## errors.As — Find Specific Error Type
+
+**Tutorial: Extracting a Specific Error Type from the Chain**
+
+`errors.As(err, &target)` searches the error chain for an error matching a specific type and, if found, assigns it to the target pointer. This lets you access structured error data (like field names, status codes) even when the error has been wrapped multiple times. The target must be a pointer to the error type you're looking for.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         errors.As Type Matching                          │
+│                                                          │
+│  var ve *ValidationError                                 │
+│  errors.As(err, &ve)                                     │
+│      │                                                   │
+│      ├─ "validateUser: ..."  → *fmt.wrapError     ✗     │
+│      │       │                                           │
+│      │       ▼ Unwrap()                                  │
+│      ├─ "validateAge: ..."   → *fmt.wrapError     ✗     │
+│      │       │                                           │
+│      │       ▼ Unwrap()                                  │
+│      └─ &ValidationError{}   → *ValidationError   ✓     │
+│              │                                           │
+│              ▼                                           │
+│         ve.Field = "age"                                 │
+│         ve.Message = "invalid age: -5"                   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -210,6 +301,28 @@ func main() {
 
 ## Custom Error Types
 
+**Tutorial: Defining Structured Error Types**
+
+Custom error types carry structured data beyond a simple message — status codes, URLs, operation names. Implement the `error` interface by adding an `Error() string` method. To participate in wrapping chains, store the underlying error in a field and implement `Unwrap() error` so `errors.Is` and `errors.As` can traverse through it.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Custom Error Type Anatomy                         │
+│                                                          │
+│  HTTPError                    DatabaseError              │
+│  ┌──────────────────┐         ┌──────────────────┐       │
+│  │ StatusCode: 404  │         │ Operation: "ins" │       │
+│  │ Message: "..."   │         │ Table: "users"   │       │
+│  │ URL: "/api/..."  │         │ Err: error ──────┼──►    │
+│  ├──────────────────┤         ├──────────────────┤ inner │
+│  │ Error() string   │         │ Error() string   │ error │
+│  └──────────────────┘         │ Unwrap() error ──┼──►    │
+│                               └──────────────────┘       │
+│  Simple custom error          Wrapping custom error      │
+│  (no chain)                   (errors.Is/As traverse)    │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -259,6 +372,30 @@ func main() {
 ---
 
 ## Sentinel Errors
+
+**Tutorial: Package-Level Sentinel Errors for Known Conditions**
+
+Sentinel errors are package-level variables representing well-known failure conditions (e.g., `ErrNotFound`, `ErrUnauthorized`). Callers check against them with `errors.Is(err, ErrNotFound)`, which works even when the error has been wrapped with additional context. This pattern provides a stable API contract between packages.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Sentinel Error Pattern                           │
+│                                                          │
+│  Package level:                                          │
+│  var ErrNotFound     = errors.New("not found")           │
+│  var ErrUnauthorized = errors.New("unauthorized")        │
+│                                                          │
+│  GetUser(999) returns:                                   │
+│  ┌──────────────────────────────────────────┐            │
+│  │ fmt.Errorf("GetUser(999): %w", ErrNotFound) │          │
+│  └────────────────────┬─────────────────────┘            │
+│                       │ Unwrap()                         │
+│                       ▼                                  │
+│              ErrNotFound ("not found")                   │
+│                                                          │
+│  Caller: errors.Is(err, ErrNotFound) → true ✓           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -310,6 +447,33 @@ func main() {
 ---
 
 ## Error Handling Patterns
+
+**Tutorial: Idiomatic Patterns — Early Return and errors.Join**
+
+This example demonstrates two core patterns. Pattern 1: early return — check `err != nil` immediately after each fallible call, wrap with context, and return. The happy path stays left-aligned and easy to read. Pattern 2: `errors.Join` (Go 1.20+) — collect multiple independent errors (like validation failures) into a single combined error instead of short-circuiting at the first one.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Error Handling Patterns                           │
+│                                                          │
+│  Pattern 1: Early Return                                 │
+│  ┌─────────────────────────────────────┐                 │
+│  │ result, err := doWork()             │                 │
+│  │ if err != nil {                     │ ◄── check       │
+│  │     return fmt.Errorf("ctx: %w",err)│ ◄── wrap+return │
+│  │ }                                   │                 │
+│  │ // happy path continues left-aligned │                 │
+│  └─────────────────────────────────────┘                 │
+│                                                          │
+│  Pattern 2: errors.Join (Go 1.20+)                       │
+│  ┌─────────────────────────────────────┐                 │
+│  │ errs := []error{}                   │                 │
+│  │ if bad1 { append(errs, err1) }      │                 │
+│  │ if bad2 { append(errs, err2) }      │                 │
+│  │ return errors.Join(errs...)         │ ◄── all or nil  │
+│  └─────────────────────────────────────┘                 │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -389,6 +553,33 @@ func main() {
 ---
 
 ## panic and recover — When to Use
+
+**Tutorial: panic/recover — Last Resort Error Handling**
+
+`panic` immediately stops normal execution and unwinds the stack. `recover`, called inside a deferred function, catches the panic and allows the program to continue. Use `panic` only for truly unrecoverable situations (programmer bugs, impossible states). The `safeHandler` wrapper pattern shown here is common in HTTP servers to prevent one bad request from crashing the entire process.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         panic/recover Flow                               │
+│                                                          │
+│  main()                                                  │
+│    │                                                     │
+│    ├─► safeHandler("order", fn)                          │
+│    │     │                                               │
+│    │     ├─► defer recover() ◄── installed first         │
+│    │     │                                               │
+│    │     ├─► fn() → panic("database connection lost!")   │
+│    │     │         │                                     │
+│    │     │         ▼ stack unwinds                       │
+│    │     │                                               │
+│    │     └─► recover() catches ──► prints error          │
+│    │                                                     │
+│    ├─► safeHandler("payment", fn)  ◄── continues!        │
+│    │     └─► fn() → completes normally                   │
+│    │                                                     │
+│    └─► "Server still running!"                           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

@@ -38,6 +38,32 @@ Go's GC is a **concurrent, tri-color mark-and-sweep** collector optimized for lo
 
 ## GC Overview — Tri-Color Mark-and-Sweep
 
+**Tutorial: Reading GC Runtime Statistics**
+
+This example shows how to inspect the garbage collector's state using `runtime.ReadMemStats`. The `MemStats` struct gives you live data about heap usage, GC cycle count, and CPU fraction spent on garbage collection. These metrics are your first stop when diagnosing memory issues. Note that `ReadMemStats` briefly stops the world to get a consistent snapshot.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  runtime.ReadMemStats — GC Snapshot                  │
+│                                                      │
+│  Program Heap                                        │
+│  ┌────────────────────────────────┐                   │
+│  │ objects  objects  objects      │                   │
+│  │ (live)   (live)   (garbage)    │                   │
+│  └──────────────┬─────────────────┘                   │
+│                 │                                     │
+│                 ▼                                     │
+│  runtime.ReadMemStats(&stats)                        │
+│    ├── HeapAlloc   → currently allocated bytes       │
+│    ├── NumGC       → completed GC cycles so far      │
+│    └── GCCPUFraction → fraction of CPU used by GC    │
+│                                                      │
+│  Typical healthy values:                             │
+│    GCCPUFraction < 0.05 (under 5%)                   │
+│    NumGC grows slowly over time                      │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -69,6 +95,35 @@ func main() {
 ---
 
 ## Tri-Color Algorithm Explained
+
+**Tutorial: The Three Colors of Object Reachability**
+
+The tri-color algorithm is the heart of Go's concurrent GC. Every heap object is logically colored WHITE (unknown/potentially garbage), GREY (discovered but not fully scanned), or BLACK (fully scanned and reachable). The GC iteratively promotes objects from white to grey to black. The critical invariant is that a BLACK object must never directly reference a WHITE object — the write barrier enforces this during concurrent marking.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Tri-Color Marking — Step by Step                    │
+│                                                      │
+│  Step 1: All objects start WHITE                     │
+│  ○ ○ ○ ○ ○ ○   (○ = white)                          │
+│                                                      │
+│  Step 2: Roots marked GREY                           │
+│  ◐ ◐ ○ ○ ○ ○   (◐ = grey, found from stack/globals) │
+│                                                      │
+│  Step 3: Scan GREY, mark refs GREY, self BLACK       │
+│  ● ● ◐ ◐ ○ ○   (● = black, fully scanned)          │
+│                                                      │
+│  Step 4: Repeat until no GREY remains                │
+│  ● ● ● ● ○ ○                                        │
+│                                                      │
+│  Step 5: Remaining WHITE = garbage → free            │
+│  ● ● ● ●       (○ objects reclaimed)                │
+│                                                      │
+│  Write Barrier (during concurrent mark):             │
+│  BLACK obj ──ptr──► WHITE obj  ✗ FORBIDDEN           │
+│  Barrier intercepts write, marks target GREY         │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -113,6 +168,38 @@ func main() {
 
 ## GC Phases
 
+**Tutorial: The Four Phases of a GC Cycle**
+
+Each GC cycle runs through four distinct phases. Two are brief Stop-the-World (STW) pauses (mark setup and mark termination, typically <100μs each), while marking and sweeping run concurrently with the application. The GC uses ~25% of CPU during concurrent marking. If a goroutine allocates faster than the GC can mark, it gets drafted into "mark assist" duty to prevent heap runaway.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GC Cycle Timeline                                   │
+│                                                      │
+│  ──time──►                                           │
+│                                                      │
+│  App:  ████████░░██████████████░░████████████████     │
+│  GC:          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓                    │
+│         ▲  ▲                    ▲  ▲                 │
+│         │  │                    │  │                 │
+│  Phase: 1  2                    3  4                 │
+│                                                      │
+│  1 ─ Mark Setup     (STW ~10-30μs)                   │
+│      └─ enable write barrier, find roots             │
+│                                                      │
+│  2 ─ Concurrent Mark (runs with app, ~25% CPU)       │
+│      └─ trace refs, mark assist if allocating fast   │
+│                                                      │
+│  3 ─ Mark Termination (STW ~10-30μs)                 │
+│      └─ finish marking, disable write barrier        │
+│                                                      │
+│  4 ─ Concurrent Sweep (lazy, as spans needed)        │
+│      └─ free WHITE objects, no STW                   │
+│                                                      │
+│  ████ = app running   ░░ = STW   ▓▓ = GC concurrent  │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -150,6 +237,35 @@ func main() {}
 ---
 
 ## GOGC — GC Trigger Percentage
+
+**Tutorial: Controlling GC Frequency with GOGC**
+
+GOGC sets the percentage of new heap growth that triggers the next GC cycle. The default `GOGC=100` means the GC runs when the heap has doubled since the last collection. Increasing GOGC (e.g., 200) reduces GC frequency at the cost of more memory, while decreasing it (e.g., 50) increases frequency to save memory at the cost of CPU. Use `debug.SetGCPercent` at runtime or set the `GOGC` environment variable.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GOGC — Heap Growth Trigger                          │
+│                                                      │
+│  Live heap after last GC = 100 MB                    │
+│                                                      │
+│  GOGC=50:   next GC at 150 MB  (100 + 50%)          │
+│  ├──────────┤·····┤                                  │
+│  100MB       150MB                                   │
+│                                                      │
+│  GOGC=100:  next GC at 200 MB  (100 + 100%)         │
+│  ├──────────┤···········┤                            │
+│  100MB                 200MB                         │
+│                                                      │
+│  GOGC=200:  next GC at 300 MB  (100 + 200%)         │
+│  ├──────────┤·····················┤                  │
+│  100MB                          300MB                │
+│                                                      │
+│  Trade-off:                                          │
+│  Higher GOGC ──► less GC CPU, more memory            │
+│  Lower  GOGC ──► more GC CPU, less memory            │
+│  GOGC=off    ──► disable (use with GOMEMLIMIT)       │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -198,6 +314,35 @@ func main() {
 ---
 
 ## GOMEMLIMIT — Soft Memory Limit (Go 1.19+)
+
+**Tutorial: Setting a Soft Memory Ceiling**
+
+GOMEMLIMIT (Go 1.19+) tells the GC to work harder to keep total memory under a target. It is a soft limit — Go can briefly exceed it, but the GC increases frequency to bring usage back down. The killer pattern for containers is `GOGC=off` + `GOMEMLIMIT=<value>`, which maximizes throughput within a memory budget. Always leave ~10% headroom below the container's hard memory limit for non-Go allocations (cgo, OS overhead).
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GOMEMLIMIT — Soft Memory Ceiling                    │
+│                                                      │
+│  Container Memory: 512 MB (hard kill at 512)         │
+│  GOMEMLIMIT:       450 MiB (soft target)             │
+│                                                      │
+│  Memory ▲                                            │
+│  512 MB ┤ ─ ─ ─ ─ ─ ─ container OOM kill ─ ─ ─      │
+│         │                                            │
+│  450 MB ┤═══════════ GOMEMLIMIT ═══════════          │
+│         │     ╱╲    ╱╲                               │
+│         │    ╱  ╲  ╱  ╲   ◄── GC works harder here  │
+│         │   ╱    ╲╱    ╲                             │
+│         │  ╱              ╲                          │
+│    0 MB ┤─╱────────────────╲──────── time ──►        │
+│         └────────────────────────────────────         │
+│                                                      │
+│  GOGC=off + GOMEMLIMIT pattern:                      │
+│  • GC only runs when approaching the limit           │
+│  • Maximizes throughput in memory-bounded envs       │
+│  • GC still runs — just triggered by limit, not %    │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -250,6 +395,35 @@ func main() {
 
 ## GC Pacing — How the GC Decides When to Run
 
+**Tutorial: The GC Pacer Algorithm**
+
+The GC pacer is the internal algorithm that decides exactly when to start each GC cycle and how many resources to devote to it. It balances allocation rate against marking speed to complete marking before the heap exceeds the trigger target. When a goroutine allocates too fast, it is forced into "mark assist" — it must help the GC mark objects before it can proceed with its own allocation. This prevents any single hot goroutine from outpacing the collector.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GC Pacer Decision Flow                              │
+│                                                      │
+│  Inputs:                                             │
+│  ┌──────────────┐  ┌────────────┐  ┌──────────────┐  │
+│  │ Live heap    │  │ GOGC /     │  │ Allocation   │  │
+│  │ after GC     │  │ GOMEMLIMIT │  │ rate         │  │
+│  └──────┬───────┘  └─────┬──────┘  └──────┬───────┘  │
+│         │                │                │          │
+│         └────────┬───────┘────────────────┘          │
+│                  ▼                                   │
+│         ┌────────────────┐                           │
+│         │   GC Pacer     │                           │
+│         └───┬────────┬───┘                           │
+│             │        │                               │
+│             ▼        ▼                               │
+│  ┌──────────────┐  ┌────────────────────┐            │
+│  │ When to start│  │ Mark assist needed?│            │
+│  │ next GC      │  │ (goroutine drafted │            │
+│  └──────────────┘  │  to help marking)  │            │
+│                    └────────────────────┘            │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -285,6 +459,35 @@ func main() {}
 ---
 
 ## runtime.GC() — Forcing Garbage Collection
+
+**Tutorial: Manually Triggering a GC Cycle**
+
+Calling `runtime.GC()` forces an immediate, complete garbage collection cycle. This is rarely needed in production since the GC pacer handles timing automatically. It's useful in benchmarks (to get a clean starting state), tests (to verify finalizers), or after releasing a very large batch of data. Watch the before/after `HeapAlloc` values to see how much memory was reclaimed. Avoid calling this in regular application code — it usually degrades performance.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  runtime.GC() — Manual Collection                    │
+│                                                      │
+│  ┌───────────────────────────────────┐               │
+│  │ Heap before GC                    │               │
+│  │ ████████████░░░░░░░░░             │               │
+│  │ live data    garbage              │               │
+│  └───────────────────────────────────┘               │
+│         │                                            │
+│    data = nil    ◄── remove reference                │
+│    runtime.GC()  ◄── force collection                │
+│         │                                            │
+│         ▼                                            │
+│  ┌───────────────────────────────────┐               │
+│  │ Heap after GC                     │               │
+│  │ ████████████                      │               │
+│  │ live data only                    │               │
+│  └───────────────────────────────────┘               │
+│                                                      │
+│  Use for: benchmarks, tests, post-bulk-release       │
+│  Avoid:   regular app code (trust the pacer)         │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -328,6 +531,34 @@ func main() {
 ---
 
 ## runtime.MemStats — GC Metrics
+
+**Tutorial: Deep Dive into Memory Statistics**
+
+The `runtime.MemStats` struct provides a comprehensive view of the Go runtime's memory state. Key fields include `HeapAlloc` (live heap bytes), `HeapSys` (total heap from OS), `HeapIdle`/`HeapInuse` (unused vs active spans), `NumGC` (cycle count), `PauseTotalNs` (cumulative STW time), and `GCCPUFraction`. Note that `ReadMemStats` briefly stops the world, so call it sparingly in production — prefer `debug.ReadGCStats` for lighter-weight GC info.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  runtime.MemStats — Key Fields                       │
+│                                                      │
+│  OS Memory (Sys)                                     │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  HeapSys (heap from OS)                      │    │
+│  │  ┌──────────────────┬───────────────────┐    │    │
+│  │  │  HeapInuse       │    HeapIdle        │    │    │
+│  │  │  (active spans)  │  (unused spans)    │    │    │
+│  │  │  ┌────────────┐  │  ┌──────────────┐  │    │    │
+│  │  │  │ HeapAlloc  │  │  │ HeapReleased │  │    │    │
+│  │  │  │ (live obj) │  │  │ (back to OS) │  │    │    │
+│  │  │  └────────────┘  │  └──────────────┘  │    │    │
+│  │  └──────────────────┴───────────────────┘    │    │
+│  │                                              │    │
+│  │  StackInuse / StackSys — goroutine stacks    │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                      │
+│  GC metrics: NumGC, PauseTotalNs, GCCPUFraction      │
+│  Alloc metrics: TotalAlloc, Mallocs, Frees           │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -379,6 +610,33 @@ func main() {
 
 ## GODEBUG=gctrace — GC Trace Logging
 
+**Tutorial: Interpreting GC Trace Output**
+
+Setting `GODEBUG=gctrace=1` when launching your application prints one line per GC cycle to stderr. This is the most accessible way to observe GC behavior without adding instrumentation to your code. The trace shows STW pause durations, concurrent mark time, heap sizes before/after, CPU usage breakdown (assist, background, idle marking), and the GC goal. Learn to read these numbers to diagnose whether your app is GC-bound.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  gctrace output anatomy:                             │
+│                                                      │
+│  gc 1 @0.012s 2%: 0.015+0.41+0.008 ms clock         │
+│  │  │  │     │    │     │    │                       │
+│  │  │  │     │    │     │    └─ STW mark termination │
+│  │  │  │     │    │     └── concurrent mark (wall) │
+│  │  │  │     │    └───── STW mark setup          │
+│  │  │  │     └───────── GC CPU %                │
+│  │  │  └─────────────── time since start        │
+│  │  └──────────────────── cycle number            │
+│                                                      │
+│  4->4->1 MB, 4 MB goal, 8 P                         │
+│  │  │  │       │          │                         │
+│  │  │  │       │          └─ GOMAXPROCS             │
+│  │  │  │       └────────── heap target              │
+│  │  │  └───────────────── live heap after mark     │
+│  │  └──────────────────── heap at end of mark      │
+│  └─────────────────────── heap at start of mark    │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -422,6 +680,33 @@ func main() {
 ---
 
 ## Escape Analysis — Stack vs Heap
+
+**Tutorial: How the Compiler Decides Stack vs Heap Allocation**
+
+Escape analysis is the compiler's decision process for whether a variable stays on the stack (fast, no GC) or escapes to the heap (GC-managed). A variable escapes if its address outlives the function: returning a pointer, passing to an `interface{}` parameter, or being captured by an escaping closure. Run `go build -gcflags="-m"` to see escape decisions. Reducing escapes is the most effective way to lower GC pressure.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Escape Analysis — Stack vs Heap Decision             │
+│                                                      │
+│  Stack (fast, auto-freed)    Heap (GC-managed)       │
+│  ┌──────────────────┐      ┌──────────────────┐    │
+│  │  x := 42        │      │  x := 42        │    │
+│  │  return x        │      │  return &x       │    │
+│  │                  │      │  ▲ escapes!      │    │
+│  │  ✔ stays on stack│      │  ptr outlives fn │    │
+│  └──────────────────┘      └──────────────────┘    │
+│                                                      │
+│  Common escape causes:                               │
+│  1. return &localVar      ◄── pointer escapes       │
+│  2. fmt.Println(x)        ◄── boxed to interface{}  │
+│  3. closure captures var   ◄── closure escapes      │
+│  4. large/dynamic slice    ◄── can't prove size     │
+│  5. store in global var    ◄── outlives function    │
+│                                                      │
+│  Check: go build -gcflags="-m" .                     │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -491,6 +776,36 @@ func main() {
 
 ## Finalizers — runtime.SetFinalizer
 
+**Tutorial: Cleanup Callbacks Before Collection**
+
+Finalizers are functions called by the GC just before an object is collected. You register them with `runtime.SetFinalizer(obj, cleanupFunc)`. However, finalizers have significant caveats: they defer collection by one cycle, aren't guaranteed to run before program exit, and can accidentally "resurrect" objects. The idiomatic Go pattern is explicit `Close()` methods with `defer`, using finalizers only as a safety net for missed cleanup.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Finalizer Lifecycle                                 │
+│                                                      │
+│  ┌──────────────────┐                                  │
+│  │  obj := &Res{}  │                                  │
+│  │  SetFinalizer(  │                                  │
+│  │    obj, cleanup)│                                  │
+│  └────────┬─────────┘                                  │
+│           │                                           │
+│           ▼                                           │
+│  obj = nil (remove reference)                        │
+│           │                                           │
+│           ▼                                           │
+│  GC Cycle 1: ──► runs finalizer, obj NOT freed yet    │
+│           │                                           │
+│           ▼                                           │
+│  GC Cycle 2: ──► object actually freed               │
+│                                                      │
+│  Best practice:                                      │
+│  • Use defer obj.Close() for cleanup                 │
+│  • Finalizers = safety net, not primary cleanup      │
+│  • SetFinalizer(obj, nil) removes finalizer           │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -538,6 +853,37 @@ func main() {
 ---
 
 ## GC Tuning Strategies
+
+**Tutorial: Practical GC Optimization Playbook**
+
+GC tuning follows a strict priority order: measure first, reduce allocations second, then tune knobs. The most effective optimization is always reducing allocations — using `sync.Pool`, pre-allocating slices, avoiding interface boxing in hot paths. GOGC and GOMEMLIMIT are coarse-grained tools for trading memory against CPU. The ballast technique (pre-GOMEMLIMIT) raised the live heap baseline to reduce GC frequency. For most applications, Go's default GC settings work well without tuning.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GC Tuning Priority (most to least effective)        │
+│                                                      │
+│  1. MEASURE                                          │
+│     └► GODEBUG=gctrace=1, pprof, go tool trace       │
+│              │                                       │
+│              ▼                                       │
+│  2. REDUCE ALLOCATIONS  (biggest impact)             │
+│     ├► sync.Pool for buffer reuse                    │
+│     ├► make([]T, 0, cap) pre-allocate               │
+│     ├► strings.Builder not + concatenation           │
+│     ├► []T instead of []*T                          │
+│     └► avoid boxing in hot paths                     │
+│              │                                       │
+│              ▼                                       │
+│  3. TUNE GOGC / GOMEMLIMIT                          │
+│     ├► GOGC=200 → half as many GC cycles             │
+│     └► GOMEMLIMIT=450MiB (90% of container)         │
+│              │                                       │
+│              ▼                                       │
+│  4. ADVANCED (rarely needed)                         │
+│     ├► GOGC=off + GOMEMLIMIT                        │
+│     └► Off-heap / arena (experimental)               │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -589,6 +935,37 @@ func main() {}
 ---
 
 ## GC-Friendly Code Patterns
+
+**Tutorial: Writing Code That Minimizes GC Pressure**
+
+These five patterns reduce heap allocations and GC work. `sync.Pool` recycles temporary objects (like buffers) across GC cycles instead of allocating fresh ones. Pre-allocating slice capacity avoids repeated grow-and-copy operations. Value receivers on small structs keep them on the stack. Using `[]Item` instead of `[]*Item` creates one contiguous allocation with better cache locality. Struct of Arrays (SoA) layout improves batch-processing throughput over Array of Structs (AoS).
+
+```
+┌──────────────────────────────────────────────────────┐
+│  GC-Friendly Patterns                                │
+│                                                      │
+│  Pattern 1: sync.Pool                                │
+│  ┌───────────┐  Get   ┌──────────┐  Put   ┌─────────┐  │
+│  │sync.Pool │ ──► │  use buf │ ──► │sync.Pool│  │
+│  └───────────┘       └──────────┘       └─────────┘  │
+│    (reuse, no alloc each time)                        │
+│                                                      │
+│  Pattern 2: Pre-allocate capacity                    │
+│  make([]int, 0, n) ─► append without regrowth        │
+│                                                      │
+│  Pattern 3: Value receiver (small struct)             │
+│  func (p Point) Dist() ─► no heap alloc              │
+│                                                      │
+│  Pattern 4: []Item vs []*Item                        │
+│  []Item  ─► ┌─┬─┬─┬─┐ one contiguous block          │
+│  []*Item ─► ┌┐┌┐┌┐┌┐ N separate heap allocs        │
+│              │ │ │ │                                │
+│              ▼ ▼ ▼ ▼ (poor cache locality)          │
+│                                                      │
+│  Pattern 5: Struct of Arrays (SoA)                   │
+│  X[] Y[] Z[] ─► batch-process one field at a time    │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -655,6 +1032,37 @@ func main() {
 ---
 
 ## Monitoring GC in Production
+
+**Tutorial: Production GC Observability**
+
+This example demonstrates three approaches to monitor the GC in production. `runtime.ReadMemStats` provides the most detail but briefly stops the world. `debug.ReadGCStats` gives GC-specific info (pause history, last GC time) with less overhead. `expvar` exposes runtime stats over HTTP at `/debug/vars` for integration with monitoring systems like Prometheus or Grafana. Watch `GCCPUFraction` (alert if >5%) and pause times (alert if consistently >1ms).
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Production Monitoring Methods                        │
+│                                                      │
+│  Method 1: runtime.ReadMemStats (detailed, STW)      │
+│  ┌─────────────────┐                                   │
+│  │ HeapAlloc       │                                   │
+│  │ NumGC           ├──► richest data, brief STW        │
+│  │ GCCPUFraction   │                                   │
+│  └─────────────────┘                                   │
+│                                                      │
+│  Method 2: debug.ReadGCStats (GC-focused)            │
+│  ┌─────────────────┐                                   │
+│  │ LastGC          │                                   │
+│  │ Pause[]         ├──► lighter weight                  │
+│  │ NumGC           │                                   │
+│  └─────────────────┘                                   │
+│                                                      │
+│  Method 3: expvar (HTTP endpoint)                    │
+│  GET /debug/vars ──► JSON metrics ──► Grafana        │
+│                                                      │
+│  Alerts:                                             │
+│  • GCCPUFraction > 0.05  ──► investigate              │
+│  • Pause > 1ms           ──► investigate              │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

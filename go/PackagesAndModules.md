@@ -93,6 +93,22 @@ go get -u ./...
 go get github.com/user/pkg/v2
 ```
 
+**Tutorial: Importing Major Version 2+ Modules**
+
+When a Go module reaches major version 2 or higher, the import path must include the version suffix (e.g., `/v2`). This allows different major versions to coexist in the same build, since they are treated as distinct modules. Version 0 and 1 have no suffix.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Semantic Import Versioning                         │
+│                                                          │
+│  v0.x.x / v1.x.x → import "github.com/user/pkg"        │
+│  v2.x.x           → import "github.com/user/pkg/v2"     │
+│  v3.x.x           → import "github.com/user/pkg/v3"     │
+│                                                          │
+│  Both can coexist in the same binary!                    │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 // Importing v2 of a module
 import "github.com/user/pkg/v2"
@@ -101,6 +117,27 @@ import "github.com/user/pkg/v2"
 ---
 
 ## Package Naming Conventions
+
+**Tutorial: Idiomatic Package Names in Go**
+
+Go package names should be short, lowercase, and singular — they become the qualifier prefix for all exported symbols (e.g., `user.New()`, `http.Get()`). Avoid camelCase, underscores, or generic names like `common` or `utils`. A good package name makes call sites read like natural English.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Package Naming Rules                               │
+│                                                          │
+│  ✅ Good                     ❌ Bad                       │
+│  ┌──────────────────┐       ┌────────────────────┐     │
+│  │ user             │       │ httpUtils           │     │
+│  │ http             │       │ string_utils        │     │
+│  │ auth             │       │ mypackage           │     │
+│  │ db               │       │ common              │     │
+│  └──────────────────┘       └────────────────────┘     │
+│                                                          │
+│  user.New()  ─► reads naturally                          │
+│  http.Get()  ─► reads naturally                          │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 // ✅ Good package names — short, lowercase, singular
@@ -138,6 +175,28 @@ myproject/
 └── go.mod
 ```
 
+**Tutorial: Internal Packages — Access Control via Directory Structure**
+
+The `internal` directory is Go's built-in access control mechanism. Any package under `internal/` can only be imported by code rooted at the parent of `internal`. External projects get a compile error. This enforces encapsulation without needing language-level access modifiers. The `pkg/` directory (by convention) signals packages intended for external use.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Internal Package Access Rules                     │
+│                                                          │
+│  myproject/                                              │
+│  ├── cmd/server/main.go  ──► CAN import internal/*   ✓  │
+│  ├── internal/                                          │
+│  │   ├── auth/           ──► only myproject/ tree      │
+│  │   └── database/       ──► only myproject/ tree      │
+│  ├── pkg/models/         ──► anyone can import     ✓  │
+│  └── go.mod                                             │
+│                                                          │
+│  Other project:                                          │
+│  import ".../internal/auth"  ─► COMPILE ERROR         ✗  │
+│  import ".../pkg/models"     ─► OK                    ✓  │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 // cmd/server/main.go — CAN import internal
 package main
@@ -155,6 +214,30 @@ import (
 ---
 
 ## Exported vs Unexported Identifiers
+
+**Tutorial: Visibility Rules — Uppercase Exports, Lowercase Hides**
+
+Go's visibility rule is simple: identifiers starting with an uppercase letter are exported (public), lowercase are unexported (package-private). This applies to types, functions, methods, fields, and constants. There are no `public`/`private` keywords — the first letter of the name is the entire access control mechanism.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Exported vs Unexported                             │
+│                                                          │
+│  package user                                            │
+│  ┌────────────────────────────────────────────┐        │
+│  │ type User struct {                          │        │
+│  │     Name  string  ◄── Exported (uppercase)   │        │
+│  │     Email string  ◄── Exported (uppercase)   │        │
+│  │     age   int     ◄── unexported (lowercase) │        │
+│  │ }                                             │        │
+│  │                                               │        │
+│  │ func NewUser()   ◄── Exported                │        │
+│  │ func validateEmail()  ◄── unexported           │        │
+│  └────────────────────────────────────────────┘        │
+│                                                          │
+│  Other package: user.Name ✓  user.age ✗ (compile error)  │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package user
@@ -224,6 +307,30 @@ myworkspace/
 
 ## Build Tags / Build Constraints
 
+**Tutorial: Conditional Compilation with Build Tags**
+
+Build tags (`//go:build`) control which files are included in a build based on OS, architecture, or custom flags. Each file can specify a constraint expression using `&&` (AND), `||` (OR), and `!` (NOT). The Go toolchain evaluates the constraint and skips files that don't match. The three examples below show platform-specific files and a custom `production` tag that excludes development defaults.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Build Tag File Selection                         │
+│                                                          │
+│  go build (on linux/amd64)                               │
+│      │                                                   │
+│      ├─ platform_linux.go                               │
+│      │  //go:build linux && amd64  → ✓ INCLUDED          │
+│      │                                                   │
+│      ├─ platform_windows.go                             │
+│      │  //go:build windows        → ✗ SKIPPED           │
+│      │                                                   │
+│      └─ config_dev.go                                   │
+│         //go:build !production    → ✓ INCLUDED          │
+│                                                          │
+│  go build -tags=production                               │
+│      └─ config_dev.go            → ✗ SKIPPED           │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 //go:build linux && amd64
 
@@ -235,6 +342,20 @@ func GetPlatform() string {
 }
 ```
 
+**Tutorial: Windows-Specific Build Constraint**
+
+This file is only compiled when `GOOS=windows`. On any other platform the Go toolchain ignores it entirely, so you can have OS-specific implementations of the same function in separate files without conflicts.
+
+```
+┌──────────────────────────────────────────┐
+│  //go:build windows                  │
+│                                      │
+│  Included on: GOOS=windows    ✓     │
+│  Skipped on:  GOOS=linux      ✗     │
+│  Skipped on:  GOOS=darwin     ✗     │
+└──────────────────────────────────────────┘
+```
+
 ```go
 //go:build windows
 
@@ -243,6 +364,19 @@ package platform
 func GetPlatform() string {
     return "windows"
 }
+```
+
+**Tutorial: Negated Build Tag — Excluding Files from Specific Builds**
+
+The `!` operator negates a tag. `//go:build !production` means this file compiles in every build **except** when `-tags=production` is specified. This is useful for development defaults, debug helpers, or test fixtures that should not ship in production.
+
+```
+┌──────────────────────────────────────────┐
+│  //go:build !production               │
+│                                      │
+│  go build              → ✓ INCLUDED  │
+│  go build -tags=production → ✗ SKIP  │
+└──────────────────────────────────────────┘
 ```
 
 ```go

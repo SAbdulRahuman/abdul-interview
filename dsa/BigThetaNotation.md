@@ -86,6 +86,28 @@ func main() {
 
 **Key insight:** Linear search is **O(n)** (upper bound) and **Ω(1)** (lower bound). Since the bounds don't match, we **cannot** say it's Θ(n).
 
+```
+  Linear Search — Bounds don't match:
+
+  Target at index 0 (best):    1 comparison    → Ω(1) lower bound
+  Target at index n-1 (worst): n comparisons   → O(n) upper bound
+
+  Operations
+  ▲
+  │            ╱ O(n) upper bound
+  │          ╱
+  │        ╱
+  │      ╱
+  │    ╱
+  │  ╱         Gap between bounds → no Θ!
+  │╱
+  │●─────●────●────●  Ω(1) lower bound
+  └─────────────────────▶ n
+
+  Θ requires: upper bound = lower bound
+  Here:       O(n) ≠ Ω(1)  → cannot use Θ
+```
+
 ---
 
 ## Example 3: Θ(n²) — Bubble Sort Always Does n² Work
@@ -120,9 +142,21 @@ func main() {
 }
 ```
 
----
+```
+  Unoptimized Bubble Sort — always n² comparisons:
 
-## Example 4: O(n²) but Θ varies — Optimized Bubble Sort
+  Input [1,2,3,4,5] (already sorted!):
+  Pass 1: compare (1,2)(2,3)(3,4)(4,5) = 4 comparisons  (no swaps)
+  Pass 2: compare (1,2)(2,3)(3,4)(4,5) = 4 comparisons  (no swaps)
+  Pass 3: compare (1,2)(2,3)(3,4)(4,5) = 4 comparisons  (no swaps)
+  Pass 4: compare (1,2)(2,3)(3,4)(4,5) = 4 comparisons  (no swaps)
+  Pass 5: compare (1,2)(2,3)(3,4)(4,5) = 4 comparisons  (no swaps)
+                                    Total: 20 = n × (n-1) = n²
+
+  Best case:  n² comparisons  → Ω(n²)
+  Worst case: n² comparisons  → O(n²)
+  Same bounds → Θ(n²) ✓
+```
 
 ```go
 package main
@@ -165,9 +199,29 @@ func main() {
 }
 ```
 
----
+```
+  Optimized Bubble Sort — Θ varies by input:
 
-## Example 5: Θ(n log n) — Merge Sort (Always)
+  Best case (sorted [1,2,3,4,5]):
+  Pass 1: 4 comparisons, 0 swaps → swapped=false → EXIT!
+  Total: 4 = n-1 ≈ Θ(n)  ← linear!
+
+  Worst case (reverse [5,4,3,2,1]):
+  Pass 1: 4 comps, 4 swaps  [4,3,2,1,5]
+  Pass 2: 3 comps, 3 swaps  [3,2,1,4,5]
+  Pass 3: 2 comps, 2 swaps  [2,1,3,4,5]
+  Pass 4: 1 comp,  1 swap   [1,2,3,4,5]
+  Total: 4+3+2+1 = 10 = n(n-1)/2 ≈ Θ(n²)
+
+  Summary:
+  ┌─────────────┬─────────┬─────────┐
+  │  Case        │  Bound   │ Can use Θ?│
+  ├─────────────┼─────────┼─────────┤
+  │  Best        │  Θ(n)    │          │
+  │  Worst       │  Θ(n²)   │   NO ✗   │
+  │  Overall     │  O(n²)   │  O only  │
+  └─────────────┴─────────┴─────────┘
+```
 
 ```go
 package main
@@ -217,6 +271,24 @@ func main() {
 
 **Why Θ(n log n)?** — Merge sort always divides (log n levels) and always merges all elements (n per level), regardless of input order.
 
+```
+  Merge Sort — Always the same structure:
+
+  Level 0: [3, 1, 4, 1, 5, 9, 2, 6]          merge: 8 elements
+              /                \  
+  Level 1: [3,1,4,1]      [5,9,2,6]           merge: 8 elements
+            /    \          /    \
+  Level 2: [3,1] [4,1]   [5,9] [2,6]          merge: 8 elements
+           / \    / \     / \    / \
+  Level 3: [3][1][4][1] [5][9][2][6]          merge: 8 elements
+
+  Levels = log₂(8) = 3
+  Work per level = n = 8
+  Total = n × log n = 8 × 3 = 24  → Θ(n log n)
+
+  Same work regardless of input order → Tight bound Θ!
+```
+
 ---
 
 ## Example 6: Θ(1) — Direct Computation
@@ -252,9 +324,23 @@ func main() {
 }
 ```
 
----
+```
+  Θ(1) — no variation by input:
 
-## Example 7: Θ(log n) — Binary GCD (Always Logarithmic)
+  sumFirstN(n) = n×(n+1)/2
+
+  n=5:       5×6/2 = 15         → 3 arithmetic ops
+  n=1000:    1000×1001/2 = 500500 → 3 arithmetic ops
+  n=1000000: same formula        → 3 arithmetic ops
+
+  Operations
+  ▲
+  │
+  │  ● ─ ─ ─ ● ─ ─ ─ ● ─ ─ ─ ●   Θ(1)
+  │
+  └─────────────────────────▶ n
+  Constant regardless of input size.
+```
 
 ```go
 package main

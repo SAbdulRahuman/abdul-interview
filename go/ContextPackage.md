@@ -41,6 +41,32 @@ The `context` package provides a way to carry **deadlines, cancellation signals,
 
 ## context.Background() and context.TODO()
 
+**Tutorial: The Root Contexts — Background and TODO**
+
+Every context tree starts from a root. `context.Background()` is the standard root used in `main`, `init`, and at the top of incoming request handlers. `context.TODO()` is a placeholder for when you know a function should accept a context but you haven't wired it through yet. Neither is ever cancelled; they exist purely as parents from which derived contexts are created.
+
+```
+┌───────────────────────────────────────────┐
+│         Root Context Selection            │
+│                                           │
+│  Start of program / request?              │
+│        │                                  │
+│        ▼                                  │
+│   ┌─────────┐  YES   ┌────────────────┐   │
+│   │ Known   │──────►│ Background()    │   │
+│   │ usage?  │        │ (standard root)│   │
+│   └─────────┘        └────────────────┘   │
+│        │ NO                               │
+│        ▼                                  │
+│   ┌────────────────┐                      │
+│   │ TODO()         │                      │
+│   │ (placeholder)  │                      │
+│   └────────────────┘                      │
+│                                           │
+│  Both return non-nil, never-cancelled ctx │
+└───────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -65,6 +91,33 @@ func main() {
 ---
 
 ## context.WithCancel
+
+**Tutorial: Manual Cancellation with WithCancel**
+
+`context.WithCancel` derives a new context from a parent and returns a `cancel` function. Calling `cancel()` closes the `Done()` channel on the derived context, which every goroutine watching it via `select` will notice immediately. This is the fundamental building block for cooperative cancellation — goroutines voluntarily check `ctx.Done()` and clean up when signalled.
+
+```
+┌──────────────────────────────────────────────┐
+│        WithCancel Flow                       │
+│                                              │
+│  ctx, cancel := WithCancel(parentCtx)        │
+│                                              │
+│  parentCtx ──► ctx (derived)                 │
+│                 │                             │
+│          ┌──────┴──────┐                     │
+│          ▼             ▼                     │
+│     goroutine 1    goroutine 2               │
+│     select {       select {                  │
+│       <-ctx.Done()   <-ctx.Done()            │
+│     }              }                         │
+│          ▲             ▲                     │
+│          └──────┬──────┘                     │
+│                 │                             │
+│           cancel() called                    │
+│           ctx.Done() closed                  │
+│           all goroutines notified            │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -109,6 +162,32 @@ func main() {
 
 ## context.WithTimeout
 
+**Tutorial: Automatic Cancellation After a Duration**
+
+`context.WithTimeout` creates a context that automatically cancels after a specified duration. This is essential for bounding how long an operation (such as an HTTP call or database query) can take. When the timeout fires, `ctx.Err()` returns `context.DeadlineExceeded`. Always `defer cancel()` even with timeouts — it releases internal timer resources immediately rather than waiting for GC.
+
+```
+┌──────────────────────────────────────────────┐
+│        WithTimeout Timeline                  │
+│                                              │
+│  Time ──►                                    │
+│  ├──────────────────────┤                    │
+│  0ms                  200ms (timeout)        │
+│  │                      │                    │
+│  ▼                      ▼                    │
+│  ctx created         ctx.Done() closed       │
+│  slowOp starts       ctx.Err() = Deadline    │
+│  select {               Exceeded             │
+│    case <-After(5s):                         │
+│       // never reached                       │
+│    case <-ctx.Done():  ◄── triggers here     │
+│       return err                             │
+│  }                                           │
+│                                              │
+│  defer cancel() ── releases timer resources  │
+└──────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -149,6 +228,34 @@ func main() {
 
 ## context.WithDeadline
 
+**Tutorial: Cancellation at an Absolute Wall-Clock Time**
+
+`context.WithDeadline` is like `WithTimeout` but takes an absolute `time.Time` instead of a relative duration. This is useful when you already have a fixed deadline (e.g., from an upstream service). You can inspect whether a context carries a deadline using `ctx.Deadline()`, which returns the deadline time and a boolean indicating if one is set.
+
+```
+┌──────────────────────────────────────────────────┐
+│      WithDeadline vs WithTimeout                 │
+│                                                  │
+│  WithTimeout(ctx, 300ms)                         │
+│    → internally: deadline = time.Now() + 300ms   │
+│                                                  │
+│  WithDeadline(ctx, time.Now().Add(300ms))         │
+│    → explicit absolute time                      │
+│                                                  │
+│  Timeline:                                       │
+│  now                         now+300ms            │
+│   │                            │                 │
+│   ├────────────────────────────┤                 │
+│   ▼                            ▼                 │
+│  ctx = WithDeadline(bg, dl)   ctx.Done() closed  │
+│  select blocks...             Err()=Deadline     │
+│                                                  │
+│  dl, ok := ctx.Deadline()                        │
+│  dl  = the deadline time                         │
+│  ok  = true (deadline was set)                   │
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -181,6 +288,34 @@ func main() {
 ---
 
 ## context.WithValue
+
+**Tutorial: Passing Request-Scoped Data Through Context**
+
+`context.WithValue` attaches a key-value pair to a context. The key should be an unexported custom type (not a plain string) to avoid collisions between packages. Values are looked up by walking up the context chain. Use this for request-scoped metadata like trace IDs or auth tokens — never for passing function arguments. Each `WithValue` call wraps the parent, so lookups are O(n) in the depth of the chain.
+
+```
+┌──────────────────────────────────────────────────┐
+│       WithValue — Layered Key Lookup             │
+│                                                  │
+│  Background()                                    │
+│    └─► WithValue(userIDKey, "user-123")          │
+│          └─► WithValue(requestIDKey, "req-456")  │
+│                │                                 │
+│                ▼                                 │
+│          ctx.Value(requestIDKey)                 │
+│            → found in this layer: "req-456"      │
+│                                                  │
+│          ctx.Value(userIDKey)                    │
+│            → not here, walk up ──► "user-123"    │
+│                                                  │
+│          ctx.Value(missingKey)                   │
+│            → not here, walk up ──► not here      │
+│            → return nil                          │
+│                                                  │
+│  ⚠ Use unexported key types:                    │
+│    type contextKey string  (not plain string)    │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -228,6 +363,36 @@ func main() {
 ---
 
 ## Context Propagation — Best Practices
+
+**Tutorial: Threading Context Through Your Call Chain**
+
+The power of context comes from consistent propagation. Every function that does I/O or may block should accept `ctx context.Context` as its first parameter and pass it to downstream calls. This creates an unbroken cancellation chain: when the top-level handler's context is cancelled, every nested operation receives the signal. Watch how `fetchUser` and `fetchOrders` both respect the same timeout set in `main`.
+
+```
+┌──────────────────────────────────────────────────┐
+│     Context Propagation Chain                    │
+│                                                  │
+│  main()                                          │
+│    │ ctx (200ms timeout)                         │
+│    ▼                                             │
+│  handleUserRequest(ctx, userID)                  │
+│    │                                             │
+│    ├──► fetchUser(ctx, userID)                   │
+│    │      select { <-ctx.Done() ... }            │
+│    │                                             │
+│    └──► fetchOrders(ctx, userID)                 │
+│           select { <-ctx.Done() ... }            │
+│                                                  │
+│  If timeout fires at ANY point:                  │
+│    ctx.Done() closed ──► ALL selects unblock     │
+│                                                  │
+│  Rules:                                          │
+│    1. ctx = first param, always                  │
+│    2. defer cancel() immediately after creation  │
+│    3. Never store ctx in a struct                │
+│    4. Pass ctx down, never up                    │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -294,6 +459,32 @@ func main() {
 ---
 
 ## context.WithoutCancel and context.AfterFunc (Go 1.21+)
+
+**Tutorial: Detaching Cancellation and Running Cleanup**
+
+`context.WithoutCancel` creates a child that inherits values from the parent but is **not** cancelled when the parent is cancelled. This is critical for cleanup tasks that must finish even after the main request is done (e.g., flushing logs, releasing external locks). `context.AfterFunc` registers a callback that runs in a new goroutine when the context is done — useful for triggering cleanup logic without blocking the main flow.
+
+```
+┌──────────────────────────────────────────────────┐
+│    WithoutCancel & AfterFunc                     │
+│                                                  │
+│  parentCtx (100ms timeout)                       │
+│    │                                             │
+│    ├──► WithoutCancel(parentCtx)                 │
+│    │      = cleanupCtx                           │
+│    │                                             │
+│    │   After 100ms:                              │
+│    │     parentCtx.Err() = DeadlineExceeded      │
+│    │     cleanupCtx.Err() = nil  ◄── still alive │
+│    │                                             │
+│    └──► AfterFunc(ctx2, callback)                │
+│           │                                      │
+│           │  cancel2() called                    │
+│           ▼                                      │
+│           callback() runs in NEW goroutine       │
+│           (cleanup, logging, resource release)   │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main

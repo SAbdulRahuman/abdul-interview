@@ -35,6 +35,35 @@ Go's I/O system is built around two simple interfaces: `io.Reader` and `io.Write
 
 ## io.Reader and io.Writer Interfaces
 
+**Tutorial: Reading and Writing Byte Streams**
+
+This example demonstrates the two foundational I/O interfaces in Go. A `strings.NewReader` is used as an `io.Reader`, reading data in fixed-size chunks until `io.EOF` is returned. A `strings.Builder` serves as an `io.Writer`, accumulating bytes written to it. Notice how `Read` returns the number of bytes actually read — you must use `buf[:n]`, not the entire buffer.
+
+```
+┌─────────────────────────────────────────────┐
+│         io.Reader loop pattern              │
+│                                             │
+│  strings.Reader("Hello, Reader!")           │
+│       │                                     │
+│       ▼                                     │
+│  ┌──────────┐  Read(buf)  ┌────────────┐    │
+│  │  Reader   │───────────►│ buf[0..4]  │    │
+│  │ pos=0..14 │  n=5       │ "Hello"    │    │
+│  └──────────┘             └────────────┘    │
+│       │         Read(buf)                   │
+│       ├──────────────────►│ ", Rea"    │    │
+│       │         Read(buf)                   │
+│       ├──────────────────►│ "der!"     │    │
+│       │         Read(buf)                   │
+│       └──────────────────► n=0, io.EOF      │
+│                                             │
+│  io.Writer accumulation:                    │
+│  Builder ◄── Write("Hello, ")               │
+│  Builder ◄── Write("Writer!")               │
+│  Builder.String() ──► "Hello, Writer!"      │
+└─────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -79,6 +108,32 @@ func main() {
 ---
 
 ## io.Copy, io.TeeReader, io.MultiReader, io.MultiWriter
+
+**Tutorial: Composing Readers and Writers**
+
+This example shows four powerful I/O combinators. `io.Copy` streams data from a Reader to a Writer without loading everything into memory. `io.TeeReader` splits a read stream so data is simultaneously consumed and logged. `io.MultiReader` concatenates multiple readers into one sequential stream, while `io.MultiWriter` fans out writes to multiple destinations at once. These combinators make complex pipelines simple without custom glue code.
+
+```
+┌──────────────────────────────────────────────────┐
+│  io.Copy           io.TeeReader                  │
+│  ┌────────┐        ┌────────┐                    │
+│  │ Reader │──Copy──►│ Writer │                    │
+│  └────────┘        └────────┘                    │
+│                                                  │
+│  ┌────────┐  read  ┌────────────┐  write         │
+│  │Original│───────►│ TeeReader  │───────►logBuf  │
+│  └────────┘        └─────┬──────┘                │
+│                          ▼                       │
+│                     consumer reads               │
+│                                                  │
+│  io.MultiReader        io.MultiWriter            │
+│  ┌────┐ ┌────┐         ┌────────────┐            │
+│  │ r1 │►│ r2 │──►read  │ MultiWrite │            │
+│  └────┘ └────┘         └──┬───┬──┬──┘            │
+│  sequential               ▼   ▼  ▼              │
+│                         buf1 buf2 stdout         │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -128,6 +183,36 @@ func main() {
 
 ## io.ReadAll, io.LimitReader, io.NopCloser
 
+**Tutorial: Controlled Reading with Limits and Wrappers**
+
+This example covers three utility functions from the `io` package. `io.ReadAll` consumes an entire reader into a `[]byte` — convenient but use carefully with large streams. `io.LimitReader` wraps a reader to cap the maximum bytes read, which is critical for preventing memory exhaustion on untrusted input. `io.NopCloser` adds a no-op `Close()` method, adapting an `io.Reader` into an `io.ReadCloser` when an API requires one.
+
+```
+┌─────────────────────────────────────────────────┐
+│  io.ReadAll                                     │
+│  ┌──────────┐  ReadAll  ┌───────────────────┐   │
+│  │  Reader   │─────────►│ []byte (all data) │   │
+│  └──────────┘           └───────────────────┘   │
+│                                                 │
+│  io.LimitReader                                 │
+│  ┌──────────────────────────┐                   │
+│  │ Reader: "Only read..."   │                   │
+│  └──────────┬───────────────┘                   │
+│             ▼                                   │
+│  ┌──────────────────┐                           │
+│  │ LimitReader(r,5) │  max 5 bytes              │
+│  └────────┬─────────┘                           │
+│           ▼                                     │
+│   ReadAll ──► "Only " (5 bytes only)            │
+│                                                 │
+│  io.NopCloser                                   │
+│  ┌────────┐  NopCloser  ┌──────────────┐        │
+│  │ Reader │────────────►│ ReadCloser   │        │
+│  └────────┘             │ Close()=noop │        │
+│                         └──────────────┘        │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -165,6 +250,34 @@ func main() {
 ---
 
 ## os Package — File Operations
+
+**Tutorial: File CRUD with the os Package**
+
+This example walks through the core file operations: writing an entire file with `os.WriteFile`, reading it back with `os.ReadFile`, inspecting metadata with `os.Stat`, and using lower-level `os.Open` / `os.Create` / `os.OpenFile` for fine-grained control. Note the flag constants (`os.O_APPEND|os.O_CREATE|os.O_WRONLY`) that control append-mode behavior. Always `defer file.Close()` immediately after opening to avoid resource leaks.
+
+```
+┌────────────────────────────────────────────────────┐
+│  os File Operations                                │
+│                                                    │
+│  os.WriteFile("f.txt", data, 0644)                 │
+│       │  creates/overwrites file                   │
+│       ▼                                            │
+│  ┌──────────┐                                      │
+│  │ f.txt    │  ◄── on disk                         │
+│  └──────────┘                                      │
+│       │                                            │
+│  os.ReadFile("f.txt") ──► []byte                   │
+│  os.Stat("f.txt")     ──► FileInfo{Name,Size,...}  │
+│                                                    │
+│  os.Open("f.txt")     ──► *File (read-only)        │
+│  os.Create("out.txt") ──► *File (write, truncate)  │
+│  os.OpenFile("log.txt", flags, perm) ──► *File     │
+│       │                                            │
+│       │  flags: O_APPEND │ O_CREATE │ O_WRONLY     │
+│       ▼                                            │
+│  defer file.Close()   ◄── always close!            │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -243,6 +356,36 @@ func main() {
 
 ## bufio Package — Buffered I/O
 
+**Tutorial: Buffered Reading and Writing with bufio**
+
+This example demonstrates three key `bufio` types. `bufio.Scanner` reads input token-by-token (lines by default, or words with `ScanWords`). `bufio.Reader` wraps a reader with an internal buffer enabling `ReadString` and `Peek` operations. `bufio.Writer` batches small writes into a buffer — you **must** call `Flush()` to push buffered data to the underlying writer, otherwise data is silently lost.
+
+```
+┌──────────────────────────────────────────────────┐
+│  bufio.Scanner                                   │
+│  ┌─────────────────────┐                         │
+│  │ "Line 1\nLine 2\n" │                          │
+│  └────────┬────────────┘                         │
+│           ▼                                      │
+│  ┌──────────────┐  Scan()   ┌──────────┐         │
+│  │   Scanner    │──────────►│ "Line 1" │         │
+│  │ Split=Lines  │  Scan()   │ "Line 2" │         │
+│  │              │──────────►│ "Line 3" │         │
+│  └──────────────┘  false    └──────────┘         │
+│                                                  │
+│  bufio.Writer — MUST Flush!                      │
+│  ┌──────────┐  WriteString  ┌────────────┐       │
+│  │  Writer  │◄──────────────│ "Buffered "│       │
+│  │ [buffer] │◄──────────────│ "content"  │       │
+│  └────┬─────┘               └────────────┘       │
+│       │ Flush()                                  │
+│       ▼                                          │
+│  ┌──────────────────┐                            │
+│  │ underlying Writer│ ◄── data written here      │
+│  └──────────────────┘                            │
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -293,6 +436,33 @@ func main() {
 
 ## embed Package (Go 1.16+)
 
+**Tutorial: Embedding Files into Go Binaries**
+
+The `//go:embed` directive embeds file content into the compiled binary at build time, eliminating the need for external file dependencies at runtime. You can embed as a `string`, `[]byte` (for single files), or `embed.FS` (for directories). The embedded filesystem implements `fs.FS`, so you can use `ReadFile` and `ReadDir` on it. This is commonly used for bundling HTML templates, static assets, or default configuration.
+
+```
+┌────────────────────────────────────────────────┐
+│  //go:embed at compile time                    │
+│                                                │
+│  Source Files            Compiled Binary        │
+│  ┌────────────┐         ┌──────────────────┐   │
+│  │config.json │──embed──►│ var configData   │   │
+│  └────────────┘         │     string       │   │
+│  ┌────────────┐         │                  │   │
+│  │ logo.png   │──embed──►│ var logoBytes    │   │
+│  └────────────┘         │     []byte       │   │
+│  ┌────────────┐         │                  │   │
+│  │templates/  │──embed──►│ var templateFS   │   │
+│  │ ├─index.   │         │     embed.FS     │   │
+│  │ └─about.   │         └──────────────────┘   │
+│  └────────────┘                                │
+│                                                │
+│  At runtime:                                   │
+│  templateFS.ReadFile("templates/index.html")   │
+│  templateFS.ReadDir("templates")               │
+└────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -339,6 +509,36 @@ func main() {
 
 ## os/exec — Running External Commands
 
+**Tutorial: Spawning External Processes**
+
+This example shows how to run shell commands from Go using `os/exec`. `exec.Command` creates a `Cmd` struct, and `.Output()` runs it and captures stdout. `exec.LookPath` checks whether a command exists in `$PATH` before attempting execution. `CombinedOutput()` captures both stdout and stderr in a single byte slice. Always check the returned `error` — a non-zero exit code produces an `*exec.ExitError`.
+
+```
+┌───────────────────────────────────────────────┐
+│  exec.Command flow                            │
+│                                               │
+│  Go Process                                   │
+│  ┌──────────────────────┐                     │
+│  │ cmd := exec.Command  │                     │
+│  │  ("echo", "Hello")   │                     │
+│  └──────────┬───────────┘                     │
+│             │ .Output()                       │
+│             ▼                                 │
+│  ┌──────────────────────┐                     │
+│  │  OS spawns child     │                     │
+│  │  process: echo Hello │                     │
+│  └──────────┬───────────┘                     │
+│             │ stdout                          │
+│             ▼                                 │
+│  ┌──────────────────────┐                     │
+│  │ []byte("Hello...\n") │ ◄── returned        │
+│  └──────────────────────┘                     │
+│                                               │
+│  exec.LookPath("go")                          │
+│   ──► searches $PATH ──► "/usr/local/go/..." │
+└───────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -378,6 +578,32 @@ func main() {
 ---
 
 ## io/fs Package (Go 1.16+)
+
+**Tutorial: Walking Directory Trees with io/fs**
+
+This example uses `fs.WalkDir` to recursively traverse a directory tree rooted at `"."`. The `os.DirFS(".")` call creates an `fs.FS` from the real filesystem, and the callback receives each entry with its path, `DirEntry` metadata, and any error. This pattern is preferred over the older `filepath.Walk` because it avoids an extra `os.Stat` call per file — `DirEntry` can lazily fetch `FileInfo` via `.Info()` only when needed.
+
+```
+┌───────────────────────────────────────────┐
+│  fs.WalkDir traversal order               │
+│                                           │
+│  "." (root)                               │
+│   ├── DIR: src/                           │
+│   │    ├── FILE: main.go (1234 bytes)     │
+│   │    └── FILE: util.go (567 bytes)      │
+│   ├── DIR: tests/                         │
+│   │    └── FILE: main_test.go (890 bytes) │
+│   └── FILE: go.mod (45 bytes)             │
+│                                           │
+│  Callback receives:                       │
+│  ┌──────────────────────────────────┐     │
+│  │ path: "src/main.go"              │     │
+│  │ d.IsDir() ──► false              │     │
+│  │ d.Info()  ──► FileInfo{Size:...} │     │
+│  │ return nil (continue walking)    │     │
+│  └──────────────────────────────────┘     │
+└───────────────────────────────────────────┘
+```
 
 ```go
 package main

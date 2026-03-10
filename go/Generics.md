@@ -35,6 +35,31 @@ Generics allow writing functions and types that work with **any type** satisfyin
 
 ## Type Parameters
 
+**Tutorial: Declaring and Using Type Parameters**
+
+Type parameters are declared in square brackets after the function name: `func Print[T any](val T)`. The `T` is a placeholder that the compiler replaces with a concrete type at the call site. You can specify the type explicitly (`Print[int](42)`) or let the compiler infer it (`Print(42)`). Multiple type parameters are separated by commas. Watch how `Pair[T, U]` accepts two independent type parameters.
+
+```
+┌──────────────────────────────────────────────────┐
+│      Type Parameter Resolution                   │
+│                                                  │
+│  func Print[T any](val T)                        │
+│                                                  │
+│  Call site            │  T resolves to           │
+│  ─────────────────────┼──────────────────        │
+│  Print[int](42)       │  int (explicit)          │
+│  Print("hello")       │  string (inferred)       │
+│  Print(3.14)          │  float64 (inferred)      │
+│                                                  │
+│  func Pair[T, U any](first T, second U)          │
+│                                                  │
+│  Pair("name", 42)                                │
+│    T ──► string                                  │
+│    U ──► int                                     │
+│    Output: (name, 42)                            │
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -66,6 +91,31 @@ func main() {
 ---
 
 ## Type Constraints
+
+**Tutorial: Restricting What Types Are Allowed**
+
+Constraints are interfaces that limit which types can be used as type arguments. `any` allows all types but provides no operations. `comparable` allows types that support `==` and `!=`, which is required for things like map keys or equality checks. `cmp.Ordered` allows types that support ordering operators (`<`, `>`, `<=`, `>=`). The constraint you choose determines what operations are available inside the generic function body.
+
+```
+┌──────────────────────────────────────────────────┐
+│      Constraint Hierarchy                        │
+│                                                  │
+│  any (all types)                                 │
+│   │   Operations: none (only assign/pass)        │
+│   │                                              │
+│   ├──► comparable                                │
+│   │     Operations: == !=                        │
+│   │     Use for: map keys, Contains()            │
+│   │                                              │
+│   └──► cmp.Ordered                               │
+│         Operations: == != < > <= >=              │
+│         Use for: Max(), Min(), sorting           │
+│                                                  │
+│  func Identity[T any](v T) T          ✓ compile  │
+│  func Contains[T comparable](...) bool ✓ uses == │
+│  func Max[T cmp.Ordered](a,b T) T     ✓ uses >  │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -122,6 +172,33 @@ func main() {
 ---
 
 ## Generic Functions — Practical Examples
+
+**Tutorial: Map, Filter, Reduce, and Sort with Generics**
+
+These are the classic functional programming patterns implemented with Go generics. `Map` transforms each element using a function, `Filter` keeps elements matching a predicate, and `Reduce` accumulates elements into a single value. `SortSlice` demonstrates using the `cmp.Ordered` constraint to write a type-safe sort. Notice how `Map[T, U]` uses two type parameters — the input slice type and the output type can differ.
+
+```
+┌──────────────────────────────────────────────────┐
+│   Map / Filter / Reduce Data Flow                │
+│                                                  │
+│   nums = [1, 2, 3, 4, 5]                        │
+│                                                  │
+│   Map(nums, ×2)                                  │
+│   [1, 2, 3, 4, 5] ──► [2, 4, 6, 8, 10]          │
+│    each elem ──► fn(elem) ──► new slice          │
+│                                                  │
+│   Filter(nums, even?)                            │
+│   [1, 2, 3, 4, 5] ──► [2, 4]                    │
+│    keep if predicate(elem) == true               │
+│                                                  │
+│   Reduce(nums, 0, +)                             │
+│   [1, 2, 3, 4, 5] ──► 15                        │
+│    acc=0 ──► +1=1 ──► +2=3 ──► +3=6 ──► ...      │
+│                                                  │
+│   SortSlice[T cmp.Ordered]                       │
+│   [5, 3, 1, 4, 2] ──► [1, 2, 3, 4, 5]           │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -200,6 +277,32 @@ func main() {
 ---
 
 ## Generic Types
+
+**Tutorial: Parameterizing Structs with Type Parameters**
+
+Generic types let you define data structures that work with any element type while keeping full type safety. `Stack[T any]` stores elements of any type, while `Set[T comparable]` requires its element type to support equality checking (needed for map keys). Note the method syntax: `func (s *Stack[T]) Push(item T)` — the type parameter declared on the struct is used in method signatures, but you cannot add new type parameters to methods.
+
+```
+┌──────────────────────────────────────────────────┐
+│    Generic Stack[T] Memory Layout                │
+│                                                  │
+│  intStack := &Stack[int]{}                       │
+│                                                  │
+│  Push(1)  Push(2)  Push(3)     Pop()             │
+│  ┌───┐   ┌───┬───┐ ┌───┬───┬───┐  ┌───┬───┐     │
+│  │ 1 │   │ 1 │ 2 │ │ 1 │ 2 │ 3 │  │ 1 │ 2 │     │
+│  └───┘   └───┴───┘ └───┴───┴───┘  └───┴───┘     │
+│                          top ▲       returns 3   │
+│                                                  │
+│  Generic Set[T comparable]                       │
+│  ┌──────────────────────┐                        │
+│  │ items: map[T]struct{}│                        │
+│  │  "go"   → struct{}   │                        │
+│  │  "rust" → struct{}   │                        │
+│  │  "go"   → (duplicate,│ no effect)             │
+│  └──────────────────────┘                        │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -293,6 +396,32 @@ func main() {
 
 ## Interface Type Sets and Tilde (~)
 
+**Tutorial: Union Types and the Tilde Approximation Operator**
+
+Go 1.18 interfaces can now define **type sets** using `|` (union). `type Number interface { int | float64 }` means "T must be exactly `int` or `float64`." The tilde `~` is an approximation element: `~int` means "any type whose *underlying type* is `int`," so `type MyInt int` satisfies `~int` but not plain `int`. This distinction is critical for libraries that need to accept user-defined types built on primitives.
+
+```
+┌──────────────────────────────────────────────────┐
+│    Tilde (~) — Underlying Type Matching           │
+│                                                  │
+│  type Number interface { int | float64 }         │
+│    int      ✓                                    │
+│    float64  ✓                                    │
+│    MyInt    ✗ (MyInt is not int, just based on)  │
+│                                                  │
+│  type Number2 interface { ~int | ~float64 }      │
+│    int      ✓                                    │
+│    float64  ✓                                    │
+│    MyInt    ✓ (underlying type IS int)            │
+│                                                  │
+│  type Stringish interface { ~string }            │
+│                                                  │
+│  type MyString string                            │
+│    string    ──► underlying: string ──► ✓ ~string│
+│    MyString  ──► underlying: string ──► ✓ ~string│
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -349,6 +478,31 @@ func main() {
 
 ## Limitations of Generics
 
+**Tutorial: What Go Generics Cannot Do**
+
+Go's generics are deliberately limited compared to languages like Rust or C++. Methods on types cannot introduce new type parameters — only the type itself can be generic. You cannot use type assertions on type parameters, and there is no specialization (providing different implementations for different types). The workaround for method-level type parameters is to use standalone generic functions like `Transform[T, U]` shown below.
+
+```
+┌──────────────────────────────────────────────────┐
+│   Generic Limitations & Workarounds              │
+│                                                  │
+│  ✗ Generic methods:                              │
+│    func (c Container[T]) Transform[U](...) U     │
+│    ──► COMPILE ERROR                             │
+│                                                  │
+│  ✓ Workaround — standalone function:             │
+│    func Transform[T, U any](val T, fn func(T)U)U│
+│                                                  │
+│  ✗ Type assertions on type params:               │
+│    func foo[T any](v T) { s := v.(string) }     │
+│    ──► ERROR                                     │
+│                                                  │
+│  ✗ Specialization:                               │
+│    Can't have Max[int] use one body              │
+│    and Max[string] use another                   │
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -377,6 +531,31 @@ func Transform[T, U any](val T, fn func(T) U) U {
 ---
 
 ## cmp Package (Go 1.21+)
+
+**Tutorial: Comparison Utilities in the Standard Library**
+
+`cmp.Compare` is Go's three-way comparison function — it returns -1 if `a < b`, 0 if equal, and +1 if `a > b`, working with any `cmp.Ordered` type. `cmp.Or` returns the first non-zero value from its arguments, similar to SQL's `COALESCE`. These utilities eliminate boilerplate when writing sorting functions, default-value logic, or custom comparators.
+
+```
+┌──────────────────────────────────────────────────┐
+│   cmp.Compare and cmp.Or                         │
+│                                                  │
+│  cmp.Compare(a, b) ──► result                    │
+│    a < b  ──► -1                                 │
+│    a == b ──►  0                                 │
+│    a > b  ──► +1                                 │
+│                                                  │
+│  cmp.Or(v1, v2, v3, ...) ──► first non-zero      │
+│    Or(0, 0, 42, 100) ──► 42                      │
+│    Or("", "", "default") ──► "default"            │
+│                                                  │
+│  Like SQL COALESCE:                              │
+│    ┌───┐  ┌───┐  ┌────┐  ┌─────┐                │
+│    │ 0 │─►│ 0 │─►│ 42 │─►│ 100 │                │
+│    └───┘  └───┘  └──┬─┘  └─────┘                │
+│     skip   skip   ◄─┘ first non-zero → return    │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main

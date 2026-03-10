@@ -30,6 +30,32 @@ Go has pointers but **no pointer arithmetic** — this prevents entire classes o
 
 ## Pointer Basics
 
+**Tutorial: Address-of (&) and Dereference (*) Operators**
+
+Every variable lives at a memory address. The `&` operator retrieves that address, and `*` dereferences a pointer to read or write the value stored there. This example walks through creating a pointer, reading through it, and mutating the original variable via the pointer. Watch how changing `*p` also changes `x` — they point to the same memory.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Pointer Operations Step by Step                  │
+│                                                          │
+│  Step 1: x := 42                                         │
+│  ┌──────────┐                                            │
+│  │ x: 42    │  addr: 0x...08                             │
+│  └──────────┘                                            │
+│                                                          │
+│  Step 2: p := &x                                         │
+│  ┌──────────┐      ┌──────────────┐                      │
+│  │ x: 42    │◄─────│ p: 0x...08   │                      │
+│  └──────────┘      └──────────────┘                      │
+│                                                          │
+│  Step 3: *p = 100                                        │
+│  ┌──────────┐      ┌──────────────┐                      │
+│  │ x: 100   │◄─────│ p: 0x...08   │                      │
+│  └──────────┘      └──────────────┘                      │
+│  x changed! Same memory location.                        │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -63,6 +89,31 @@ func main() {
 
 ## No Pointer Arithmetic
 
+**Tutorial: Go Forbids Pointer Arithmetic for Safety**
+
+Unlike C/C++, Go deliberately prevents you from incrementing or adding offsets to pointers. This eliminates buffer overflows and out-of-bounds memory access. The code below illustrates what is forbidden — `p++` and `p + 4` will not compile. If you truly need raw pointer manipulation, the `unsafe` package exists but should be avoided in normal Go code.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Go vs C: Pointer Arithmetic                      │
+│                                                          │
+│  C language:                                             │
+│  int arr[] = {10, 20, 30};                               │
+│  int *p = arr;                                           │
+│  p++;        ← moves to arr[1] (allowed)                 │
+│  *(p + 1)    ← reads arr[2]   (allowed)                  │
+│                                                          │
+│  Go language:                                            │
+│  arr := [3]int{10, 20, 30}                               │
+│  p := &arr[0]                                            │
+│  p++         ✗ COMPILE ERROR                             │
+│  *(p + 1)    ✗ COMPILE ERROR                             │
+│  arr[1]      ✓ use indexing instead                      │
+│                                                          │
+│  Result: No buffer overflows possible via pointers       │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -79,6 +130,28 @@ package main
 ---
 
 ## new(T) — Allocate Zeroed Memory
+
+**Tutorial: Allocating with new() — Zero-Valued Pointer**
+
+`new(T)` allocates memory for a value of type `T`, zeroes it, and returns a `*T` pointer. It works for any type — ints, structs, arrays. For structs, `new(Point)` is equivalent to `&Point{}`. In practice, the `&Point{}` composite-literal form is preferred because it lets you set initial field values inline.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         new(T) Allocation                                │
+│                                                          │
+│  p := new(int)           pt := new(Point)                │
+│       │                       │                          │
+│       ▼                       ▼                          │
+│  ┌─────────┐             ┌──────────────┐                │
+│  │ *int     │             │ *Point       │                │
+│  │ value: 0 │ (zeroed)    │ X: 0, Y: 0  │ (zeroed)       │
+│  └─────────┘             └──────────────┘                │
+│                                                          │
+│  Equivalent to:                                          │
+│  p := new(int)     ≡   v := 0; p := &v                   │
+│  pt := new(Point)  ≡   pt := &Point{}                    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -113,6 +186,35 @@ func main() {
 ---
 
 ## make(T, ...) — Create Slices, Maps, Channels
+
+**Tutorial: Initializing Reference Types with make()**
+
+`make` is exclusively for slices, maps, and channels — the three types that need internal data structure initialization before use. Unlike `new`, `make` returns `T` (not `*T`) and the value is immediately usable. A slice created with `make([]int, 3, 10)` has length 3, capacity 10, and a backing array allocated. A `new([]int)` would give you a `*[]int` pointing to a nil slice — not useful.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         make() Initializes Internal Structures           │
+│                                                          │
+│  make([]int, 3, 10)         make(map[string]int)         │
+│       │                          │                       │
+│       ▼                          ▼                       │
+│  ┌──────────────┐           ┌──────────────┐             │
+│  │ []int        │           │ map[str]int  │             │
+│  │ len:  3      │           │ buckets: ✓   │             │
+│  │ cap: 10      │           │ hash fn: ✓   │             │
+│  │ arr: [0,0,0] │           │ ready to use │             │
+│  └──────────────┘           └──────────────┘             │
+│                                                          │
+│  make(chan int, 5)                                        │
+│       │                                                  │
+│       ▼                                                  │
+│  ┌──────────────┐                                        │
+│  │ chan int      │                                        │
+│  │ buffer: 5    │                                        │
+│  │ ready to use │                                        │
+│  └──────────────┘                                        │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -206,6 +308,32 @@ func main() {
 
 ## Nil Pointers
 
+**Tutorial: Zero-Value Pointers and Nil Dereference Panics**
+
+An uninitialized pointer has the zero value `nil`. Dereferencing a nil pointer (`*p`) causes a runtime panic — one of the most common Go bugs. Always guard pointer access with a nil check before dereferencing. This example demonstrates the nil state, the panic scenario (commented out), and the safe nil-check pattern.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Nil Pointer Lifecycle                            │
+│                                                          │
+│  var p *int                                              │
+│  ┌──────────┐                                            │
+│  │ p: nil   │  points to nothing                         │
+│  └──────────┘                                            │
+│       │                                                  │
+│       ├─► *p  →  PANIC! (nil dereference)                │
+│       │                                                  │
+│       ├─► p == nil  →  true (safe check)                 │
+│       │                                                  │
+│       ▼  p = &x                                          │
+│  ┌──────────┐      ┌──────────┐                          │
+│  │ p: 0x...│──────►│ x: 42   │                           │
+│  └──────────┘      └──────────┘                          │
+│       │                                                  │
+│       └─► *p  →  42 (safe, p is not nil)                 │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -232,6 +360,30 @@ func main() {
 ---
 
 ## Passing Pointers to Functions
+
+**Tutorial: Pass-by-Value vs Pass-by-Pointer in Functions**
+
+Go is always pass-by-value — function parameters receive copies. To let a function modify the caller's variable, pass a pointer. This example contrasts `incrementByValue` (copy — original unchanged) with `incrementByPointer` (pointer — original mutated). For large structs, passing a pointer also avoids the cost of copying all fields. Note Go's syntactic sugar: `u.Name` works on a `*User` without explicit `(*u).Name`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Pass by Value vs Pass by Pointer                 │
+│                                                          │
+│  score := 100                                            │
+│                                                          │
+│  incrementByValue(score)       incrementByPointer(&score)│
+│       │                              │                   │
+│       ▼                              ▼                   │
+│  ┌──────────────┐             ┌──────────────┐           │
+│  │ score: 100   │ (copy)      │ *ptr → score │           │
+│  │ score++      │             │ (*ptr)++     │           │
+│  │ score = 101  │             │ score = 101  │           │
+│  └──────────────┘             └──────────────┘           │
+│       │                              │                   │
+│       ▼                              ▼                   │
+│  original: 100 (unchanged)    original: 101 (mutated!)   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -278,6 +430,29 @@ func main() {
 ---
 
 ## Pointer vs Value Semantics
+
+**Tutorial: Choosing Value or Pointer Semantics**
+
+Value semantics means each variable holds its own independent copy — mutations don't leak. Pointer semantics means multiple variables share the same data via pointers. Use value semantics for small, immutable types (like configs or coordinates) and pointer semantics for large structs or when in-place mutation is needed. This example contrasts both approaches side by side.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     Value Semantics             Pointer Semantics        │
+│                                                          │
+│  cfg := SmallConfig{false}      data := &LargeData{}     │
+│  ┌──────────────┐               ┌──────────────┐         │
+│  │ Debug: false │               │ LargeData    │         │
+│  └──────┬───────┘               │ Records[1000]│         │
+│         │ copy                  │ Name: "raw"  │         │
+│         ▼                       └──────▲───────┘         │
+│  ┌──────────────┐                      │                 │
+│  │ Debug: false │ ← function's copy    │ shared pointer  │
+│  │ Debug = true │                      │                 │
+│  └──────────────┘               processData(data)        │
+│                                 data.Name = "processed"  │
+│  original unchanged ✓           original mutated ✓       │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -326,6 +501,32 @@ func main() {
 
 ## Pointers to Interfaces
 
+**Tutorial: Why You Almost Never Need *Interface**
+
+An interface value is internally a `(type, value)` pair — it already holds a pointer to the concrete data. Passing `*Speaker` (pointer to interface) is almost always a mistake because the interface itself is already a thin wrapper around a pointer. The correct pattern is to store a `*Dog` (pointer to concrete type) inside a `Speaker` interface, not to create a pointer to the interface.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     Interface Internals — Already a Pointer Wrapper      │
+│                                                          │
+│  var s Speaker = dog                                     │
+│                                                          │
+│  Interface value s:                                      │
+│  ┌─────────────────────────────────────┐                 │
+│  │  type: Dog                         │                  │
+│  │  value: ───────►┌──────────────┐   │                  │
+│  │                 │ Name: "Rex"  │   │                  │
+│  │                 └──────────────┘   │                  │
+│  └─────────────────────────────────────┘                 │
+│                                                          │
+│  ✓  var s Speaker = &dog   (ptr to Dog in interface)     │
+│  ✗  var sp *Speaker = &s   (ptr to interface — avoid!)  │
+│                                                          │
+│  func process(s Speaker) {}   ✓ correct                  │
+│  func process(s *Speaker) {}  ✗ almost never needed      │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -369,6 +570,35 @@ func main() {
 ---
 
 ## Stack vs Heap — Escape Analysis
+
+**Tutorial: How Go Decides Stack vs Heap Allocation**
+
+The compiler's **escape analysis** determines where variables live. If a variable's address escapes the function (e.g., returned as a pointer), it's allocated on the heap and garbage-collected. If the variable stays local, it lives on the stack for fast allocation and automatic cleanup. You can inspect these decisions with `go build -gcflags="-m"`. This example shows both patterns side by side.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Escape Analysis: Stack vs Heap                   │
+│                                                          │
+│  func addLocal(a, b int) int {     Does NOT escape       │
+│      result := a + b               ┌─────────┐          │
+│      return result   ◄─────────────│  STACK   │          │
+│  }                                 │  fast    │          │
+│                                    │  auto-GC │          │
+│                                    └─────────┘          │
+│                                                          │
+│  func createUser(name string) *string {  ESCAPES         │
+│      s := name                     ┌─────────┐          │
+│      return &s  ◄──────────────────│  HEAP    │          │
+│  }                                 │  GC-mgd  │          │
+│       │                            │  slower  │          │
+│       ▼                            └─────────┘          │
+│  Pointer survives function                               │
+│  scope → must live on heap                               │
+│                                                          │
+│  Check: go build -gcflags="-m" main.go                   │
+│  Output: "s escapes to heap"                             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

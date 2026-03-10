@@ -24,6 +24,30 @@ Functions are the building blocks of Go programs. Go functions are **first-class
 
 ## Function Declarations, Parameters, Return Values
 
+**Tutorial: Basic Function Anatomy**
+
+Every Go function starts with `func`, followed by the name, parameters in parentheses, and the return type. Parameters of the same type can be grouped: `(a, b int)` instead of `(a int, b int)`. Functions with no return type are used for side effects (printing, writing files). The function is called by name and arguments are passed by value (copies are made).
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Function Signature Anatomy                        │
+│                                                          │
+│  func add(a int, b int) int {                            │
+│  │    │   │              │                               │
+│  │    │   │              └── return type                  │
+│  │    │   └── parameters (pass-by-value)                 │
+│  │    └── function name (exported if Uppercase)          │
+│  └── keyword                                             │
+│                                                          │
+│  Call: add(3, 5)                                         │
+│  ┌───────┐     ┌───────┐                                 │
+│  │ a = 3 │     │ b = 5 │  ← copies of arguments         │
+│  └───┬───┘     └───┬───┘                                 │
+│      └──────┬──────┘                                     │
+│         return 8                                         │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -54,6 +78,34 @@ func main() {
 ---
 
 ## Multiple Return Values
+
+**Tutorial: Idiomatic Error Handling**
+
+Go's multiple return values enable the `(result, error)` pattern — the core of Go's error handling philosophy. The `divide` function returns both a result and an `error`. The caller checks `err != nil` to handle the failure case. The `_` (blank identifier) discards an unwanted return value — the compiler doesn't complain about unused values when you use `_`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Multiple Return Values — Flow                      │
+│                                                          │
+│  result, err := divide(10, 3)                            │
+│                   │                                      │
+│                   ▼                                      │
+│            ┌─────────────┐                               │
+│            │ b == 0?     │                               │
+│            │ NO          │                               │
+│            └──────┬──────┘                               │
+│                   ▼                                      │
+│         return (3.33, nil)                                │
+│         │            │                                   │
+│         ▼            ▼                                   │
+│  result = 3.33   err = nil                               │
+│                                                          │
+│  _, err = divide(10, 0)                                  │
+│  │               │                                       │
+│  discard         return (0, error("division by zero"))   │
+│  result                                                  │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -95,6 +147,25 @@ func main() {
 ---
 
 ## Named Return Values and Naked Return
+
+**Tutorial: Named Returns as Pre-Declared Variables**
+
+Named return values (`area, perimeter float64`) are automatically declared as local variables initialized to their zero values. You can assign to them directly and use a bare `return` (naked return) to return their current values. This is useful for short functions and for documenting what each return value means. Avoid naked returns in long functions — they make it hard to track what's being returned.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     Named Returns — Variable Lifecycle                   │
+│                                                          │
+│  func rectangleProps(l, w float64) (area, perimeter float64)│
+│                                      │         │         │
+│     auto-declared:  area = 0.0   perimeter = 0.0         │
+│                                                          │
+│     area = l * w          → area = 15.0                  │
+│     perimeter = 2*(l+w)   → perimeter = 16.0             │
+│     return                → returns (15.0, 16.0)         │
+│     └── naked return = return area, perimeter            │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -138,6 +209,32 @@ func main() {
 
 ## Variadic Functions
 
+**Tutorial: Variable Argument Lists**
+
+The `...` syntax makes a function accept zero or more arguments of the same type. Inside the function, the variadic parameter is a slice. You can pass an existing slice with `numbers...` (spread operator). The variadic parameter must be the last in the parameter list.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Variadic — What Happens Under the Hood             │
+│                                                          │
+│  sum(1, 2, 3)                                            │
+│       │                                                  │
+│       ▼                                                  │
+│  nums = []int{1, 2, 3}   ← compiler wraps args in slice │
+│                                                          │
+│  sum()                                                   │
+│       │                                                  │
+│       ▼                                                  │
+│  nums = []int{}           ← empty slice (not nil)        │
+│                                                          │
+│  numbers := []int{5, 10, 15}                             │
+│  sum(numbers...)          ← spread: passes slice directly│
+│       │                                                  │
+│       ▼                                                  │
+│  nums = numbers           ← no new slice created         │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -180,16 +277,30 @@ func main() {
 
 Functions in Go are first-class citizens — they can be assigned to variables, passed as arguments, and returned from other functions.
 
+**Tutorial: Functions as Values**
+
+This example shows three patterns: (1) defining a function type `MathFunc` for type safety, (2) passing functions as arguments to `apply()`, and (3) returning functions from `makeMultiplier()` — creating a function factory. The `double` and `triple` variables each hold a closure that remembers the `factor` value from when it was created.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Function Factory — makeMultiplier(2)               │
+│                                                          │
+│  makeMultiplier(2) returns:                              │
+│  ┌───────────────────────────────────┐                   │
+│  │ func(x int) int {                │                   │
+│  │    return x * factor              │                   │
+│  │ }                                 │                   │
+│  │         │                         │                   │
+│  │         └── factor = 2 (captured) │                   │
+│  └───────────────────────────────────┘                   │
+│                                                          │
+│  double := makeMultiplier(2)  │  triple := makeMultiplier(3)│
+│  double(5) → 5 * 2 = 10      │  triple(5) → 5 * 3 = 15 │
+│  (factor=2 captured)          │  (factor=3 captured)     │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
-package main
-
-import "fmt"
-
-// Function type
-type MathFunc func(int, int) int
-
-// Function that takes a function as argument
-func apply(a, b int, fn MathFunc) int {
     return fn(a, b)
 }
 
@@ -251,16 +362,11 @@ A closure is an anonymous function that "closes over" (captures) variables from 
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Closures and the Loop Variable Gotcha**
+
+A closure captures variables by **reference**, not by value. When `increment()` modifies `counter`, the outer `counter` variable changes too — they share the same memory. The classic gotcha: in a loop, all closures captured the same loop variable `i`. In Go 1.22+, each iteration gets its own copy of `i`, fixing this issue. Pre-1.22, you had to shadow the variable with `i := i` inside the loop.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // Anonymous function — defined and called inline
-    func() {
-        fmt.Println("I'm an anonymous function!")
-    }()
 
     // Closure — captures variables from surrounding scope
     message := "Hello"
@@ -307,6 +413,29 @@ func main() {
 ---
 
 ## Recursion
+
+**Tutorial: Recursive Functions**
+
+Recursion in Go works like any other language — a function calls itself with smaller input until reaching a base case. `factorial(5)` calls `factorial(4)` which calls `factorial(3)` and so on until `factorial(1)` returns `1`. The tree example shows recursive traversal of a tree structure — each call processes one node and recurses into its children with increased indentation.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       factorial(5) — Call Stack Unwinding                │
+│                                                          │
+│  factorial(5) = 5 * factorial(4)                         │
+│                     4 * factorial(3)                      │
+│                         3 * factorial(2)                  │
+│                             2 * factorial(1)             │
+│                                 return 1  ← base case   │
+│                             return 2 * 1 = 2            │
+│                         return 3 * 2 = 6                 │
+│                     return 4 * 6 = 24                    │
+│                 return 5 * 24 = 120                      │
+│                                                          │
+│  Stack depth: 5 frames (Go goroutine stacks grow        │
+│  dynamically, so deep recursion is safer than in C)     │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -366,6 +495,26 @@ func main() {
 ---
 
 ## defer — Deferred Function Calls
+
+**Tutorial: defer for Cleanup and Mutex Safety**
+
+The `processFile` function defers `"Closing file..."` right after opening — guaranteeing cleanup even if a panic occurs later. The `safeIncrement` function uses `defer mu.Unlock()` immediately after `mu.Lock()` — this is the standard mutex pattern in Go. It ensures the lock is always released, even if the code between lock and unlock panics.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Mutex + defer Pattern                              │
+│                                                          │
+│  mu.Lock()         ← acquire lock                        │
+│  defer mu.Unlock() ← schedule unlock for function exit   │
+│                                                          │
+│  *counter++        ← critical section (safe)             │
+│                                                          │
+│  } ← function returns                                    │
+│    └─► mu.Unlock() runs ← lock always released          │
+│                                                          │
+│  Even if *counter++ panics, Unlock still runs!           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -439,13 +588,11 @@ func main() {
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: panic and recover — Exception-Like Recovery**
+
+`panic` immediately stops the current function, runs its deferred functions, and propagates up the call stack. `recover` catches a panic but **only works inside a deferred function**. In `safeDivide`, dividing by zero triggers a runtime panic. The deferred function calls `recover()` which catches the panic, converts it to an error, and allows the program to continue normally.
+
 ```go
-package main
-
-import "fmt"
-
-// panic triggers a runtime error — the program crashes unless recovered
-func mustPositive(n int) int {
     if n < 0 {
         panic(fmt.Sprintf("negative number: %d", n))
     }
@@ -484,6 +631,26 @@ func main() {
 ---
 
 ## defer/panic/recover Error Recovery Pattern
+
+**Tutorial: Isolating Panics in Request Handlers**
+
+This pattern is used in web servers — each request handler is wrapped with `defer/recover` so that a panic in one request doesn't crash the entire server. The `handleRequest("/crash")` panics, but the deferred `recover()` catches it and logs the error. The program continues to handle subsequent requests normally.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Request Isolation with recover                     │
+│                                                          │
+│  main() calls:                                           │
+│  ├── handleRequest("/home")   → prints "Handled"    ✓   │
+│  ├── handleRequest("/crash")  → panic("crash!")          │
+│  │     └── defer recover()    → catches panic, logs it   │
+│  │         └── program survives                          │
+│  └── handleRequest("/about")  → prints "Handled"    ✓   │
+│                                                          │
+│  Without recover: server crashes at "/crash"             │
+│  With recover: only that request fails, server lives     │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -548,16 +715,11 @@ Go has two ways to obtain a function value from a method: **method values** (bou
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Method Value (Bound) vs Method Expression (Unbound)**
+
+A method value (`calc.Add`) binds the receiver `calc` into the function — you call it as `addFn(3, 5)` without specifying the receiver. A method expression (`Calculator.Add`) is unbound — the receiver becomes the first argument: `addExpr(calc, 10, 20)`. Method values are commonly used when passing methods as callback functions.
+
 ```go
-package main
-
-import "fmt"
-
-type Calculator struct {
-    Name string
-}
-
-func (c Calculator) Add(a, b int) int {
     return a + b
 }
 

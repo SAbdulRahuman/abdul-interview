@@ -35,6 +35,29 @@ Go has built-in profiling and tracing tools that require zero external setup. Th
 
 ### HTTP Server Profiling
 
+**Tutorial: Enabling Live Profiling via HTTP**
+
+Adding `net/http/pprof` as a blank import automatically registers profiling endpoints on the DefaultServeMux. This code shows how a running HTTP server can expose CPU, memory, goroutine, block, and mutex profiles for live debugging. Note that you must use the DefaultServeMux (pass `nil` to `ListenAndServe`) rather than a custom mux for the pprof routes to be accessible.
+
+```
+┌────────────────────────────────────────┐
+│         HTTP Server (:8080)           │
+│                                        │
+│  DefaultServeMux                       │
+│  ├── GET /              → handler      │
+│  └── /debug/pprof/*     → pprof routes │
+│       ├── /profile      → CPU profile  │
+│       ├── /heap          → heap allocs  │
+│       ├── /goroutine     → goroutine    │
+│       ├── /block         → blocking     │
+│       ├── /mutex         → mutex        │
+│       └── /trace         → exec trace   │
+│                                        │
+│  _ "net/http/pprof"  ◄── blank import  │
+│  registers routes automatically        │
+└────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -80,6 +103,30 @@ go tool pprof http://localhost:8080/debug/pprof/heap
 
 ### Non-Server Profiling (runtime/pprof)
 
+**Tutorial: Profiling CLI Tools with runtime/pprof**
+
+For CLI tools, batch jobs, or any non-HTTP program, use `runtime/pprof` directly. You explicitly create profile output files, start/stop CPU profiling, and write heap profiles at specific points. The generated `.prof` files can be analyzed offline with `go tool pprof`.
+
+```
+┌──────────────────────────────────────┐
+│     runtime/pprof Direct Usage      │
+│                                      │
+│  1. Create file   → os.Create(...)   │
+│  2. Start CPU     → pprof.Start...   │
+│  3. Run code      → doWork()         │
+│  4. Stop CPU      → pprof.Stop...    │
+│  5. Write heap    → pprof.Write...   │
+│                                      │
+│  Output:                             │
+│  ┌──────────┐    ┌──────────┐        │
+│  │ cpu.prof │    │ mem.prof │        │
+│  └────┬─────┘    └────┬─────┘        │
+│       └──────┬────────┘              │
+│              ▼                       │
+│     go tool pprof <file>            │
+└──────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -121,6 +168,31 @@ go tool pprof mem.prof
 
 ## go tool trace
 
+**Tutorial: Capturing Execution Traces**
+
+`runtime/trace` captures fine-grained execution events — goroutine scheduling, GC pauses, system calls, and network I/O. Unlike pprof which aggregates samples, trace records a timeline of events. The resulting trace file opens in a browser-based viewer showing exactly when each goroutine ran, blocked, or was scheduled.
+
+```
+┌──────────────────────────────────────┐
+│       Execution Trace Flow          │
+│                                      │
+│  trace.Start(f) ──► Recording        │
+│       │                              │
+│       ▼                              │
+│  ┌─────────────────────────────┐     │
+│  │  Timeline (trace.out)       │     │
+│  │  G1: ████░░████░░░████     │     │
+│  │  G2:    ░░░████░░░░░░░     │     │
+│  │  GC:       ██      ██     │     │
+│  │  █=running ░=waiting      │     │
+│  └─────────────────────────────┘     │
+│       │                              │
+│  trace.Stop() ──► Flush to file      │
+│       ▼                              │
+│  go tool trace trace.out → browser   │
+└──────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -152,6 +224,32 @@ go tool trace trace.out
 ---
 
 ## Benchmarking
+
+**Tutorial: Writing and Running Go Benchmarks**
+
+Go's `testing.B` type provides built-in benchmarking with automatic iteration tuning. The framework adjusts `b.N` to run enough iterations for statistically meaningful results. Use `b.ReportAllocs()` for allocation counts, sub-benchmarks with `b.Run()` for parameterized tests, and `benchstat` to compare before/after performance across multiple runs.
+
+```
+┌───────────────────────────────────────────┐
+│           Benchmark Lifecycle            │
+│                                           │
+│  go test -bench=. -benchmem              │
+│       │                                   │
+│       ▼                                   │
+│  ┌─────────────────────────────────┐      │
+│  │  b.N = 1                       │      │
+│  │  Run loop → too fast? increase  │      │
+│  │  b.N = 100                      │      │
+│  │  Run loop → too fast? increase  │      │
+│  │  b.N = 10000                    │      │
+│  │  Run loop → stable timing ✓    │      │
+│  └─────────────────────────────────┘      │
+│       │                                   │
+│       ▼                                   │
+│  Output: BenchmarkXxx-8  10000           │
+│          123 ns/op  48 B/op  2 allocs/op │
+└───────────────────────────────────────────┘
+```
 
 ```go
 // bench_test.go
@@ -240,6 +338,28 @@ benchstat old.txt new.txt
 
 ### Pre-allocate Slices
 
+**Tutorial: Avoiding Repeated Allocations with Pre-allocation**
+
+When the final size of a slice is known (or can be estimated), pre-allocating with `make([]T, 0, capacity)` avoids costly repeated allocations and copies during `append`. Without pre-allocation, Go doubles the backing array when capacity runs out, causing O(log n) allocations instead of one. This is one of the highest-impact optimizations in Go.
+
+```
+┌──────────────────────────────────────────────┐
+│   Without Pre-allocation (repeated growth)  │
+│                                              │
+│   cap=1  [x]         → copy, alloc          │
+│   cap=2  [x][x]      → copy, alloc          │
+│   cap=4  [x][x][x][ ] → copy, alloc         │
+│   cap=8  [x][x][x][x][x][ ][ ][ ] → ...    │
+│   Total: O(log n) allocations + copies       │
+│                                              │
+│   With Pre-allocation (single alloc)        │
+│                                              │
+│   cap=10000  [ ][ ][ ]...[ ] → one alloc    │
+│   append:    [x][x][x]...[ ] → no copies    │
+│   Total: 1 allocation, 0 copies              │
+└──────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -263,6 +383,30 @@ func main() {
 ```
 
 ### strings.Builder for Concatenation
+
+**Tutorial: Efficient String Building with strings.Builder**
+
+String concatenation with `+=` creates a new string on every iteration because Go strings are immutable — each concatenation copies all previous bytes. `strings.Builder` uses an internal `[]byte` buffer that grows efficiently, converting to string only once via `String()`. This reduces time complexity from O(n²) to O(n).
+
+```
+┌──────────────────────────────────────────┐
+│    String += "x" (O(n²))                │
+│                                          │
+│    Iter 1: alloc "x"          (1 byte)   │
+│    Iter 2: alloc "xx"         (2 bytes)  │
+│    Iter 3: alloc "xxx"        (3 bytes)  │
+│    ...                                   │
+│    Total bytes copied: 1+2+3+...+n = n²/2│
+│                                          │
+│    strings.Builder (O(n))               │
+│                                          │
+│    ┌──────────────────────────┐          │
+│    │ internal []byte buffer   │          │
+│    │ [x][x][x][x][...][ ][ ] │          │
+│    └──────────────────────────┘          │
+│    .String() → single conversion         │
+└──────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -291,6 +435,31 @@ func main() {
 ```
 
 ### sync.Pool for Object Reuse
+
+**Tutorial: Reducing GC Pressure with sync.Pool**
+
+`sync.Pool` is a cache of temporary objects that reduces GC pressure by reusing allocations. You `Get()` an object from the pool (or create a new one via `New`), use it, `Reset()` it, and `Put()` it back. The pool may be cleared between GC cycles, so never rely on objects persisting. This is ideal for short-lived, frequently allocated objects like buffers.
+
+```
+┌───────────────────────────────────────────┐
+│          sync.Pool Lifecycle             │
+│                                           │
+│  Get()                                    │
+│   ├── Pool has item? → return it          │
+│   └── Pool empty?    → call New()         │
+│          │                                │
+│          ▼                                │
+│   ┌─────────────┐                         │
+│   │  Use buffer  │ ◄── buf.WriteString()  │
+│   └──────┬──────┘                         │
+│          │                                │
+│          ▼                                │
+│   buf.Reset()  → clear contents           │
+│   Put(buf)     → return to pool           │
+│                                           │
+│   ⚠ GC may clear pool at any time        │
+└───────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -326,6 +495,30 @@ func main() {
 ```
 
 ### Struct Field Ordering
+
+**Tutorial: Minimizing Struct Padding with Field Ordering**
+
+Go aligns struct fields according to their size, inserting padding bytes to ensure proper memory alignment. Ordering fields from largest to smallest minimizes padding waste. This can significantly reduce struct size — especially when your program allocates millions of structs. Use `unsafe.Sizeof()` to verify layout.
+
+```
+┌──────────────────────────────────────────────┐
+│        Memory Layout Comparison             │
+│                                              │
+│  BadLayout (24 bytes):                       │
+│  ┌──┬───────┬────────┬──┬─────┬────┬────┐   │
+│  │a │padding│   b    │c │pad  │ d  │pad │   │
+│  │1 │  7    │   8    │1 │ 3   │ 4  │    │   │
+│  └──┴───────┴────────┴──┴─────┴────┴────┘   │
+│                                              │
+│  GoodLayout (16 bytes):                      │
+│  ┌────────┬────┬──┬──┬────┐                  │
+│  │   b    │ d  │a │c │pad │                  │
+│  │   8    │ 4  │1 │1 │ 2  │                  │
+│  └────────┴────┴──┴──┴────┘                  │
+│                                              │
+│  Rule: order fields large → small            │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -387,6 +580,29 @@ go build -gcflags="-m" .
 
 # See bounds check elimination:
 go build -gcflags="-d=ssa/check_bce/debug=1" .
+```
+
+**Tutorial: Inlining and Bounds Check Elimination**
+
+The Go compiler applies inlining and bounds check elimination (BCE) as optimizations. Small functions are inlined at call sites, removing function call overhead. BCE removes array/slice bounds checks when the compiler can prove access is safe (e.g., sequential iteration with `i < len(s)`). Use `-gcflags="-m"` to see what gets inlined.
+
+```
+┌──────────────────────────────────────────┐
+│       Compiler Optimizations            │
+│                                          │
+│  Inlining:                               │
+│  func add(a,b int) int { return a+b }   │
+│       │                                  │
+│       ▼  (compiler replaces call)        │
+│  result := a + b  ◄── no function call   │
+│                                          │
+│  Bounds Check Elimination:               │
+│  for i := 0; i < len(s); i++ {          │
+│      s[i]  ◄── compiler proves i < len  │
+│  }          ◄── bounds check removed     │
+│                                          │
+│  Check: go build -gcflags="-m" .        │
+└──────────────────────────────────────────┘
 ```
 
 ```go

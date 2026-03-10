@@ -29,6 +29,31 @@ Go's standard library is remarkably comprehensive — you can build production w
 
 ## time Package
 
+**Tutorial: Working with Time, Durations, Timers, and Formatting**
+
+This example covers the `time` package's essential operations: getting the current time, performing duration arithmetic, using `Timer` (fires once) and `Ticker` (fires repeatedly), and formatting/parsing with Go's unique reference time layout. Go does NOT use `%Y-%m-%d` style format strings — instead, you rearrange the reference date `Mon Jan 2 15:04:05 MST 2006` to describe your desired format. This is the most common stumbling point for newcomers.
+
+```
+┌───────────────────────────────────────────────────┐
+│       Go Time Reference Layout                   │
+│                                                   │
+│   Mon Jan  2 15:04:05 MST 2006                    │
+│    │   │  │  │  │  │   │   │                     │
+│    1   1  2  3  4  5  -7  2006                    │
+│   day mon d  h  m  s  tz  year                    │
+│                                                   │
+│   Timer vs Ticker:                                │
+│   ┌─────────┐           ┌──────────┐             │
+│   │  Timer  │           │  Ticker   │             │
+│   │ (once)  │           │ (repeat)  │             │
+│   └────┬────┘           └────┬─────┘             │
+│        │  200ms           │  100ms  100ms  ...   │
+│        ▼                  ▼        ▼              │
+│   <-timer.C          <-ticker.C (loop)            │
+│   (fire & done)      (tick, tick, Stop())         │
+└───────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -93,6 +118,33 @@ func main() {
 
 ## sort Package
 
+**Tutorial: Sorting with sort and slices Packages**
+
+This example demonstrates Go's sorting capabilities: `sort.Slice` for custom sort-by-field, `sort.SliceStable` to preserve order of equal elements, and `sort.Search` for binary search on sorted data. It also shows the newer `slices.Sort` and `slices.SortFunc` (Go 1.21+) which use generics for cleaner, type-safe APIs. Watch for the difference between `sort.Slice` (may reorder equal elements) and `sort.SliceStable` (preserves original order).
+
+```
+┌─────────────────────────────────────────────────┐
+│       Sorting Options in Go                      │
+│                                                   │
+│  sort.Slice(s, less)     ─► unstable, func-based  │
+│  sort.SliceStable(s, less) ─► stable, func-based  │
+│  sort.Search(n, f)       ─► binary search         │
+│                                                   │
+│  slices.Sort(s)          ─► generic, ordered      │
+│  slices.SortFunc(s, cmp) ─► generic, custom cmp   │
+│                                                   │
+│  Stable vs Unstable:                              │
+│  Input:  [{Bob,20} {Eve,20} {Ann,20}]             │
+│  Stable:  order of equal elements preserved       │
+│  Unstable: [{Eve,20} {Bob,20} {Ann,20}] possible  │
+│                                                   │
+│  sort.Search ─► finds first index where f(i)=true  │
+│  [1, 3, 5, 7, 9, 11]  f: nums[i] >= 7            │
+│         │              ▲                           │
+│         └──────────────┘ idx=3                     │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -152,6 +204,32 @@ func main() {
 
 ## regexp Package
 
+**Tutorial: Regular Expressions with the regexp Package**
+
+This example shows Go's `regexp` package which uses the RE2 engine — guaranteed linear-time matching with no catastrophic backtracking. Use `regexp.Compile` for user-supplied patterns (returns error) or `regexp.MustCompile` for known-valid patterns (panics on error). Key methods include `FindString` (first match), `FindAllString` (all matches), `MatchString` (boolean test), `ReplaceAllString`, and `FindStringSubmatch` for capture groups.
+
+```
+┌─────────────────────────────────────────────────┐
+│         regexp Method Overview                   │
+│                                                   │
+│  re := regexp.MustCompile(`\d+`)                  │
+│                                                   │
+│  Input: "abc 123 def 456"                         │
+│                                                   │
+│  FindString      ─► "123"        (first match)    │
+│  FindAllString   ─► ["123","456"] (all matches)  │
+│  ReplaceAllString─► "abc X def X" (replace)      │
+│  MatchString     ─► true/false   (test)          │
+│                                                   │
+│  Capture groups with FindStringSubmatch:          │
+│  Pattern: (\d{4})-(\d{2})-(\d{2})                 │
+│  Input:   "Date: 2026-03-09"                      │
+│  Result:  ["2026-03-09", "2026", "03", "09"]      │
+│            matches[0]  [1]   [2]   [3]            │
+│            full match  groups──────►               │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -198,6 +276,35 @@ func main() {
 ---
 
 ## log and log/slog (Go 1.21+)
+
+**Tutorial: Logging with log and Structured Logging with slog**
+
+This example contrasts Go's basic `log` package with the modern `log/slog` structured logger introduced in Go 1.21. The basic `log` writes plain-text messages with timestamps and optional file/line info. `slog` adds log levels (Info, Warn, Error, Debug) and key-value structured fields, making logs machine-parseable. The `slog.NewJSONHandler` outputs structured JSON — ideal for log aggregation systems like ELK or Datadog.
+
+```
+┌─────────────────────────────────────────────────┐
+│      log vs slog Comparison                      │
+│                                                   │
+│  log.Println("msg")                                │
+│    └► 2026/03/09 14:30:00 msg                     │
+│       (plain text, no levels)                      │
+│                                                   │
+│  slog.Info("msg", "key", value)                    │
+│    └► 2026/03/09 INFO msg key=value               │
+│       (leveled, structured key-value pairs)        │
+│                                                   │
+│  slog Handlers:                                   │
+│  ┌─────────────┐  ┌────────────────┐              │
+│  │ TextHandler │  │  JSONHandler    │              │
+│  │ (default)   │  │ {"level":..}   │              │
+│  └──────┬──────┘  └───────┬────────┘              │
+│         └────────────┬─┘                         │
+│                      ▼                            │
+│             ┌─────────────┐                      │
+│             │  os.Stdout  │                      │
+│             └─────────────┘                      │
+└─────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -249,6 +356,28 @@ func main() {
 
 ## flag Package
 
+**Tutorial: Parsing Command-Line Arguments with the flag Package**
+
+This example shows how to define and parse command-line flags using Go's built-in `flag` package. Each `flag.Int`, `flag.String`, or `flag.Bool` returns a pointer to the value. You must call `flag.Parse()` before accessing values. Non-flag arguments (positional args) are available via `flag.Args()`. Note that flag values are accessed with `*port`, `*host` since the functions return pointers.
+
+```
+┌─────────────────────────────────────────────────┐
+│     flag Package Flow                             │
+│                                                   │
+│  go run main.go -port=9090 -debug arg1 arg2       │
+│                  │          │      │    │         │
+│                  ▼          ▼      └────┤         │
+│           ┌────────────────┐   flag.Args()     │
+│           │  flag.Parse() │  ["arg1","arg2"]   │
+│           └─────┬──────────┘                   │
+│                 │                                │
+│                 ▼                                │
+│    *port = 9090   (flag.Int returns *int)         │
+│    *host = "localhost" (default, not overridden)  │
+│    *debug = true  (flag.Bool returns *bool)       │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -280,6 +409,33 @@ func main() {
 ---
 
 ## container Packages
+
+**Tutorial: Heap, Linked List, and Ring from container/**
+
+This example covers Go's three `container/` packages: `container/heap` for priority queues (you implement the `heap.Interface`), `container/list` for doubly-linked lists with O(1) insert/remove, and `container/ring` for fixed-size circular buffers. The heap requires implementing five methods (`Len`, `Less`, `Swap`, `Push`, `Pop`) on your type, then using `heap.Init`, `heap.Push`, and `heap.Pop` to operate on it.
+
+```
+┌─────────────────────────────────────────────────┐
+│       container/ Data Structures                 │
+│                                                   │
+│  container/heap (Min-Heap / Priority Queue):      │
+│            1                                      │
+│          ┌─┴─┐                                     │
+│        ┌─┤   ├─┐                                   │
+│        2   3                                      │
+│      ┌─┴─┐                                         │
+│      4   5   heap.Pop() ─► returns 1 (min)        │
+│                                                   │
+│  container/list (Doubly Linked List):             │
+│  nil ◄── [z] ◄─► [a] ◄─► [b] ──► nil               │
+│        Front()              Back()               │
+│                                                   │
+│  container/ring (Circular Buffer):                │
+│  ┌─► [0] ─► [1] ─► [2] ─► [3] ─► [4] ─┐            │
+│  └────────────────────────────────┘            │
+│  r.Next() always wraps around                     │
+└─────────────────────────────────────────────────┘
+```
 
 ```go
 package main

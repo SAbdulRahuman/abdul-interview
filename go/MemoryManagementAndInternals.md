@@ -38,6 +38,28 @@ Understanding how Go manages memory helps you write efficient programs and debug
 
 ## Stack vs Heap Allocation
 
+**Tutorial: Stack vs Heap — Where Does Your Data Live?**
+
+This example contrasts two functions: one that returns a value (stays on the stack) and one that returns a pointer (escapes to the heap). The compiler uses escape analysis at build time to decide placement. Watch how `stackAllocation` returns a copy of `x` (stack-safe), while `heapAllocation` returns `&x`, forcing the compiler to allocate `x` on the heap so it survives the function return.
+
+```
+┌─────────────────────────────────────────────────┐
+│           stackAllocation()                     │
+│  ┌──────────────┐                               │
+│  │ Stack Frame   │   x := 42                    │
+│  │  x: 42       │──► return x (copy)            │
+│  └──────────────┘   Frame freed ✓               │
+│                                                 │
+│           heapAllocation()                      │
+│  ┌──────────────┐       ┌────────────┐          │
+│  │ Stack Frame   │       │   Heap     │          │
+│  │  x ─────────►│──────►│  x: 42     │          │
+│  └──────────────┘       └────────────┘          │
+│   Frame freed ✓          Survives! GC managed   │
+│                          return &x (pointer)    │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -76,6 +98,29 @@ Use `go build -gcflags="-m"` to see what escapes to the heap.
 $ go build -gcflags="-m" main.go
 # main.go:12:2: moved to heap: x        ← heapAllocation's x escapes
 # main.go:8:2: x does not escape          ← stackAllocation's x is stack-only
+```
+
+**Tutorial: Common Escape Scenarios in Practice**
+
+This code demonstrates three common escape patterns: a slice that stays on the stack because it never leaves the function, a slice that escapes because it's returned, and a value that escapes because `fmt.Println` accepts `interface{}`. Understanding these patterns helps you write allocation-efficient code. Run `go build -gcflags="-m"` on your own code to see what the compiler decides.
+
+```
+┌────────────────────────────────────────────────────┐
+│  noEscape()              escapeToHeap()            │
+│  ┌────────────┐          ┌────────────┐            │
+│  │ Stack      │          │ Stack      │            │
+│  │ s []int    │          │ s ─────────┼──► Heap    │
+│  │ (local use)│          │ (returned) │   []int    │
+│  └────────────┘          └────────────┘            │
+│  ✓ No escape             ✗ Escapes                 │
+│                                                    │
+│  escapeViaInterface()                              │
+│  ┌────────────┐   fmt.Println(x)                   │
+│  │ Stack      │        │                           │
+│  │ x: 42 ────►│───► interface{} ──► Heap           │
+│  └────────────┘   (boxing to interface)            │
+│  ✗ Escapes (interface conversion)                  │
+└────────────────────────────────────────────────────┘
 ```
 
 ```go
@@ -120,6 +165,37 @@ func main() {
 ## Garbage Collector
 
 Go uses a **tri-color mark-and-sweep** concurrent garbage collector.
+
+**Tutorial: Inspecting and Tuning the Garbage Collector**
+
+This example shows how to read runtime memory statistics, force garbage collection, and tune GC behavior with `GOGC` and `GOMEMLIMIT`. The `runtime.MemStats` struct exposes allocation counts, heap size, and GC run counts. Adjusting `GOGC` trades memory usage for CPU time — higher values mean less frequent GC. `GOMEMLIMIT` (Go 1.19+) sets a soft cap on total memory, useful in containers.
+
+```
+┌──────────────────────────────────────────────────────┐
+│         Tri-Color Mark & Sweep GC                    │
+│                                                      │
+│  Phase 1: Mark Setup (STW)                           │
+│  ┌──────┐  Enable write barrier                      │
+│  │ Root │                                            │
+│  └──┬───┘                                            │
+│     ▼                                                │
+│  Phase 2: Concurrent Marking                         │
+│  ┌─────┐    ┌─────┐    ┌─────┐                       │
+│  │White│───►│Grey │───►│Black│                        │
+│  │(?)  │    │(scan)│   │(done)│                       │
+│  └─────┘    └─────┘    └─────┘                       │
+│  unreached   queued    reachable                     │
+│     ▼                                                │
+│  Phase 3: Mark Termination (STW)                     │
+│     ▼                                                │
+│  Phase 4: Concurrent Sweep                           │
+│  White objects ──► freed (reclaimed)                 │
+│                                                      │
+│  GOGC=100: GC when heap doubles    (default)         │
+│  GOGC=200: GC when heap triples    (less GC)         │
+│  GOMEMLIMIT=512MB: soft cap        (Go 1.19+)        │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -167,6 +243,28 @@ func main() {
 
 ## Memory Alignment & Struct Padding
 
+**Tutorial: How Field Order Affects Struct Size**
+
+The CPU requires data to be aligned to specific boundaries (e.g., `int64` on 8-byte boundaries). When struct fields aren't ordered by alignment, the compiler inserts invisible padding bytes to satisfy these constraints. This example shows that reordering the same four fields can save 8 bytes per struct — significant when allocating millions of instances. Use `unsafe.Sizeof` to verify struct sizes.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  BadStruct (24 bytes)        GoodStruct (16 bytes)   │
+│  Offset  Field   Size       Offset  Field   Size     │
+│  ┌────────────────────┐     ┌────────────────────┐   │
+│  │ 0: a bool   [1]   │     │ 0: b int64  [8]   │   │
+│  │ 1: padding  [7]   │     │ 8: d int32  [4]   │   │
+│  │ 8: b int64  [8]   │     │12: a bool   [1]   │   │
+│  │16: c bool   [1]   │     │13: c bool   [1]   │   │
+│  │17: padding  [3]   │     │14: padding  [2]   │   │
+│  │20: d int32  [4]   │     └────────────────────┘   │
+│  └────────────────────┘     Total: 16 bytes ✓        │
+│  Total: 24 bytes ✗          (saved 8 bytes!)         │
+│                                                      │
+│  Rule: Order fields largest → smallest alignment     │
+└──────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -209,6 +307,31 @@ func main() {
 ---
 
 ## unsafe Package
+
+**Tutorial: Low-Level Memory Inspection with unsafe**
+
+The `unsafe` package lets you bypass Go's type system to inspect memory layout, compute field offsets, and reinterpret raw pointer bits. This example demonstrates `Sizeof`, `Alignof`, `Offsetof` for struct introspection, `unsafe.Pointer` for type-punning between pointer types, and `unsafe.Slice` for creating slices from raw pointers. These operations are inherently unsafe — they bypass compile-time type checks and can cause undefined behavior if misused.
+
+```
+┌────────────────────────────────────────────────────┐
+│           unsafe Package Operations                │
+│                                                    │
+│  Sizeof(x)     ──► bytes occupied by value         │
+│  Alignof(x)    ──► alignment requirement           │
+│  Offsetof(f)   ──► byte offset of struct field     │
+│                                                    │
+│  unsafe.Pointer ──► generic pointer (bridges types)│
+│                                                    │
+│  *int64 ──► unsafe.Pointer ──► *float64            │
+│   &i          (bridge)          (*float64)(p)      │
+│   42      raw bits reinterpreted as float64        │
+│                                                    │
+│  unsafe.Slice(&arr[0], 3)                          │
+│  [10, 20, 30, 40, 50]                              │
+│   ▲──────────▲                                     │
+│   ptr        len=3  ──► []int{10, 20, 30}          │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -254,6 +377,31 @@ func main() {
 
 ## cgo Basics
 
+**Tutorial: Calling C Code from Go with cgo**
+
+Go can call C functions directly using the `cgo` tool. You embed C code in a comment block immediately before `import "C"`, then call functions via the `C` pseudo-package. This example calls a C function, passes arguments, and handles C strings. Note that C memory (`C.CString`) must be freed manually — Go's garbage collector doesn't manage C allocations. Be aware of significant performance overhead: Go↔C calls are ~100x slower than Go↔Go calls.
+
+```
+┌────────────────────────────────────────────────────┐
+│           cgo Call Flow                            │
+│                                                    │
+│  Go Code                    C Code                 │
+│  ┌──────────────┐           ┌──────────────┐       │
+│  │ main()       │           │ hello_from_c()│       │
+│  │              │──cgo──►   │ printf(...)   │       │
+│  │ C.hello()    │  bridge   │               │       │
+│  │              │◄────────  │ return        │       │
+│  │              │           └──────────────┘       │
+│  │ C.add(3,4)  │──cgo──►   add(a,b) → 7          │
+│  │              │◄────────  return 7               │
+│  └──────────────┘                                  │
+│                                                    │
+│  C.CString("hello")  ──► malloc (C heap)           │
+│  C.free(cStr)        ──► free   (manual!)          │
+│  ⚠ Go GC does NOT manage C memory                 │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -297,6 +445,33 @@ func main() {
 
 ## Go Runtime — Goroutine Stacks
 
+**Tutorial: Runtime Introspection — Goroutines, CPUs, and Scheduling**
+
+This example uses the `runtime` package to inspect goroutine count, available CPUs, and `GOMAXPROCS` (the number of OS threads that can execute Go code simultaneously). It also demonstrates `runtime.Gosched()` to voluntarily yield the processor, and `runtime.Goexit()` to terminate a goroutine while still running deferred functions. Goroutine stacks start at ~2-8 KB and grow dynamically — enabling millions of concurrent goroutines.
+
+```
+┌────────────────────────────────────────────────────┐
+│       Go Runtime: GMP Scheduler Model              │
+│                                                    │
+│  G = Goroutine    M = OS Thread    P = Processor   │
+│                                                    │
+│  ┌───┐ ┌───┐ ┌───┐    ┌───┐ ┌───┐                 │
+│  │ G │ │ G │ │ G │    │ G │ │ G │  (many G's)     │
+│  └─┬─┘ └─┬─┘ └─┬─┘    └─┬─┘ └─┬─┘                 │
+│    └──────┼─────┘        └──┬──┘                    │
+│       ┌───▼───┐         ┌───▼───┐                   │
+│       │  P-0  │         │  P-1  │  (GOMAXPROCS Ps)  │
+│       └───┬───┘         └───┬───┘                   │
+│       ┌───▼───┐         ┌───▼───┐                   │
+│       │  M-0  │         │  M-1  │  (OS threads)     │
+│       └───────┘         └───────┘                   │
+│                                                    │
+│  Gosched()  ──► yield current G, let others run    │
+│  Goexit()   ──► terminate G, defers still execute  │
+│  Stack: 2-8KB initial ──► grows up to 1GB          │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -335,6 +510,35 @@ func main() {
 ---
 
 ## Memory Profiling
+
+**Tutorial: Measuring Allocation Impact with MemStats**
+
+This example captures `runtime.MemStats` snapshots before and after a known allocation workload, then compares them to measure total bytes allocated and malloc/free counts. This technique is useful for micro-benchmarking allocation-heavy code paths. For production profiling, use `pprof` which provides heap profiles, flame graphs, and goroutine analysis.
+
+```
+┌────────────────────────────────────────────────────┐
+│        Memory Profiling Flow                       │
+│                                                    │
+│  ReadMemStats(&before)                             │
+│        │                                           │
+│        ▼                                           │
+│  ┌──────────────────┐                              │
+│  │ allocateSlices() │  1000 × make([]byte, 1024)   │
+│  │  loop 1000x      │  = ~1MB total allocation     │
+│  └──────────────────┘                              │
+│        │                                           │
+│        ▼                                           │
+│  ReadMemStats(&after)                              │
+│        │                                           │
+│        ▼                                           │
+│  Diff: TotalAlloc, Mallocs, Frees                  │
+│  ┌────────────────────────────────┐                 │
+│  │ Alloc diff ≈ 1024 KB          │                 │
+│  │ Mallocs    ≈ 1000             │                 │
+│  │ Frees      ≈ (GC dependent)   │                 │
+│  └────────────────────────────────┘                 │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

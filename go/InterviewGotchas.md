@@ -41,6 +41,31 @@ These are the traps and subtleties that frequently appear in Go interviews. Unde
 
 ## 1. Slice Append & Capacity
 
+**Tutorial: The Shared Underlying Array Trap**
+
+When you `append` to a slice that still has capacity, the new elements go into the existing underlying array — meaning other slices sharing that array see the changes. Once capacity is exceeded, Go allocates a new array, breaking the shared reference. The full slice expression `a[:n:n]` limits capacity to force a new allocation on the next append.
+
+```
+┌──────────────────────────────────────────────┐
+│   Shared Underlying Array Gotcha            │
+│                                              │
+│   a := make([]int, 3, 5)                    │
+│   ┌───┬───┬───┬───┬───┐                     │
+│   │ 1 │ 2 │ 3 │   │   │  cap=5             │
+│   └───┴───┴───┴───┴───┘                     │
+│   a ──────►[0:3]                             │
+│                                              │
+│   b := append(a, 4)  (fits in cap=5)        │
+│   ┌───┬───┬───┬───┬───┐                     │
+│   │ 1 │ 2 │ 3 │ 4 │   │  SAME array!       │
+│   └───┴───┴───┴───┴───┘                     │
+│   a ──────►[0:3]                             │
+│   b ──────►[0:4]  ◄── b[0]=99 changes a!   │
+│                                              │
+│   Fix: d := a[:2:2]  ◄── cap=2, forces new  │
+└──────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -78,6 +103,28 @@ func main() {
 
 ## 2. Map Iteration Order
 
+**Tutorial: Non-Deterministic Map Traversal**
+
+Go deliberately randomizes map iteration order to prevent developers from depending on it. Each `range` over a map may yield keys in a different sequence. If you need deterministic output (e.g., for tests or serialization), collect the keys into a slice and sort them before iterating.
+
+```
+┌──────────────────────────────────────┐
+│       Map Iteration Order           │
+│                                      │
+│   m := {"a":1, "b":2, "c":3, "d":4} │
+│                                      │
+│   Run 1:  b → d → a → c            │
+│   Run 2:  c → a → d → b            │
+│   Run 3:  a → c → b → d            │
+│                                      │
+│   ⚠ Order is RANDOM each time       │
+│                                      │
+│   Fix: sort keys first              │
+│   keys := slices.Sorted(maps.Keys(m))│
+│   for _, k := range keys { ... }    │
+└──────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -101,6 +148,27 @@ func main() {
 ---
 
 ## 3. Goroutine Loop Variable Capture
+
+**Tutorial: The Classic Closure-Over-Loop-Variable Bug**
+
+Before Go 1.22, the loop variable `v` in `for _, v := range` was a single variable reused across iterations. Goroutines launched inside the loop captured a reference to this shared variable, so by the time they executed, `v` held its final value. Go 1.22 fixed this by creating a new variable per iteration. For older versions, pass the variable as a function argument or shadow it with `v := v`.
+
+```
+┌──────────────────────────────────────────┐
+│   Loop Variable Capture (pre-Go 1.22)   │
+│                                          │
+│   v = 1 → go func() { print(v) }        │
+│   v = 2 → go func() { print(v) }        │
+│   v = 3 → go func() { print(v) }        │
+│           ▼                              │
+│   All goroutines share &v ──► v = 3      │
+│   Output: 3, 3, 3  ◄─ BUG!              │
+│                                          │
+│   Fix 1: go func(val int) { ... }(v)    │
+│   Fix 2: v := v  (shadow in loop body)  │
+│   Fix 3: Use Go 1.22+ (auto-fixed)      │
+└──────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -154,6 +222,35 @@ func main() {
 
 ## 4. Defer with Closures
 
+**Tutorial: Defer Argument Evaluation — Closure vs Direct Call**
+
+A deferred closure captures variables by reference, so it sees their final values when the function returns. A deferred direct function call evaluates its arguments immediately at the `defer` statement. This distinction is a classic interview question — understanding it requires knowing that `defer` schedules execution but evaluates arguments eagerly.
+
+```
+┌──────────────────────────────────────────┐
+│     Defer: Closure vs Direct Call       │
+│                                          │
+│  x := 0                                 │
+│  defer func() { print(x) }()  ◄ closure │
+│  x = 3                                  │
+│  ┌──────────────────┐                    │
+│  │ Closure captures │ ──► &x (final=3)  │
+│  └──────────────────┘                    │
+│                                          │
+│  y := 10                                │
+│  defer fmt.Println(y)    ◄ direct call   │
+│  y = 30                                 │
+│  ┌──────────────────┐                    │
+│  │ Arg evaluated at │ ──► y=10 (frozen)  │
+│  │ defer statement  │                    │
+│  └──────────────────┘                    │
+│                                          │
+│  Output order (LIFO):                    │
+│  Direct y: 10   ◄ evaluated when deferred│
+│  Closure x: 3   ◄ evaluated at return    │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -184,6 +281,36 @@ func main() {
 ---
 
 ## 5. Nil Interface vs Nil Pointer in Interface
+
+**Tutorial: The (type, value) Pair Inside Interfaces**
+
+A Go interface is internally a pair of `(type, value)`. When you assign a nil pointer of a concrete type to an interface, the interface becomes `(type=*MyError, value=nil)` — which is NOT equal to `nil`. Only when both type and value are nil is the interface itself nil. Always return the bare `nil` for interface return types to avoid this trap.
+
+```
+┌──────────────────────────────────────────────┐
+│    Interface Internal Representation        │
+│                                              │
+│  var err *MyError = nil                      │
+│  return err  (as error interface)            │
+│                                              │
+│  ┌──────────────────────────┐                │
+│  │  error interface         │                │
+│  │  ┌──────────┬──────────┐ │                │
+│  │  │ type     │ value    │ │                │
+│  │  │ *MyError │ nil      │ │  ≠ nil !      │
+│  │  └──────────┴──────────┘ │                │
+│  └──────────────────────────┘                │
+│                                              │
+│  return nil  (explicit)                      │
+│  ┌──────────────────────────┐                │
+│  │  error interface         │                │
+│  │  ┌──────────┬──────────┐ │                │
+│  │  │ type     │ value    │ │                │
+│  │  │ nil      │ nil      │ │  == nil ✓     │
+│  │  └──────────┴──────────┘ │                │
+│  └──────────────────────────┘                │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -232,6 +359,33 @@ func main() {
 
 ## 6. String Immutability
 
+**Tutorial: Strings Are Read-Only Byte Sequences**
+
+Go strings are immutable byte sequences — you cannot modify individual characters in place. To mutate a string, convert it to `[]byte` (for ASCII) or `[]rune` (for Unicode) first, make your changes, then convert back. Note that both conversions allocate new memory each time.
+
+```
+┌──────────────────────────────────────────┐
+│       String Immutability               │
+│                                          │
+│  s := "hello"                            │
+│  s[0] = 'H'  ◄─ COMPILE ERROR           │
+│                                          │
+│  Mutation path:                          │
+│  ┌─────────┐    ┌───────────────┐        │
+│  │ "hello" │───►│ []byte(s)     │        │
+│  └─────────┘    │ [h][e][l][l][o]│       │
+│                 └───────┬───────┘        │
+│                 b[0] = 'H'               │
+│                 ┌───────┴───────┐        │
+│                 │ [H][e][l][l][o]│       │
+│                 └───────┬───────┘        │
+│                 string(b)                │
+│                 ┌───────┴───────┐        │
+│                 │   "Hello"     │        │
+│                 └───────────────┘        │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -256,6 +410,30 @@ func main() {
 ---
 
 ## 7. String Concatenation in Loops — O(n²)
+
+**Tutorial: Why += in Loops is Quadratic**
+
+Each `+=` on a string allocates a new string and copies all previous content, leading to O(n²) total bytes copied. `strings.Builder` maintains an internal byte buffer that grows amortized, achieving O(n) total cost. For any loop that concatenates strings, always prefer `strings.Builder`.
+
+```
+┌──────────────────────────────────────────┐
+│   += Allocations Over Loop Iterations   │
+│                                          │
+│   Iter 1: alloc "x"           1 byte    │
+│   Iter 2: alloc "xx"          2 bytes   │
+│   Iter 3: alloc "xxx"         3 bytes   │
+│   ...                                   │
+│   Iter n: alloc "xxx...x"     n bytes   │
+│   Total copied: n(n+1)/2 = O(n²)       │
+│                                          │
+│   strings.Builder:                      │
+│   ┌─────────────────────────────┐        │
+│   │ buf: [x][x][x]...[ ][ ][ ] │        │
+│   │      append only, no copy   │        │
+│   └─────────────────────────────┘        │
+│   Total: O(n) amortized                 │
+└──────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -287,6 +465,31 @@ func main() {
 
 ## 8. Channel Deadlocks
 
+**Tutorial: Unbuffered Channel Deadlock Patterns**
+
+Sending to an unbuffered channel blocks until another goroutine receives, and vice versa. If both send and receive are in the same goroutine with no concurrency, the program deadlocks. Fix by using buffered channels (for single-value cases) or launching a goroutine for the send or receive operation.
+
+```
+┌──────────────────────────────────────────┐
+│        Channel Deadlock Scenario        │
+│                                          │
+│  Unbuffered (deadlock):                  │
+│  main goroutine:                         │
+│    ch <- 42  ──► BLOCKS (no receiver)    │
+│    <-ch      ──► never reached           │
+│    ═══ DEADLOCK ═══                      │
+│                                          │
+│  Fix 1: Buffered channel                 │
+│    ch := make(chan int, 1)               │
+│    ch <- 42  ──► succeeds (buffer=1)     │
+│    <-ch      ──► reads 42               │
+│                                          │
+│  Fix 2: Goroutine                        │
+│    go func() { ch <- 42 }()             │
+│    <-ch  ──► receives from goroutine     │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -313,6 +516,31 @@ func main() {
 ---
 
 ## 9. Value vs Pointer Receiver Method Sets
+
+**Tutorial: Method Sets and Interface Satisfaction**
+
+In Go, a value type's method set includes only value-receiver methods, while a pointer type's method set includes both value and pointer-receiver methods. This matters for interface satisfaction: you cannot assign a value to an interface that requires a pointer-receiver method. The compiler auto-takes the address for direct calls but NOT for interface assignments.
+
+```
+┌──────────────────────────────────────────────┐
+│       Method Sets & Interface Matching      │
+│                                              │
+│  Counter has:                                │
+│    Value()     → value receiver              │
+│    Increment() → pointer receiver            │
+│                                              │
+│  ┌──────────────┬─────────┬──────────────┐   │
+│  │ Type         │ Methods │ Incrementer? │   │
+│  ├──────────────┼─────────┼──────────────┤   │
+│  │ Counter      │ Value() │ ✗ NO         │   │
+│  │ *Counter     │ Value() │ ✓ YES        │   │
+│  │              │ Incr()  │              │   │
+│  └──────────────┴─────────┴──────────────┘   │
+│                                              │
+│  var i Incrementer = c    ◄ COMPILE ERROR   │
+│  var i Incrementer = &c   ◄ OK              │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -354,6 +582,31 @@ func main() {
 
 ## 10. init() Execution Order
 
+**Tutorial: Package Initialization and Multiple init() Functions**
+
+Go allows multiple `init()` functions per package — they run in the order they appear in source code. The initialization order is: imported packages (depth-first, alphabetical) → package-level variable declarations → `init()` functions → `main()`. The `init()` function takes no arguments and returns nothing; it's called automatically.
+
+```
+┌──────────────────────────────────────────┐
+│       Go Initialization Order           │
+│                                          │
+│  import "pkg_a"  ──► pkg_a.init()        │
+│  import "pkg_b"  ──► pkg_b.init()        │
+│       │                                  │
+│       ▼                                  │
+│  Package-level var declarations          │
+│       │                                  │
+│       ▼                                  │
+│  init() 1 ──► init() 2 ──► init() 3     │
+│       │                                  │
+│       ▼                                  │
+│  main()                                  │
+│                                          │
+│  Multiple init() per file: runs in       │
+│  source order (top to bottom)            │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -381,6 +634,27 @@ func main() {
 
 ## 11. Named Return + Defer
 
+**Tutorial: Deferred Functions Can Modify Named Return Values**
+
+Named return values are variables that exist for the function's lifetime. When `return 10` executes, it sets `result = 10`, then deferred functions run — and they can modify the named return value before it's actually returned to the caller. This is a frequently asked interview question because the final return value differs from what `return` states.
+
+```
+┌──────────────────────────────────────────┐
+│   Named Return + Defer Execution        │
+│                                          │
+│   func compute() (result int) {         │
+│       defer func() { result *= 2 }()    │
+│       return 10                          │
+│   }                                      │
+│                                          │
+│   Step 1: return 10 ──► result = 10      │
+│   Step 2: defer runs ──► result *= 2     │
+│   Step 3: return    ──► result = 20      │
+│                                          │
+│   Caller receives: 20 (not 10!)          │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -401,6 +675,30 @@ func main() {
 ---
 
 ## 12. Map Value Not Addressable
+
+**Tutorial: Why You Can't Modify Struct Fields in a Map Directly**
+
+Map values in Go are not addressable — you cannot take the address of or directly modify a field within a struct stored as a map value. This is because the map may relocate values internally during growth. The workaround is to copy the value out, modify it, and reassign, or store pointers in the map instead.
+
+```
+┌──────────────────────────────────────────────┐
+│    Map Value Addressability                 │
+│                                              │
+│  m["origin"].X = 5  ◄─ COMPILE ERROR        │
+│                                              │
+│  Why? Map may rehash/relocate values:       │
+│  ┌─────────────────────────────────┐         │
+│  │ Bucket 0: "origin" → {0,0}     │         │
+│  │ Bucket 1: ...                   │ rehash  │
+│  │ ...                             │──►move  │
+│  └─────────────────────────────────┘         │
+│  Address would become invalid!               │
+│                                              │
+│  Fix 1: Copy → modify → reassign           │
+│  Fix 2: Use map[string]*Point               │
+│          (pointer IS addressable)            │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -438,6 +736,32 @@ func main() {
 
 ## 13. range Copies Values
 
+**Tutorial: The range Loop Copy Trap with Structs**
+
+When you use `for _, v := range slice`, `v` is a **copy** of each element — modifying `v` does not affect the original slice. This is especially surprising with slices of structs. To modify elements in-place, iterate by index with `for i := range slice` and access `slice[i]` directly.
+
+```
+┌──────────────────────────────────────────┐
+│      range Creates Copies               │
+│                                          │
+│  items := [{Apple,100}, {Banana,50}]    │
+│                                          │
+│  for _, v := range items:               │
+│    v = copy ──► v.Price *= 2            │
+│    items[0] unchanged!                   │
+│                                          │
+│  ┌────────────┐    ┌─────────────┐       │
+│  │ items[0]   │    │ v (copy)    │       │
+│  │ Price: 100 │    │ Price: 200  │       │
+│  └────────────┘    └─────────────┘       │
+│       ▲ NOT modified      ▲ discarded    │
+│                                          │
+│  Fix: for i := range items {            │
+│           items[i].Price *= 2           │
+│       }                                  │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -472,6 +796,31 @@ func main() {
 
 ## 14. select Randomness
 
+**Tutorial: Non-Deterministic Channel Selection**
+
+When multiple `select` cases are ready simultaneously, Go chooses one at random — it does NOT pick the first listed case. This ensures fairness and prevents starvation of any channel. In interviews, be prepared to explain that `select` behavior is non-deterministic when multiple channels have data available.
+
+```
+┌──────────────────────────────────────────┐
+│      select Random Choice               │
+│                                          │
+│  ch1 ◄── "one"   (ready)                │
+│  ch2 ◄── "two"   (ready)                │
+│                                          │
+│  select {                                │
+│  case <-ch1: ─┐                          │
+│  case <-ch2: ─┤── both ready             │
+│  }            │                          │
+│               ▼                          │
+│  Go runtime picks RANDOMLY              │
+│                                          │
+│  Run 1: ch1 selected                     │
+│  Run 2: ch2 selected                     │
+│  Run 3: ch1 selected                     │
+│  ...                                     │
+└──────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -498,6 +847,34 @@ func main() {
 ---
 
 ## 15. Struct Comparison
+
+**Tutorial: When Structs Can and Cannot Use ==**
+
+Go structs can be compared with `==` only if ALL their fields are comparable types. Slices, maps, and functions are NOT comparable, so a struct containing any of these cannot use `==`. For structs with non-comparable fields, use `reflect.DeepEqual()` or, in Go 1.21+, `slices.Equal()` for slice fields.
+
+```
+┌──────────────────────────────────────────────┐
+│      Struct Comparability Rules             │
+│                                              │
+│  Comparable types:                           │
+│  int, string, bool, float, array, struct*   │
+│                                              │
+│  NOT comparable:                             │
+│  slice, map, func                            │
+│                                              │
+│  ┌──────────────────┬──────────┐             │
+│  │ Comparable{      │ a == b   │             │
+│  │   Name string    │  ✓ OK    │             │
+│  │   Age  int       │          │             │
+│  │ }                │          │             │
+│  ├──────────────────┼──────────┤             │
+│  │ NotComparable{   │ c == d   │             │
+│  │   Name string    │  ✗ ERROR │             │
+│  │   Tags []string  │          │             │
+│  │ }                │          │             │
+│  └──────────────────┴──────────┘             │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -528,6 +905,31 @@ func main() {
 ---
 
 ## 16. Zero-Size Struct — struct{}
+
+**Tutorial: Using struct{} for Memory-Efficient Sets and Signals**
+
+`struct{}` occupies zero bytes of memory, making it ideal for cases where you need a type but not a value. The two most common uses are: sets (using `map[K]struct{}` instead of `map[K]bool` to save memory) and signal-only channels (`chan struct{}`) where the message carries no data, just a notification.
+
+```
+┌──────────────────────────────────────────┐
+│       struct{} — Zero Memory            │
+│                                          │
+│  unsafe.Sizeof(struct{}{}) == 0          │
+│                                          │
+│  Use case 1: Set                         │
+│  map[string]struct{} vs map[string]bool  │
+│  ┌──────────┬────────┬──────────┐        │
+│  │ Key      │ struct{}│  bool   │        │
+│  │ "apple"  │ 0 bytes │ 1 byte │        │
+│  │ "banana" │ 0 bytes │ 1 byte │        │
+│  └──────────┴────────┴──────────┘        │
+│                                          │
+│  Use case 2: Signal channel              │
+│  done := make(chan struct{})              │
+│  close(done) ──► broadcast signal        │
+│  <-done      ──► receive notification    │
+└──────────────────────────────────────────┘
+```
 
 ```go
 package main

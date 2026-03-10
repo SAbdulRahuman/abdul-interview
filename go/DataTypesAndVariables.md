@@ -51,6 +51,27 @@ Go has specific integer types with explicit sizes. Using sized types (`int32`, `
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Integer Types Demonstration**
+
+This example declares every integer type Go offers. Each variable gets the zero value `0` because no explicit value is assigned. The key insight is that `int` and `uint` are platform-dependent (64-bit on modern systems) — use them for general purposes. Use sized types (`int32`, `int64`) when you need exact control over memory layout (e.g., binary protocols, FFI, or struct layout for cache alignment).
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Memory Layout — Each Variable in RAM              │
+│                                                          │
+│  var a int     →  [8 bytes on 64-bit]  = 0000...0000     │
+│  var b int8    →  [1 byte ]  = 00000000                  │
+│  var c int16   →  [2 bytes]  = 00000000 00000000         │
+│  var d int32   →  [4 bytes]  = 00000000 ... (×4)         │
+│  var e int64   →  [8 bytes]  = 00000000 ... (×8)         │
+│                                                          │
+│  var g uint8   →  [1 byte ]  = 00000000 (0-255)          │
+│  var k uintptr →  [8 bytes]  = stores raw pointer value  │
+│                                                          │
+│  All zero-initialized — Go guarantees no garbage values! │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -82,6 +103,28 @@ func main() {
 
 ## Floating Point Types
 
+**Tutorial: Floating-Point Precision**
+
+Go offers two floating-point sizes: `float32` (7 digits precision) and `float64` (15 digits precision). Always prefer `float64` — it's the default inferred type for float literals and provides adequate precision for most tasks. This example demonstrates the classic floating-point imprecision issue: `0.1 + 0.2 ≠ 0.3` because these decimal fractions can't be represented exactly in IEEE 754 binary. Use `fmt.Printf("%.2f")` when displaying to avoid showing imprecision.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         IEEE 754 — Why 0.1 + 0.2 ≠ 0.3                  │
+│                                                          │
+│  Decimal 0.1 in binary:                                  │
+│  0.0001100110011001100110011... (repeating forever)      │
+│                                                          │
+│  float64 stores 52 bits of mantissa → truncated!        │
+│  0.1 ≈ 0.1000000000000000055511151231257827021181583...  │
+│  0.2 ≈ 0.2000000000000000111022302462515654042363166...  │
+│  sum  = 0.30000000000000004  (not exactly 0.3)           │
+│                                                          │
+│  Fix: use fmt.Printf("%.2f", result) → "0.30"           │
+│  For exact decimals (money): use integer cents or        │
+│  a decimal library like shopspring/decimal               │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -104,6 +147,26 @@ func main() {
 ---
 
 ## Complex Types
+
+**Tutorial: Complex Number Arithmetic**
+
+Go has built-in complex number support — unusual for a systems language. `complex64` uses two `float32` values (real + imaginary), while `complex128` uses two `float64` values. The `complex()` built-in constructs a complex number, `real()` extracts the real part, and `imag()` extracts the imaginary part. Complex numbers are used in signal processing, physics simulations, and fractal generation.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Complex Number Memory Layout                       │
+│                                                          │
+│  complex128 = 3 + 4i                                     │
+│  ┌──────────────────┬──────────────────┐                 │
+│  │ real: float64    │ imag: float64    │                 │
+│  │ 3.0 (8 bytes)    │ 4.0 (8 bytes)    │                 │
+│  └──────────────────┴──────────────────┘                 │
+│  Total: 16 bytes                                         │
+│                                                          │
+│  Arithmetic: (3+4i) + (1+1i) = (4+5i)                   │
+│  real(3+4i) = 3.0     imag(3+4i) = 4.0                  │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -147,14 +210,11 @@ Understanding the difference between `byte` and `rune` is critical for working w
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: byte vs rune vs string**
+
+This is one of the most important concepts in Go. A `byte` is an alias for `uint8` — used for raw data and ASCII. A `rune` is an alias for `int32` — used for Unicode code points. A `string` is an immutable slice of bytes encoded in UTF-8. The critical insight: `len(s)` returns the **byte count**, not the character count! The character '世' takes 3 bytes in UTF-8, so `"Hello, 世界"` is 13 bytes but only 9 characters.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // byte — alias for uint8, represents a single ASCII character
-    var b byte = 'A'
     fmt.Println(b)       // 65 (ASCII value)
     fmt.Printf("%c\n", b) // A
 
@@ -203,17 +263,11 @@ Every type in Go has a **zero value** — the default value assigned when you do
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Zero Values — No Uninitialized Variables**
+
+This example shows that every type in Go has a predictable zero value. Unlike C/C++ where uninitialized variables contain garbage, Go guarantees deterministic defaults. This eliminates an entire class of bugs. Note that `nil` types (pointers, slices, maps, channels, functions, interfaces) are safe to read but may panic when written to or methods are called on them — always check for `nil` before use.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    var i int         // 0
-    var f float64     // 0
-    var b bool        // false
-    var s string      // "" (empty string)
-    var p *int        // nil
     var sl []int      // nil
     var m map[string]int // nil
     var ch chan int    // nil
@@ -236,6 +290,27 @@ func main() {
 ---
 
 ## Variable Declaration
+
+**Tutorial: 7 Ways to Declare Variables**
+
+Go offers multiple declaration styles for different contexts. The `var` keyword with explicit type is the most verbose but clearest. Short declaration `:=` is the most common inside functions — it infers the type automatically. Block declarations group related variables. The swap idiom `x, y = y, x` is unique to Go — it swaps values without a temp variable because the right side is fully evaluated before assignment.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Variable Declaration Decision Guide                │
+│                                                          │
+│  Where?          Style              Example              │
+│  ──────          ─────              ───────              │
+│  Package level   var name Type      var count int        │
+│  Inside func     := (preferred)     count := 0           │
+│  Multiple vars   var block          var ( a=1; b=2 )     │
+│  Explicit type   var name Type = v  var s string = "hi"  │
+│  Type inference  var name = v       var s = "hi"         │
+│                                                          │
+│  ⚠ := only works inside functions (not package level)   │
+│  ⚠ := requires at least one NEW variable on the left    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -309,6 +384,33 @@ Constants in Go are computed at **compile time**. They must be assignable from c
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Constants as Compile-Time Values & iota Magic**
+
+Constants are evaluated at compile time — they never appear in runtime memory as mutable data. The `iota` keyword is a compile-time counter that auto-increments within each `const` block. It resets to 0 in every new `const` block. This example shows three patterns: simple constants, day-of-week enum via raw `iota`, byte-size units via `iota` with bit shifting, and Unix file permission flags via `iota` with `1 << iota`. The bit flag pattern is especially powerful: combine permissions with `|` (OR) and check them with `&` (AND).
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Bit Flags — How Permissions Work                   │
+│                                                          │
+│  const (                                                 │
+│    Read  = 1 << 0  = 001 = 1                             │
+│    Write = 1 << 1  = 010 = 2                             │
+│    Exec  = 1 << 2  = 100 = 4                             │
+│  )                                                       │
+│                                                          │
+│  Combine: Read | Write = 001 | 010 = 011 = 3            │
+│  Check:   perms & Read != 0 → true  (has read)          │
+│  Check:   perms & Exec != 0 → false (no exec)           │
+│                                                          │
+│  Bit visualization:                                      │
+│  perms = 011                                             │
+│          │││                                             │
+│          ││└─ Read  (bit 0) = 1 ✓                        │
+│          │└── Write (bit 1) = 1 ✓                        │
+│          └─── Exec  (bit 2) = 0 ✗                        │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -373,7 +475,36 @@ func main() {
 
 ## Untyped Constants
 
-Untyped constants in Go have no fixed type until used. They have much higher precision and adapt to context.
+**Tutorial: Untyped Constants — Go's Hidden Superpower**
+
+Untyped constants have no fixed type until they're used in an expression. This makes them far more flexible than typed constants. The constant `42` can become an `int`, `float64`, `float32`, or any numeric type depending on the context it's used in. Untyped constants also have much higher precision — you can declare `const huge = 1e1000` which no runtime type can hold, as long as the final result fits in a real type.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Untyped vs Typed Constants                         │
+│                                                          │
+│  const x = 42           (untyped integer)                │
+│  ┌──────────────────────────────────────┐                │
+│  │ var i int     = x  → x becomes int     ✓             │
+│  │ var f float64 = x  → x becomes float64 ✓             │
+│  │ var b byte    = x  → x becomes byte    ✓             │
+│  └──────────────────────────────────────┘                │
+│  x ADAPTS to whatever type context it appears in         │
+│                                                          │
+│  const typedX int = 42  (typed integer)                  │
+│  ┌──────────────────────────────────────┐                │
+│  │ var i int     = typedX  → ✓ (same type)              │
+│  │ var f float64 = typedX  → ✗ COMPILE ERROR            │
+│  └──────────────────────────────────────┘                │
+│  typedX is LOCKED to int — no adaptation                 │
+│                                                          │
+│  High precision:                                         │
+│  const huge = 1e1000     ← OK as untyped (compiler math)│
+│  var h float64 = huge    ← ERROR: overflow at assignment │
+│  const small = huge/1e999 ← OK: result is 10            │
+│  var s float64 = small   ← OK: 10 fits in float64       │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -407,26 +538,9 @@ func main() {
 
 ## Type Conversion
 
-Go has **no implicit conversions**. All conversions must be explicit. This prevents subtle bugs from automatic widening/narrowing that occurs in C/Java.
+**Tutorial: Explicit Conversions — No Surprises**
 
-```
-┌──────────────────────────────────────────────────────────┐
-│              Type Conversion Rules                       │
-│                                                          │
-│  int → float64    ✓  float64(myInt)    (safe)           │
-│  float64 → int    ✓  int(myFloat)      (truncates!)    │
-│  int → string     ⚠  string(65) = "A"  (Unicode, NOT "65")│
-│  int → "65"       ✓  strconv.Itoa(65)  (use strconv!)  │
-│  string → int     ✓  strconv.Atoi("65")                 │
-│  int8 → int64     ✓  int64(myInt8)     (safe, widens)  │
-│  int64 → int8     ⚠  int8(bigNum)      (overflows!)    │
-│  []byte → string  ✓  string(byteSlice) (copies data)   │
-│  string → []byte  ✓  []byte(myString)  (copies data)   │
-│                                                          │
-│  ⚠ Overflow wraps silently: int8(256) = 0               │
-│  ⚠ Float→Int truncates: int(3.99) = 3  (NOT 4)         │
-└──────────────────────────────────────────────────────────┘
-```
+Go refuses to do implicit type conversions. This is intentional — in C, `int x = 3.99` silently truncates to `3`, and `char c = 256` silently overflows. Go forces you to write `int(3.99)` so the truncation is visible in the code. The most common gotcha: `string(65)` does NOT produce `"65"` — it produces `"A"` (Unicode code point 65). For number-to-string conversion, always use `strconv.Itoa()`.
 
 ```go
 package main
@@ -470,36 +584,9 @@ func main() {
 
 ## Type Alias vs Type Definition
 
-These are two distinct mechanisms in Go that look similar but behave very differently:
+**Tutorial: Two Distinct Mechanisms**
 
-```
-┌──────────────────────────────────────────────────────────┐
-│          Type Alias vs Type Definition                   │
-│                                                          │
-│  Type ALIAS:     type MyInt = int                        │
-│  ─────────────────────────────────────────               │
-│  • MyInt IS int (same type identity)                     │
-│  • Fully interchangeable, no conversion needed           │
-│  • Cannot add methods (it's the same type)               │
-│  • Use case: gradual code refactoring/migration          │
-│                                                          │
-│  Type DEFINITION: type Celsius float64                   │
-│  ─────────────────────────────────────────               │
-│  • Celsius is a NEW distinct type                        │
-│  • Based on float64 but NOT interchangeable              │
-│  • CAN add methods to it                                 │
-│  • Requires explicit conversion: float64(c)              │
-│  • Use case: domain types, type safety, methods          │
-│                                                          │
-│  Example:                                                │
-│    var a MyInt = 10                                       │
-│    var b int = a           ✓ alias — same type           │
-│                                                          │
-│    var c Celsius = 100.0                                  │
-│    var d float64 = c       ✗ definition — different type │
-│    var d float64 = float64(c) ✓ explicit conversion      │
-└──────────────────────────────────────────────────────────┘
-```
+These are two mechanisms that look similar but serve very different purposes. A type alias (`type MyInt = int`) creates another name for the exact same type — `MyInt` and `int` are interchangeable with no conversion needed. A type definition (`type Celsius float64`) creates a brand-new type — `Celsius` and `float64` are incompatible, requiring explicit conversion. You can only add methods to type definitions (new types), not aliases (same type).
 
 ```go
 package main

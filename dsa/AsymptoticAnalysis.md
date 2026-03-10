@@ -56,6 +56,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Why Constants Vanish at Scale:**
+
+```
+  100n (O(n)) vs n² (O(n²)):
+
+  n      100n        n²       Winner
+  ────   ────────   ────────  ──────────
+  10     1,000       100       n² wins      (constant saves B)
+  50     5,000       2,500     n² wins
+  100    10,000      10,000    TIE ← crossover point!
+  500    50,000      250,000   100n wins    (scaling saves A)
+  1000   100,000     1,000,000 100n wins
+  10000  1,000,000   10⁸       100n wins by 100×
+
+  ops ▲
+      │          · n²
+      │        ·
+      │      ·
+      │    ·
+      │   · ──────  100n  (linear always wins eventually)
+      │  · ··
+      │··
+      └──────────────▶ n
+        ↑
+      crossover at n=100
+
+  Asymptotic analysis ignores constants because
+  n² ALWAYS overtakes c·n for large enough n.
+```
+
 ---
 
 ## Example 2: Comparing Growth Rates Visually
@@ -93,9 +123,29 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Growth Rate Comparison:**
 
-## Example 3: Asymptotic Equivalence — Same Big O, Different Constants
+```
+  How fast functions grow (for n=16):
+
+  O(1):       1         ■
+  O(log n):   4         ■■■■
+  O(n):       16        ■■■■■■■■■■■■■■■■
+  O(n log n): 64        ■■■■■■... (64 blocks)
+  O(n²):      256       ■■■■■■... (256 blocks)
+  O(2ⁿ):      65,536    ■■■■■■... (65K blocks!)
+
+  Growth hierarchy (slowest to fastest):
+  ┌─────────────────────────────────────────────┐
+  │  O(1) < O(log n) < O(√n) < O(n)           │
+  │       < O(n log n) < O(n²) < O(n³)        │
+  │       < O(2ⁿ) < O(n!) < O(nⁿ)              │
+  └─────────────────────────────────────────────┘
+                       ↑
+         The "efficiency boundary" — polynomial vs exponential
+```
+
+--- — Same Big O, Different Constants
 
 ```go
 package main
@@ -152,6 +202,27 @@ func main() {
 }
 ```
 
+**Textual Figure — Same Big O, Different Real Performance:**
+
+```
+  sumV1: 1 pass, 1 op/element   ──▶ fastest constant
+  sumV2: 2 passes, 1 op/element ──▶ 2× slower in practice
+  sumV3: 1 pass, 3 ops/element  ──▶ 3× slower in practice
+
+  All three: O(n)
+
+  Real time (n=100,000 × 1000 iterations):
+  ┌───────────────────────────────────────────┐
+  │  sumV1 ███████              ~1.0×        │
+  │  sumV2 ██████████████     ~2.0×        │
+  │  sumV3 ██████████████████ ~2.5×        │
+  └───────────────────────────────────────────┘
+
+  Key insight: Big O tells you the SHAPE (linear),
+  not the exact speed. Constants matter in practice
+  but not in asymptotic classification.
+```
+
 ---
 
 ## Example 4: Little-o and Little-ω (Strict Bounds)
@@ -197,9 +268,39 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Five Asymptotic Notations:**
 
-## Example 5: Analyzing Loops Asymptotically
+```
+  f(n) compared to g(n):
+
+  O (Big O) — upper bound (f ≤ c·g):
+       g(n) ········
+       f(n) ──────     "at most this fast"
+
+  Ω (Big Omega) — lower bound (f ≥ c·g):
+       f(n) ········
+       g(n) ──────     "at least this fast"
+
+  Θ (Big Theta) — tight bound (c₁·g ≤ f ≤ c₂·g):
+       c₂·g ·······
+       f(n) ──────     "exactly this rate"
+       c₁·g ·······
+
+  o (little o) — strict upper (f/g → 0):
+       f grows STRICTLY slower than g (like < vs ≤)
+
+  ω (little omega) — strict lower (f/g → ∞):
+       f grows STRICTLY faster than g (like > vs ≥)
+
+  Number analogy:
+  ┌────────────────────────────────────┐
+  │  O    ↔  ≤       o    ↔  <         │
+  │  Ω    ↔  ≥       ω    ↔  >         │
+  │  Θ    ↔  =                          │
+  └────────────────────────────────────┘
+```
+
+---
 
 ```go
 package main
@@ -267,6 +368,42 @@ func main() {
 }
 ```
 
+**Textual Figure — Loop Analysis Patterns:**
+
+```
+  Pattern 1: Sequential → ADD complexities
+  ────────────────────────────────────
+  for i=0..n: ...     O(n)
+  for j=0..n²: ...    O(n²)
+  Total: O(n) + O(n²) = O(n²)  ← drop lower term
+
+  Pattern 2: Nested → MULTIPLY complexities
+  ────────────────────────────────────
+  for i=0..n:          O(n)
+    for j=0..n:        × O(n)
+  Total: O(n) × O(n) = O(n²)
+
+  Pattern 3: Doubling/halving → O(log n)
+  ────────────────────────────────────
+  for i=1; i<n; i*=2:  O(log n)
+   i: 1 → 2 → 4 → 8 → ... → n
+   Steps: log₂(n)
+
+  Pattern 4: Outer linear × inner logarithmic
+  ────────────────────────────────────
+  for i=0..n:            O(n)
+    for j=1; j<n; j*=2:  × O(log n)
+  Total: O(n log n)
+
+  Pattern 5: Harmonic series
+  ────────────────────────────────────
+  for i=1..n:
+    for j=0; j<n/i:      n/1 + n/2 + n/3 + ... + n/n
+                         = n(1 + 1/2 + 1/3 + ... + 1/n)
+                         = n × H(n) ≈ n ln n
+                         = O(n log n)
+```
+
 ---
 
 ## Example 6: Asymptotic Analysis of Recursive Algorithms
@@ -303,6 +440,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Three Recursion Patterns:**
+
+```
+  Linear Recursion: T(n) = T(n-1) + O(1) → O(n)
+  ●─●─●─●─●─...─●   (chain of n calls)
+  Depth=n, 1 branch = n nodes = O(n)
+
+  Divide Recursion: T(n) = T(n/2) + O(1) → O(log n)
+  ●─●─●─●─●          (chain of log n calls)
+  n → n/2 → n/4 → ... → 1
+  Depth=log n, 1 branch = log n nodes
+
+  Branching Recursion: T(n) = 2T(n-1) + O(1) → O(2ⁿ)
+       ●
+      / \
+     ●   ●
+    / \ / \
+   ●  ● ●  ●        (full binary tree, depth n)
+  Depth=n, 2 branches = 2ⁿ leaves = O(2ⁿ)
+
+  Summary:
+  ┌────────────┬──────────┬─────────┬──────────┐
+  │  Pattern   │ Branches │  Depth  │ Nodes    │
+  ├────────────┼──────────┼─────────┼──────────┤
+  │  Linear   │    1     │   n     │ O(n)     │
+  │  Divide   │    1     │ log n   │ O(log n) │
+  │  Branch   │    2     │   n     │ O(2ⁿ)    │
+  └────────────┴──────────┴─────────┴──────────┘
+```
+
 ---
 
 ## Example 7: Polynomial vs Exponential — The Efficiency Boundary
@@ -335,6 +502,27 @@ func main() {
     fmt.Println("Polynomial: O(n), O(n²), O(n³) → tractable")
     fmt.Println("Exponential: O(2ⁿ), O(n!) → intractable for large n")
 }
+```
+
+**Textual Figure — The Polynomial/Exponential Boundary:**
+
+```
+  For n = 100:
+  ┌──────────┬─────────────────┬──────────────────┐
+  │  Class   │    Value        │  Feasible?       │
+  ├──────────┼─────────────────┼──────────────────┤
+  │  n       │  100            │  ✓ instant       │
+  │  n²      │  10,000         │  ✓ instant       │
+  │  n³      │  1,000,000      │  ✓ < 1 second    │
+  │  n⁵      │  10,000,000,000 │  ⚠ minutes       │
+  │──────────┼─────────────────┼ BOUNDARY ────────┤
+  │  2ⁿ      │  1.27 × 10³⁰    │  ✘ universe dies  │
+  │  n!      │  9.3 × 10¹⁵⁷    │  ✘ impossible     │
+  └──────────┴─────────────────┴──────────────────┘
+
+  Polynomial algorithms (P) are considered "efficient"
+  even if the degree is high, because exponential
+  growth will ALWAYS eventually dwarf any polynomial.
 ```
 
 ---
@@ -374,9 +562,31 @@ func main() {
 }
 ```
 
----
+**Textual Figure — What Counts as "n"?:**
 
-## Example 9: Practical Limits — What n Can You Handle?
+```
+  Different problems measure input differently:
+
+  Array:   nums = [3, 1, 4, 1, 5]    n = 5 (elements)
+  String:  s = "hello"                n = 5 (characters)
+  Matrix:  3×4 grid                   n = 3, m = 4
+  Graph:   5 nodes, 7 edges           V = 5, E = 7
+  Number:  n = 1000000                digits = 7
+
+  Why it matters:
+  ┌──────────────────────────────────────────┐
+  │  isPrime(n):                              │
+  │  Input = the number n                     │
+  │  Input SIZE = log₂(n) bits = d digits      │
+  │                                            │
+  │  Trial division: O(√n)                    │
+  │  Looks polynomial in n...                  │
+  │  But EXPONENTIAL in input size d!           │
+  │  √n = √10ᵈ = 10^(d/2) = exponential in d │
+  └──────────────────────────────────────────┘
+```
+
+--- — What n Can You Handle?
 
 ```go
 package main
@@ -413,6 +623,31 @@ func main() {
     fmt.Println("              If n ≤ 10⁶, you need O(n log n) or better.")
     fmt.Println("              If n ≤ 10⁸, you need O(n).")
 }
+```
+
+**Textual Figure — Practical n Limits:**
+
+```
+  Given ~10⁸ operations per second:
+
+  Complexity  Max n     Visual scale
+  ─────────── ───────── ────────────────────────────────
+  O(n)        10⁸       ██████████████████████████████
+  O(n log n)  5×10⁶     ████████████████████
+  O(n²)       10⁴       ██████
+  O(n³)       500        ██
+  O(2ⁿ)       25         ▪
+  O(n!)       12         ▪
+
+  Interview decision tree:
+  ┌──────────────────────────────────────────┐
+  │  n ≤ 20   → O(2ⁿ) or O(n!) OK (brute/DP) │
+  │  n ≤ 500  → O(n³) OK                     │
+  │  n ≤ 10⁴  → O(n²) OK                     │
+  │  n ≤ 10⁶  → need O(n log n)               │
+  │  n ≤ 10⁸  → need O(n)                     │
+  │  n > 10⁸  → need O(log n) or O(1)         │
+  └──────────────────────────────────────────┘
 ```
 
 ---
@@ -473,6 +708,37 @@ func main() {
     fmt.Println("  For ASCII: O(128) = O(1)")
     fmt.Println("  For Unicode: O(n)")
 }
+```
+
+**Textual Figure — Complete Analysis of Sliding Window:**
+
+```
+  longestUniqueSubstring("abcabcbb")
+
+  Sliding window trace:
+  s = a b c a b c b b
+      0 1 2 3 4 5 6 7
+
+  start=0, end=0: 'a' new         window=[a]       max=1
+  start=0, end=1: 'b' new         window=[a,b]     max=2
+  start=0, end=2: 'c' new         window=[a,b,c]   max=3
+  start=0, end=3: 'a' dup at 0    start→1
+                                  window=[b,c,a]   max=3
+  start=1, end=4: 'b' dup at 1    start→2
+                                  window=[c,a,b]   max=3
+  start=2, end=5: 'c' dup at 2    start→3
+                                  window=[a,b,c]   max=3
+  start=3, end=6: 'b' dup at 4    start→5
+                                  window=[c,b]     max=3
+  start=5, end=7: 'b' dup at 6    start→7
+                                  window=[b]       max=3
+
+  Analysis:
+  ┌────────────────────────────────────────────┐
+  │  Time:  O(n) — each char visited once by 'end' │
+  │  Space: O(min(n, |Σ|)) — hash map              │
+  │  Best = Worst = Average = O(n) → Θ(n)         │
+  └────────────────────────────────────────────┘
 ```
 
 ---

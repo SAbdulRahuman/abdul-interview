@@ -55,6 +55,24 @@ func main() {
 
 **Why Ω(1)?** — Every algorithm must execute at least one instruction. Ω(1) is trivially true for all algorithms.
 
+```
+  Ω(1) — the absolute floor:
+
+  Operations
+  ▲
+  │               ╱  actual work (varies)
+  │             ╱
+  │           ╱
+  │         ╱
+  │       ╱
+  │     ╱
+  │   ╱
+  │ ╱
+  │●────●────●────●   Ω(1) floor ← at least 1 operation
+  └────────────────────▶ n
+  Every algorithm does at least 1 thing.
+```
+
 ---
 
 ## Example 2: Ω(n) — Must Read All Input
@@ -83,6 +101,24 @@ func main() {
 ```
 
 **Why Ω(n)?** — The minimum could be ANY element. You cannot guarantee finding it without checking all `n` elements. This is both O(n) and Ω(n), so it's Θ(n).
+
+```
+  Finding minimum — must check EVERY element:
+
+  [45, 23, 67, 12, 89, 34, 56]
+   ✓   ✓   ✓   ✓   ✓   ✓   ✓   ← all checked
+                  ↑
+               min=12
+
+  Can you skip element 3? NO!
+  What if you skip it and 12 was the minimum? You'd miss it.
+
+  ┌─────────────────────────────────────────┐
+  │ Lower bound: Ω(n) — must look at all n   │
+  │ Upper bound: O(n) — single pass suffices  │
+  │ Tight bound: Θ(n) — both match!           │
+  └─────────────────────────────────────────┘
+```
 
 ---
 
@@ -119,9 +155,28 @@ func main() {
 }
 ```
 
----
+```
+  Comparison Sort Lower Bound Proof — Decision Tree:
 
-## Example 4: Linear Search — O(n) but Ω(1)
+  For n=3 elements, there are 3! = 6 possible orderings:
+  (a<b<c, a<c<b, b<a<c, b<c<a, c<a<b, c<b<a)
+
+  Each comparison is a YES/NO branch:
+
+                   a < b ?
+                 /         \
+              yes            no
+            b < c ?         a < c ?
+           /     \         /     \
+        [a,b,c]  a<c?   [b,a,c]  b<c?
+                 / \             / \
+          [a,c,b] [c,a,b] [b,c,a] [c,b,a]
+
+  6 leaf nodes (outcomes) requires
+  at least ⌈log₂(6)⌉ = 3 levels → 3 comparisons minimum
+
+  For n elements: ⌈log₂(n!)⌉ ≈ n log₂ n comparisons → Ω(n log n)
+```
 
 ```go
 package main
@@ -153,9 +208,28 @@ func main() {
 }
 ```
 
----
+```
+  Linear Search — Ω(1), O(n):
 
-## Example 5: Binary Search — Ω(1), O(log n)
+  [10, 20, 30, 40, 50]
+
+  Search for 10:  ✓  (1 check)   → best case Ω(1)
+                  ↑
+  Search for 50:  ✗  ✗  ✗  ✗  ✓  (5 checks)  → worst case O(n)
+                  ↑  ↑  ↑  ↑  ↑
+
+  Operations
+  ▲
+  │            ╱ O(n) upper bound (worst case)
+  │          ╱
+  │        ╱
+  │  •   ╱       possible actual runtime
+  │    ╱       is anywhere in this range
+  │  ╱  •
+  │╱     •
+  │●────●───●  Ω(1) lower bound (best case)
+  └────────────────▶ n
+```
 
 ```go
 package main
@@ -224,9 +298,22 @@ func main() {
 }
 ```
 
----
+```
+  Matrix traversal — every cell must be visited:
 
-## Example 7: Quick Sort — Ω(n log n) Average, O(n²) Worst
+  ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │  ← row 0: 3 cells
+  ├───┼───┼───┤
+  │ 4 │ 5 │ 6 │  ← row 1: 3 cells
+  ├───┼───┼───┤
+  │ 7 │ 8 │ 9 │  ← row 2: 3 cells
+  └───┴───┴───┘
+  Total: 9 = n² cells, all must be read for sum.
+
+  Could you skip a cell? NO!
+  Every cell contributes to the sum.
+  → Must visit all n² cells → Ω(n²)
+```
 
 ```go
 package main
@@ -272,9 +359,27 @@ func main() {
 }
 ```
 
----
+```
+  Quick Sort — Best vs Worst Partition:
 
-## Example 8: Proving Lower Bounds — Can't Do Better
+  Best case (balanced split):
+           [1,5,7,8,9,10]
+           /            \
+       [1,5,7]       [9,10]
+       /    \          \
+     [1]  [5,7]       [10]
+  → log n levels, n work per level → Ω(n log n)
+
+  Worst case (already sorted, pivot=last):
+  [1,2,3,4,5,6,7,8]
+  [1,2,3,4,5,6,7] | [8]      pivot=8
+  [1,2,3,4,5,6] | [7]        pivot=7
+  [1,2,3,4,5] | [6]          pivot=6
+  ...                         → n levels!
+  → n levels, n work per level → O(n²)
+
+  Summary:  Ω(n log n) ≤ actual ≤ O(n²)
+```
 
 ```go
 package main

@@ -33,6 +33,25 @@ The `sync` package provides traditional synchronization primitives for when chan
 
 ## sync.Mutex
 
+**Tutorial: Protecting Shared State with sync.Mutex**
+
+Mutex provides mutually exclusive access to shared state. `Lock()` acquires exclusive access and `Unlock()` releases it — only one goroutine can hold the lock at a time, others block. This example wraps a counter in a struct with a Mutex, using `defer mu.Unlock()` to guarantee release even if a panic occurs.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          sync.Mutex — Exclusive Lock                     │
+│                                                          │
+│  G1: Lock() ──► │ count++ │ ──► Unlock()                │
+│                 └─────────┘                              │
+│  G2: Lock() ─── BLOCKS ──────────────►│ count++ │─►Unlock│
+│                                        └─────────┘       │
+│  G3: Lock() ─── BLOCKS ──────────────────────────►...    │
+│                                                          │
+│  Only ONE goroutine inside critical section at a time    │
+│  defer mu.Unlock() ensures unlock even on panic          │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -78,6 +97,28 @@ func main() {
 ---
 
 ## sync.RWMutex
+
+**Tutorial: Multiple Readers or Single Writer with RWMutex**
+
+RWMutex allows multiple concurrent readers OR a single exclusive writer. `RLock()` acquires a shared read lock — multiple goroutines can hold it simultaneously. `Lock()` acquires an exclusive write lock that blocks all readers and writers. Use RWMutex when reads vastly outnumber writes, such as caches.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          sync.RWMutex — Readers/Writer Lock              │
+│                                                          │
+│  Multiple readers (concurrent):                          │
+│  R1: RLock() ──► read data ──► RUnlock()                │
+│  R2: RLock() ──► read data ──► RUnlock()  ← simultaneous│
+│  R3: RLock() ──► read data ──► RUnlock()                │
+│                                                          │
+│  Writer (exclusive):                                     │
+│  W1: Lock() ──► write data ──► Unlock()                 │
+│  R4: RLock() ─── BLOCKS ──────────────► read ──► done  │
+│  R5: RLock() ─── BLOCKS ──────────────► read ──► done  │
+│                                                          │
+│  Use when reads >> writes (e.g., caches)                 │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -136,6 +177,25 @@ func main() {
 
 ## sync.Once
 
+**Tutorial: One-Time Initialization with sync.Once**
+
+Guarantees a function executes exactly once, regardless of how many goroutines call it concurrently. This is the idiomatic Go singleton pattern — all goroutines that call `dbOnce.Do(init)` will block until the first invocation completes, then receive the same result. Subsequent calls are no-ops.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         sync.Once — Execute Exactly Once                 │
+│                                                          │
+│  G1 ──► dbOnce.Do(init) ──► init() RUNS ──► dbInstance  │
+│  G2 ──► dbOnce.Do(init) ──► skipped (already ran)       │
+│  G3 ──► dbOnce.Do(init) ──► skipped (already ran)       │
+│  ...                                                     │
+│  G10 ─► dbOnce.Do(init) ──► skipped                     │
+│                                                          │
+│  All goroutines receive the SAME *Database pointer       │
+│  Init function runs exactly once, even under contention  │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -188,6 +248,28 @@ func main() {
 
 ## Mutex Deadlock — Lock Ordering
 
+**Tutorial: Avoiding Deadlock with Consistent Lock Ordering**
+
+Deadlock occurs when two goroutines acquire the same mutexes in opposite order: G1 holds mu1 and waits for mu2, while G2 holds mu2 and waits for mu1 — neither can proceed. The fix is simple: always acquire multiple locks in a consistent global order. This example demonstrates the problem and lists prevention strategies.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Deadlock: Inconsistent Lock Ordering               │
+│                                                          │
+│  G1:  Lock(mu1) ──► Sleep ──► Lock(mu2)   BLOCKS ──┐    │
+│                                                     │    │
+│  G2:  Lock(mu2) ──► Sleep ──► Lock(mu1)   BLOCKS ──┘    │
+│                                                          │
+│       G1 holds mu1, waits for mu2                        │
+│       G2 holds mu2, waits for mu1                        │
+│       → DEADLOCK! Neither can proceed.                   │
+│                                                          │
+│  Fix: Always lock in same order (mu1 → mu2)             │
+│  G1:  Lock(mu1) → Lock(mu2) → work → Unlock both       │
+│  G2:  Lock(mu1) → Lock(mu2) → work → Unlock both       │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -237,6 +319,29 @@ func main() {
 
 ## Mutex TryLock (Go 1.18+)
 
+**Tutorial: Non-Blocking Lock Attempts with TryLock**
+
+`TryLock()` attempts to acquire a lock without blocking. It returns `true` if the lock was acquired, `false` if it's already held. This is useful for opportunistic locking and deadlock avoidance, but rarely the right tool — prefer regular `Lock()` with proper design in most cases.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         TryLock — Non-Blocking Lock Attempt              │
+│                                                          │
+│  mu.Lock()     ← mu is now held                          │
+│                                                          │
+│  mu.TryLock()  → false  (lock busy, don't block)        │
+│                  "doing something else"                   │
+│                                                          │
+│  mu.Unlock()   ← mu is now free                          │
+│                                                          │
+│  mu.TryLock()  → true   (lock acquired!)                │
+│  mu.Unlock()                                             │
+│                                                          │
+│  Also: rw.TryRLock() for read locks                      │
+│  NOTE: Prefer Lock() in most cases                       │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -283,6 +388,28 @@ func main() {
 ---
 
 ## sync.Map
+
+**Tutorial: Concurrent-Safe Map with sync.Map**
+
+The `sync.Map` type provides a concurrent-safe map without external locking. It is optimized for cases where keys are mostly stable (written once, read many times) or goroutines access disjoint key sets. For frequent writes or when you need typed keys/values, prefer a regular `map` protected by `sync.RWMutex`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          sync.Map — Concurrent Safe Map                  │
+│                                                          │
+│  Store("key1","v1")   Load("key1") → "v1", true         │
+│  Store("key2", 42)    Load("key9") → nil, false         │
+│                                                          │
+│  LoadOrStore("key1","new")  → "v1", true  (existed)      │
+│  LoadOrStore("key4","new")  → "new", false (stored)     │
+│                                                          │
+│  Delete("key3")                                          │
+│  Range(func(k,v) bool {...})  ← iterate all entries     │
+│                                                          │
+│  Best for: stable keys, read-heavy, disjoint access     │
+│  Otherwise: map + sync.RWMutex is usually better         │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -332,6 +459,26 @@ func main() {
 
 ## sync.Pool
 
+**Tutorial: Reducing GC Pressure with sync.Pool**
+
+An object pool that caches temporary objects for reuse, reducing garbage collection pressure. Call `Get()` to retrieve (or create) an object, and `Put()` to return it for reuse. Always `Reset()` objects before returning them. Pool objects may be evicted at any GC cycle — don't rely on persistence.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          sync.Pool — Object Reuse                        │
+│                                                          │
+│  pool.Get()                pool.Put(buf)                 │
+│  ┌──────────┐              ┌──────────┐                  │
+│  │ Pool     │──► *Buffer   │ Pool     │◄── *Buffer       │
+│  │ (empty?) │   (new!)     │          │   (reused!)      │
+│  │ call New │              │ stores   │                  │
+│  └──────────┘              └──────────┘                  │
+│                                                          │
+│  Get → reuse or create     Put → return for reuse        │
+│  buf.Reset() before Put!   Objects may be GC'd anytime   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -372,6 +519,30 @@ func main() {
 ---
 
 ## sync.OnceFunc, sync.OnceValue, sync.OnceValues (Go 1.21+)
+
+**Tutorial: Cleaner Once Patterns with OnceFunc/OnceValue**
+
+Go 1.21 introduced convenience wrappers: `OnceFunc` wraps a function to run once with subsequent calls being no-ops, `OnceValue` caches a single return value, and `OnceValues` caches a `(T, error)` pair. These are cleaner alternatives to using `sync.Once` directly. If the function panics, every subsequent call panics with the same value.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     sync.Once* Convenience Wrappers (Go 1.21+)          │
+│                                                          │
+│  OnceFunc(f):       f() → runs once, subsequent = no-op │
+│  OnceValue(f):      f() → T cached, returned every call │
+│  OnceValues(f):     f() → (T, error) cached             │
+│                                                          │
+│  init := OnceFunc(setup)                                 │
+│  init()  → runs setup                                    │
+│  init()  → no-op                                         │
+│                                                          │
+│  getConfig := OnceValue(loadConfig)                      │
+│  cfg := getConfig()  → computes once                     │
+│  cfg := getConfig()  → returns cached                    │
+│                                                          │
+│  If f panics → every subsequent call panics same value   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -416,6 +587,29 @@ func main() {
 ---
 
 ## sync.Cond
+
+**Tutorial: Coordinating Goroutines with Condition Variables**
+
+A condition variable lets goroutines wait for a condition to become true. `Wait()` atomically releases the lock and suspends the goroutine; when woken, it re-acquires the lock. `Broadcast()` wakes ALL waiting goroutines, while `Signal()` wakes just one. Always check the condition in a `for` loop (not `if`) to handle spurious wakeups.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        sync.Cond — Condition Variable                    │
+│                                                          │
+│  Workers:                      Signaler:                 │
+│  ┌─────────────────┐          ┌──────────────────┐       │
+│  │ mu.Lock()       │          │ mu.Lock()         │      │
+│  │ for !ready {    │          │ ready = true      │      │
+│  │   cond.Wait() ──│── waits  │ mu.Unlock()       │      │
+│  │ }               │          │ cond.Broadcast() ─│─► wake│
+│  │ "proceeding!"   │◄─────── │                   │      │
+│  │ mu.Unlock()     │          └──────────────────┘       │
+│  └─────────────────┘                                     │
+│                                                          │
+│  Wait() = Unlock + Sleep + re-Lock (atomic)              │
+│  Broadcast() = wake ALL;  Signal() = wake ONE            │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -464,6 +658,29 @@ func main() {
 
 ## atomic Package
 
+**Tutorial: Lock-Free Operations with sync/atomic**
+
+Atomic operations provide the fastest synchronization for simple operations like counters and flags — they're lock-free and don't require a Mutex. `AddInt64` atomically increments, `CompareAndSwap` enables lock-free algorithms, and `atomic.Value` lets you store/load any type atomically for patterns like hot-swapping configuration.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          atomic Package — Lock-Free Operations           │
+│                                                          │
+│  AddInt64(&counter, 1)     atomic increment              │
+│  LoadInt64(&counter)       atomic read                   │
+│  StoreInt64(&counter, 0)   atomic write                  │
+│                                                          │
+│  CompareAndSwapInt64(&v, old, new):                      │
+│  ┌────────────────────────────────┐                      │
+│  │ if v == old → v = new (true)  │  single atomic op    │
+│  │ if v != old → no-op  (false)  │                      │
+│  └────────────────────────────────┘                      │
+│                                                          │
+│  atomic.Value → Store/Load any type atomically           │
+│  Faster than Mutex for simple counter/flag operations    │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -509,6 +726,30 @@ func main() {
 ---
 
 ## Type-Safe Atomic Types (Go 1.19+)
+
+**Tutorial: Modern Atomic Types with Methods**
+
+Go 1.19 introduced type-safe atomic wrappers: `atomic.Bool`, `atomic.Int64`, `atomic.Pointer[T]`, etc. They provide methods like `.Add()`, `.Load()`, `.Store()`, and `.CompareAndSwap()` directly on the type, eliminating the need for passing pointers. The compiler enforces correct usage, making code cleaner and less error-prone.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│    Type-Safe Atomic Types (Go 1.19+)                     │
+│                                                          │
+│  Old style:                  New style:                  │
+│  atomic.AddInt64(&c, 1)      var c atomic.Int64          │
+│  atomic.LoadInt64(&c)        c.Add(1)                    │
+│                              c.Load()                    │
+│                                                          │
+│  Types: atomic.Bool, Int32, Int64, Uint32, Uint64        │
+│         atomic.Pointer[T]                                │
+│                                                          │
+│  ┌────────────────────┐  ┌────────────────────┐          │
+│  │ var p atomic.       │  │ p.Store(&Config{}) │          │
+│  │   Pointer[Config]  │  │ cfg := p.Load()    │          │
+│  └────────────────────┘  └────────────────────┘          │
+│  Compiler-enforced type safety + cleaner API             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -569,6 +810,27 @@ func main() {
 ---
 
 ## Mutex vs Channel — When to Use Which
+
+**Tutorial: Choosing Between Mutex and Channel**
+
+This is the key decision guide for Go concurrency. Use mutexes when protecting shared state (counters, maps, structs) — they're simpler and faster for that purpose. Use channels when passing data between goroutines, coordinating lifecycle, or building pipelines. The Go proverb says "share memory by communicating," but don't force channels where a mutex is simpler.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│    Mutex vs Channel Decision Guide                       │
+│                                                          │
+│  ┌─── Use Mutex ───────────┐ ┌─── Use Channel ────────┐ │
+│  │ • Protect shared state  │ │ • Pass data between G's│ │
+│  │ • Counters, maps, cache │ │ • Signal done/cancel   │ │
+│  │ • Simple lock/unlock    │ │ • Pipeline stages      │ │
+│  │ • Performance critical  │ │ • Fan-in / Fan-out     │ │
+│  │ • Read-heavy (RWMutex)  │ │ • Timeouts (select)    │ │
+│  └───────────────────────┘ └───────────────────────┘ │
+│                                                          │
+│  "Share memory by communicating"                         │
+│   but don't force channels where mutex is simpler!       │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

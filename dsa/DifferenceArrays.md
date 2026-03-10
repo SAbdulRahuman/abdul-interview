@@ -63,6 +63,38 @@ func main() {
 }
 ```
 
+**Textual Figure — Build & Reconstruct Difference Array:**
+
+```
+  nums:  [3,   1,   4,   1,   5,   9]
+  index:  0    1    2    3    4    5
+
+  Build difference:  diff[i] = nums[i] - nums[i-1]
+    diff[0] = 3          (first element as-is)
+    diff[1] = 1-3  = -2
+    diff[2] = 4-1  =  3
+    diff[3] = 1-4  = -3
+    diff[4] = 5-1  =  4
+    diff[5] = 9-5  =  4
+
+  diff:  [3,  -2,   3,  -3,   4,   4]
+
+  Reconstruct (prefix sum of diff):
+    result[0] = 3
+    result[1] = 3 + (-2) = 1
+    result[2] = 1 + 3    = 4
+    result[3] = 4 + (-3) = 1
+    result[4] = 1 + 4    = 5
+    result[5] = 5 + 4    = 9
+
+  result: [3,  1,  4,  1,  5,  9]  ← matches original! ✓
+
+  ┌────────────────────────────────────┐
+  │  diff = differences between elements  │
+  │  prefix_sum(diff) = original array     │
+  └────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Range Update in O(1)
@@ -94,6 +126,34 @@ func main() {
     //                               indices: 0 1 2 3 4 5 6 7
     // [2,5] gets +5, [4,7] gets +3
 }
+```
+
+**Textual Figure — Range Update in O(1):**
+
+```
+  n=8, start all zeros:  [0, 0, 0, 0, 0, 0, 0, 0]
+
+  Update 1: Add 5 to [2..5]
+  diff: [0, 0, +5, 0, 0, 0, -5, 0, 0]
+                ↑              ↑
+              diff[2]+=5    diff[6]-=5
+
+  Update 2: Add 3 to [4..7]
+  diff: [0, 0, +5, 0, +3, 0, -5, 0, -3]
+                       ↑              ↑
+                    diff[4]+=3    diff[8]-=3
+
+  Reconstruct (prefix sum):
+  diff:   [0,  0, +5,  0, +3,  0, -5,  0, -3]
+  result: [0,  0,  5,  5,  8,  8,  3,  3]
+          │  │        │              │
+          │  └── +5 ──┘  +3 added    │
+          │     [2..5]     [4..7]     │
+
+          Index: 0  1  2  3  4  5  6  7
+  +5 range:            ████████████
+  +3 range:                  ████████████
+  result:      0  0  5  5  8  8  3  3
 ```
 
 ---
@@ -136,6 +196,33 @@ func main() {
     // Flight 4: 25
     // Flight 5: 25
 }
+```
+
+**Textual Figure — Corporate Flight Bookings:**
+
+```
+  5 flights, 3 bookings:  [1,2,10]  [2,3,20]  [2,5,25]
+
+  diff (0-indexed):
+    [1,2,10]: diff[0]+=10, diff[2]-=10
+    [2,3,20]: diff[1]+=20, diff[3]-=20
+    [2,5,25]: diff[1]+=25, diff[5]-=25
+
+  diff:  [10, 45, -10, -20, 0, -25]
+
+  Reconstruct:
+    Flight 1: 10
+    Flight 2: 10+45 = 55
+    Flight 3: 55+(-10) = 45
+    Flight 4: 45+(-20) = 25
+    Flight 5: 25+0 = 25
+
+  Visual:
+  Flight:   1    2    3    4    5
+  +10:     ████ ████
+  +20:          ████ ████
+  +25:          ████ ████ ████ ████
+  Total:   10   55   45   25   25
 ```
 
 ---
@@ -182,6 +269,35 @@ func main() {
     fmt.Println(carPooling([][]int{{2, 1, 5}, {3, 5, 7}}, 3))  // true (no overlap)
     fmt.Println(carPooling([][]int{{3, 2, 7}, {3, 7, 9}, {8, 3, 9}}, 11)) // true
 }
+```
+
+**Textual Figure — Car Pooling:**
+
+```
+  capacity = 4
+  trips: [2, 1, 5]  [3, 3, 7]
+
+  Timeline (location 0..7):
+  diff: [0, +2, 0, +3, 0, -2, 0, -3]
+         0   1  2   3  4   5  6   7
+
+  Reconstruct (passengers at each location):
+  loc 0:  0
+  loc 1:  0+2 = 2
+  loc 2:  2
+  loc 3:  2+3 = 5  ← exceeds capacity 4!  FAIL
+  loc 4:  5
+  loc 5:  5-2 = 3  (2 passengers get off)
+  loc 6:  3
+  loc 7:  3-3 = 0  (3 passengers get off)
+
+  Visual:
+  Location: 0  1  2  3  4  5  6  7
+  Trip 1:      ████████████      (2 pax, loc 1→5)
+  Trip 2:            ████████████ (3 pax, loc 3→7)
+  Passengers: 0  2  2  5  5  3  3  0
+  Capacity:   4  4  4  4  4  4  4  4
+                    ✗  ✗           ← over capacity!
 ```
 
 ---
@@ -232,6 +348,28 @@ func main() {
     // Index:  0   1   2   3   4   5   6   7   8   9
     // Value:  5  15  15  30  30  30  20  35  35  15
 }
+```
+
+**Textual Figure — Multiple Range Updates:**
+
+```
+  n = 10, all zeros initially
+
+  Operations:
+  [0..4] += 3:   ███████████████
+  [2..7] += 5:         ██████████████████
+  [5..9] += 2:                  ███████████████
+  [1..3] -= 1:      ─────────
+
+  diff array after all operations:
+  Index:  0   1   2   3   4   5   6   7   8   9  10
+  diff:  [3, -1,  5,  0,  1, -1,  0,  0, -5,  0, -2]
+
+  Prefix sum → result:
+  Index:  0   1   2   3   4   5   6   7   8   9
+  Value:  3   2   7   7   8   7   7   7   2   2
+
+  All 4 operations applied with just 8 O(1) updates!
 ```
 
 ---
@@ -292,6 +430,35 @@ func main() {
 }
 ```
 
+**Textual Figure — 2D Difference Array:**
+
+```
+  5×5 grid, two operations:
+    1) Add 10 to submatrix (1,1)→(3,3)
+    2) Add 1  to entire grid (0,0)→(4,4)
+
+  2D diff update for (r1,c1)→(r2,c2) += val:
+    diff[r1][c1]     += val
+    diff[r2+1][c1]   -= val
+    diff[r1][c2+1]   -= val
+    diff[r2+1][c2+1]  += val    (inclusion-exclusion)
+
+  After operations, reconstruct with 2D prefix sum:
+
+  Result:
+  ┌───┬────┬────┬────┬───┐
+  │ 1 │  1 │  1 │  1 │ 1 │   row 0: only +1 from op 2
+  ├───┼────┼────┼────┼───┤
+  │ 1 │ 11 │ 11 │ 11 │ 1 │   inner: +10 + +1 = 11
+  ├───┼────┼────┼────┼───┤
+  │ 1 │ 11 │ 11 │ 11 │ 1 │   border: just +1
+  ├───┼────┼────┼────┼───┤
+  │ 1 │ 11 │ 11 │ 11 │ 1 │
+  ├───┼────┼────┼────┼───┤
+  │ 1 │  1 │  1 │  1 │ 1 │
+  └───┴────┴────┴────┴───┘
+```
+
 ---
 
 ## Example 7: Painting Segments — Counting Overlap
@@ -342,9 +509,28 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Painting Segments (Counting Overlap):**
 
-## Example 8: Temperature Change Over Time
+```
+  Segments: [2,8]  [5,12]  [10,15]  [1,3]
+
+  Position:  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+  [1, 3]:       █████████
+  [2, 8]:          █████████████████████
+  [5,12]:                   ████████████████████████
+  [10,15]:                               ██████████████████
+
+  Overlap count per position:
+  Position: 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+  Count:    0  1  2  2  1  2  2  2  2  1  2  2  2  1  1  1
+
+  How: diff[start]++, diff[end+1]--
+  Then prefix sum gives overlap count at each position.
+
+  Max overlap = 2 painters at positions 2,3,5,6,7,8,10,11,12
+```
+
+---
 
 ```go
 package main
@@ -388,9 +574,31 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Temperature Change Over Time:**
 
-## Example 9: Range Set and Range Add Combined
+```
+  Base: 20°C for all 24 hours
+
+  Events on the difference array:
+  Hour:    0  1  2  3  4  5  6  7  8  9 10 11 12 13..16 17 18 19 20..23
+  Heater:                       +5───────-5
+  Sun:                                      +8────────────-8
+  AC:                                              -3─────────+3
+  Night:                                                           -4────
+
+  Resulting temperature:
+  Hour  0-5:  20°C  (no change)
+  Hour  6-9:  25°C  (+5 heater)
+  Hour 10-11: 28°C  (+8 sun)
+  Hour 12-16: 25°C  (+8 sun, -3 AC)
+  Hour 17-18: 17°C  (-3 AC)
+  Hour 19:    20°C  (AC off)
+  Hour 20-23: 16°C  (-4 night)
+
+  Key: diff array lets us stack changes without touching every hour!
+```
+
+---
 
 ```go
 package main
@@ -428,6 +636,42 @@ func main() {
     // Index: 0  1  2  3  4  5  6  7  8  9
     //        3  2  7  7  8  7  7  7  2  2
 }
+```
+
+**Textual Figure — Range Set and Range Add:**
+
+```
+  n = 10, initial: all zeros
+
+  Operation trace on diff array:
+
+  After [0..4] += 3:
+  diff: [+3, 0, 0, 0, 0, -3, 0, 0, 0, 0, 0]
+
+  After [2..7] += 5:
+  diff: [+3, 0, +5, 0, 0, -3, 0, 0, -5, 0, 0]
+
+  After [5..9] += 2:
+  diff: [+3, 0, +5, 0, 0, -1, 0, 0, -5, 0, -2]
+
+  After [1..3] -= 1:
+  diff: [+3, -1, +5, 0, +1, -1, 0, 0, -5, 0, -2]
+
+  Prefix sum:
+   i:     0   1   2   3   4   5   6   7   8   9
+   val:   3   2   7   7   8   7   7   7   2   2
+
+  Breakdown per index:
+  idx 0: +3             = 3
+  idx 1: +3 -1          = 2
+  idx 2: +3 -1 +5       = 7
+  idx 3: +3 -1 +5       = 7
+  idx 4: +3    +5       = 8
+  idx 5:       +5 +2    = 7
+  idx 6:       +5 +2    = 7
+  idx 7:       +5 +2    = 7
+  idx 8:          +2    = 2
+  idx 9:          +2    = 2
 ```
 
 ---
@@ -484,6 +728,37 @@ func main() {
         }
     }
 }
+```
+
+**Textual Figure — Frequency Histogram with Difference Array:**
+
+```
+  Age ranges and counts:
+    Ages 20-30: 50 people
+    Ages 25-35: 30 people
+    Ages 30-40: 20 people
+    Ages 18-22: 40 people
+
+  diff array updates:
+    diff[20]+=50, diff[31]-=50
+    diff[25]+=30, diff[36]-=30
+    diff[30]+=20, diff[41]-=20
+    diff[18]+=40, diff[23]-=40
+
+  Reconstruct histogram:
+  Age 18: 40  ████████
+  Age 19: 40  ████████
+  Age 20: 90  ██████████████████  ← +50
+  Age 21: 90  ██████████████████
+  Age 22: 90  ██████████████████
+  Age 23: 50  ██████████        ← 40 left
+  Age 24: 50  ██████████
+  Age 25: 80  ████████████████  ← +30
+  ...         (and so on)
+  Age 30: 100 ████████████████████ ← peak!
+
+  Without diff array: O(people × range_size) updates
+  With diff array:    O(ranges) updates + O(max_age) reconstruct
 ```
 
 ---

@@ -34,6 +34,29 @@ Channels are Go's primary mechanism for communication between goroutines — fol
 
 ## Unbuffered Channels
 
+**Tutorial: Unbuffered Channel Synchronous Handshake**
+
+Unbuffered channels act as a synchronous rendezvous point: the sender blocks until a receiver is ready, and the receiver blocks until a sender delivers a value. Both goroutines must arrive at the channel operation at the same time for the transfer to happen. This provides a strong synchronization guarantee.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Unbuffered Channel Handshake                     │
+│                                                          │
+│  Goroutine                            main               │
+│  ┌──────────────────┐                ┌─────────────┐    │
+│  │ ch <- "hello"    │                │ Sleep(100ms)  │   │
+│  │  (BLOCKS here    │◄── handshake ──►│              │   │
+│  │   until recv)    │                │ msg := <-ch   │   │
+│  │                  │                │  (BLOCKS here │   │
+│  │ "sent!" printed  │                │   until send) │   │
+│  └──────────────────┘                └─────────────┘    │
+│                                                          │
+│  Timeline:                                               │
+│  G:  ───send(blocks)──────────────────handshake──►print      │
+│  M:  ───sleep──────────────recv(unblocks G)──►print      │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -70,6 +93,27 @@ func main() {
 
 ## Buffered Channels
 
+**Tutorial: Buffered Channels — Asynchronous Up to Capacity**
+
+Buffered channels hold up to N values without blocking the sender. Sends only block when the buffer is full; receives only block when the buffer is empty. This makes them behave like a FIFO queue between goroutines. Use `len(ch)` to check current fill and `cap(ch)` for the capacity.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Buffered Channel (capacity 3)                     │
+│                                                          │
+│  ch <- 1      ch <- 2      ch <- 3     ch <- 4          │
+│                                          BLOCKS!         │
+│  ┌───┬───┬───┐                                           │
+│  │ 1 │ 2 │ 3 │  ← buffer full (len=3, cap=3)            │
+│  └───┴───┴───┘                                           │
+│                                                          │
+│  <-ch → 1     <-ch → 2     <-ch → 3                     │
+│  ┌───┬───┬───┐                                           │
+│  │   │   │   │  ← buffer empty (len=0, cap=3)           │
+│  └───┴───┴───┘                                           │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -97,6 +141,28 @@ func main() {
 ---
 
 ## Directional Channels
+
+**Tutorial: Enforcing Channel Direction at Compile Time**
+
+Restricting a channel to send-only (`chan<- T`) or receive-only (`<-chan T`) enforces correct usage at compile time. A bidirectional `chan T` is implicitly convertible to either direction when passed to a function. This pattern ensures producers can only send and consumers can only receive, preventing accidental misuse.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Directional Channel Type Conversion                │
+│                                                          │
+│   ch := make(chan int, 5)    bidirectional                │
+│          │                                               │
+│    ┌─────┴──────┐                                        │
+│    ▼             ▼                                       │
+│  chan<- int    <-chan int                                  │
+│  (send-only)  (receive-only)                             │
+│    │             │                                       │
+│    ▼             ▼                                       │
+│  producer(ch)  consumer(ch)   implicit conversion        │
+│  can only      can only                                  │
+│  send+close    receive+range                             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -130,6 +196,27 @@ func main() {
 ---
 
 ## Closing Channels
+
+**Tutorial: Channel Close Semantics**
+
+`close(ch)` signals that no more values will be sent on the channel. Receives after close drain any buffered values first, then return the zero value with `ok=false`. Watch for two panics: sending to a closed channel, and closing an already-closed channel. Only the sender should close a channel.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Closed Channel Behavior                           │
+│                                                          │
+│  ch <- 1, 2, 3 → close(ch)                              │
+│                                                          │
+│  <-ch  → 1, true   ◄── buffered values returned first   │
+│  <-ch  → 2, true                                        │
+│  <-ch  → 3, true                                        │
+│  <-ch  → 0, false  ◄── zero value, ok=false (closed)    │
+│  <-ch  → 0, false  ◄── keeps returning zero, false      │
+│                                                          │
+│  ch <- 4   → PANIC: send on closed channel              │
+│  close(ch) → PANIC: close of closed channel             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -170,6 +257,28 @@ func main() {
 
 ## Range Over Channel
 
+**Tutorial: Iterating Channels with range**
+
+`for val := range ch` reads values from a channel until it is closed. The sender MUST close the channel when done, or the range loop blocks forever waiting for more values (causing a deadlock). This pattern is ideal for producers that generate a known sequence then signal completion.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        range Over Channel                                │
+│                                                          │
+│  fibonacci goroutine:          main goroutine:           │
+│  ┌─────────────────┐          ┌──────────────────┐       │
+│  │ ch <- 0         │────────► │ for val := range ch│     │
+│  │ ch <- 1         │────────► │   print(val)      │      │
+│  │ ch <- 1         │────────► │   ...             │      │
+│  │ ...             │          │                   │      │
+│  │ ch <- 34        │────────► │   print(34)       │      │
+│  │ close(ch) ──────│────X───► │ loop exits ✓      │      │
+│  └─────────────────┘          └──────────────────┘       │
+│                                                          │
+│  Without close(ch) → range blocks forever (deadlock!)   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -201,6 +310,29 @@ func main() {
 ---
 
 ## Nil Channel Behavior
+
+**Tutorial: Nil Channels and Disabling select Cases**
+
+Operations on a nil channel block forever — both sends and receives. This seems useless but is a powerful tool in `select` statements: set a channel variable to `nil` to disable that case on future iterations. This pattern lets you drain multiple channels exactly once without duplicating logic.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Nil Channel Behavior in select                    │
+│                                                          │
+│  var ch chan int   (nil)                                  │
+│  ch <- 1           → blocks forever                      │
+│  <-ch              → blocks forever                      │
+│                                                          │
+│  Useful pattern — disable select cases:                  │
+│  Iteration 1:  ch1="one"  ch2="two"                      │
+│    select picks ch1 → print → ch1 = nil (disabled)      │
+│                                                          │
+│  Iteration 2:  ch1=nil    ch2="two"                      │
+│    select skips nil ch1 → picks ch2 → print → ch2 = nil │
+│                                                          │
+│  Both channels consumed exactly once ✓                   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -248,6 +380,32 @@ func main() {
 ---
 
 ## select Statement — Advanced
+
+**Tutorial: Multiplexing Channel Operations with select**
+
+The `select` statement multiplexes channel operations: it blocks until one case is ready, then executes that case. Key behaviors include first-ready-wins for racing channels, timeouts with `time.After`, non-blocking operation via `default`, and random selection when multiple cases are ready simultaneously.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          select Statement Behaviors                      │
+│                                                          │
+│  1. Multi-way:  select on ch1 and ch2                    │
+│     → first ready wins (ch1 at 100ms beats ch2 at 500ms)│
+│                                                          │
+│  2. Timeout:    select { case <-ch; case <-time.After }  │
+│     → if ch not ready in 200ms, timeout case fires      │
+│                                                          │
+│  3. Non-blocking: select { case <-ch; default: }         │
+│     → if ch not ready, default runs immediately          │
+│                                                          │
+│  4. Random:     ch4 and ch5 both ready                   │
+│     ┌────┐  ┌────┐                                       │
+│     │ ch4│  │ ch5│  ← both have data                     │
+│     └──┬─┘  └──┬─┘                                       │
+│        └───┬───┘                                         │
+│          select → picks one at RANDOM (fair)             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -318,6 +476,27 @@ func main() {
 
 ### Done Channel / Cancellation
 
+**Tutorial: Broadcasting Cancellation with a Done Channel**
+
+The "done channel" pattern uses `chan struct{}` for cancellation signaling. Closing the channel broadcasts to ALL listening goroutines simultaneously — every `select` case watching `<-done` unblocks. Using `struct{}` as the element type costs zero memory since it carries no data, only a signal.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Done Channel Cancellation Pattern                 │
+│                                                          │
+│  main:                     worker:                       │
+│  ┌────────────────┐       ┌─────────────────────┐        │
+│  │ done := make() │       │ select {            │        │
+│  │ go worker(done)│──────►│ case <-done: return │        │
+│  │ Sleep(350ms)   │       │ default: do work... │        │
+│  │ close(done) ───│──X──► │ }                   │        │
+│  └────────────────┘       └─────────────────────┘        │
+│                                                          │
+│  close(done) → all receivers see it immediately          │
+│  struct{} → zero memory cost                             │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -352,6 +531,28 @@ func main() {
 ```
 
 ### Fan-In (merge multiple channels into one)
+
+**Tutorial: Fan-In — Merging Multiple Channels**
+
+The fan-in pattern merges multiple input channels into a single output channel. A goroutine is spawned per input channel to forward values to the merged channel. A `WaitGroup` tracks when all inputs are exhausted, then closes the merged channel so consumers know to stop.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Fan-In: Merge Multiple Channels                 │
+│                                                          │
+│  ch1 ──► [1, 2, 3]  ──┐                                 │
+│                        ├──► merged ──► [1,10,2,20,3,30]  │
+│  ch2 ──► [10,20,30] ──┘       (order may vary)          │
+│                                                          │
+│  Implementation:                                         │
+│  ┌──────────┐    ┌────────────┐    ┌───────────┐         │
+│  │ G reads  │───►│            │    │           │         │
+│  │ from ch1 │    │  merged ch │───►│  consumer │         │
+│  │ G reads  │───►│            │    │           │         │
+│  │ from ch2 │    └────────────┘    └───────────┘         │
+│  └──────────┘    wg.Wait() → close(merged)              │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -398,6 +599,27 @@ func main() {
 ```
 
 ### Pipeline
+
+**Tutorial: Channel Pipeline — Chaining Processing Stages**
+
+A pipeline chains processing stages connected by channels. Each stage is a goroutine that reads from an input channel, transforms data, and writes to an output channel. Each stage closes its output channel when its input is exhausted, propagating completion down the chain.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Channel Pipeline Pattern                        │
+│                                                          │
+│  generate(1,2,3,4,5)     square()         filter(>10)   │
+│  ┌───────────────┐    ┌───────────┐    ┌─────────────┐   │
+│  │ 1→2→3→4→5     │───►│ 1→4→9→   │───►│ 16→25       │   │
+│  │               │    │ 16→25    │    │             │   │
+│  └───────────────┘    └───────────┘    └──────┬──────┘   │
+│  out = chan int        out = chan int       result ch     │
+│  close(out) ✓          close(out) ✓       close(out) ✓  │
+│                                                          │
+│  Each stage: goroutine + input ch + output ch            │
+│  Each stage closes its output when input is exhausted    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -453,6 +675,27 @@ func main() {
 ```
 
 ### Semaphore (buffered channel as counting semaphore)
+
+**Tutorial: Limiting Concurrency with a Channel Semaphore**
+
+A buffered channel can act as a counting semaphore to cap the number of concurrent goroutines. Sending to the channel "acquires" a slot (blocking if full), and receiving "releases" it. This is simpler than using a weighted semaphore library and perfectly idiomatic in Go.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Buffered Channel as Counting Semaphore             │
+│                                                          │
+│  semaphore := make(chan struct{}, 3)   capacity = 3      │
+│                                                          │
+│  Worker 0: acquire ─► [■ . .]  running                   │
+│  Worker 1: acquire ─► [■ ■ .]  running                   │
+│  Worker 2: acquire ─► [■ ■ ■]  running                   │
+│  Worker 3: acquire ─► BLOCKS   (buffer full!)            │
+│            ...                                           │
+│  Worker 0: release ─► [. ■ ■]  Worker 3 unblocks ──►run │
+│                                                          │
+│  Max 3 goroutines execute concurrently                   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

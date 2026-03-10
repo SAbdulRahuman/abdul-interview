@@ -53,6 +53,29 @@ func main() {
 
 **Why drop constants?** Big O measures **growth rate**. Whether you loop 1× or 2×, the growth is still linear. O(2n) and O(n) have the same shape on a graph.
 
+```
+  O(2n) vs O(n) — Same growth shape:
+
+  Operations
+  ▲
+  │                           ╱ O(2n)
+  │                         ╱
+  │                       ╱
+  │                     ╱   ╱ O(n)
+  │                   ╱   ╱
+  │                 ╱   ╱
+  │               ╱   ╱
+  │             ╱   ╱
+  │           ╱   ╱       Both are straight lines!
+  │         ╱   ╱         Only steepness differs
+  │       ╱   ╱           (constant factor).
+  │     ╱   ╱
+  │   ╱   ╱              In Big O, they're SAME: O(n)
+  │ ╱   ╱
+  │╱  ╱
+  └──────────────────────────────▶ n
+```
+
 ---
 
 ## Example 2: Dropping Lower-Order Terms — O(n² + n) → O(n²)
@@ -91,6 +114,20 @@ func main() {
     fmt.Println(dominantTerm(nums2)) // 10100 → 10000 (n²) + 100 (n)
     // As n grows, n becomes insignificant vs n²
 }
+```
+
+```
+  Why n² dominates n:
+
+     n   │   n²     │   n   │  n as % of n²
+  ───────┼─────────┼───────┼───────────────
+     10  │     100  │   10  │  10%  ← noticeable
+    100  │  10,000  │  100  │   1%  ← small
+   1000  │ 1,000,000│ 1000  │  0.1% ← negligible
+  10000  │ 10⁸     │ 10000 │  0.01%← irrelevant!
+
+  As n grows, n becomes invisible next to n².
+  So O(n² + n) = O(n²)
 ```
 
 ---
@@ -137,9 +174,19 @@ func main() {
 }
 ```
 
----
+```
+  O(1) operations — instant regardless of size:
 
-## Example 4: O(n) — Linear Algorithms
+  ┌─────────────────────────────────────────┐
+  │ Array index access    nums[i]     O(1) │
+  │ Hash map lookup       m["key"]    O(1) │
+  │ Arithmetic            a + b       O(1) │
+  │ Comparison            a == b      O(1) │
+  │ Stack push/pop        s.push(x)   O(1) │
+  │ Variable assignment   x := 5      O(1) │
+  └─────────────────────────────────────────┘
+  No loops, no recursion → constant time
+```
 
 ```go
 package main
@@ -186,9 +233,18 @@ func main() {
 }
 ```
 
----
+```
+  Linear algorithms — visit each element once:
 
-## Example 5: O(log n) — Halving Patterns
+  Input:  [5, 3, 8, 1, 9]
+           ↓  ↓  ↓  ↓  ↓     ← every element checked
+  Check:   1  2  3  4  5     ← n operations total
+
+  Double the input, double the work:
+  n=5    → 5 ops     █████
+  n=10   → 10 ops    ██████████
+  n=20   → 20 ops    ████████████████████
+```
 
 ```go
 package main
@@ -245,6 +301,28 @@ func main() {
 
 **Key pattern:** Whenever you see **dividing by a constant** (÷2, ÷10, etc.), think O(log n).
 
+```
+  Halving pattern — countHalves(16):
+
+  n=16 → n=8 → n=4 → n=2 → n=1    (4 steps)
+
+  Each step: n = n / 2
+  Steps until n=1: log₂(n)
+
+  ┌────────────────────────────────┐  step 0: n=16
+  └────────────────────────────────┘
+  ┌────────────────┐                  step 1: n=8
+  └────────────────┘
+  ┌────────┐                          step 2: n=4
+  └────────┘
+  ┌────┐                              step 3: n=2
+  └────┘
+  ┌─┐                                  step 4: n=1 DONE
+  └─┘
+
+  n=1,000,000 → only ~20 steps!
+```
+
 ---
 
 ## Example 6: O(n log n) — Efficient Sorting
@@ -278,9 +356,20 @@ func main() {
 }
 ```
 
----
+```
+  Sort then dedup — complexity breakdown:
 
-## Example 7: O(n²) — Nested Loops (Same Input)
+  Step 1: Sort O(n log n)
+  [5, 3, 8, 3, 1, 5, 9, 1, 2] → [1, 1, 2, 3, 3, 5, 5, 8, 9]
+
+  Step 2: Dedup O(n)
+  [1, 1, 2, 3, 3, 5, 5, 8, 9] → [1, 2, 3, 5, 8, 9]
+   ✓  ✗  ✓  ✓  ✗  ✓  ✗  ✓  ✓
+
+  Total: O(n log n) + O(n) = O(n log n)
+         └────────┘   └─┤
+         dominates    dropped
+```
 
 ```go
 package main
@@ -325,9 +414,27 @@ func main() {
 }
 ```
 
----
+```
+  Pair checking with nested loops:
 
-## Example 8: Different Inputs — O(a + b) vs O(a × b)
+  nums = [1, 3, 5, 7, 9]    target = 10
+
+  i=0: (1,3) (1,5) (1,7) (1,9✓)
+  i=1:       (3,5) (3,7✓)(3,9)
+  i=2:             (5,7) (5,9)
+  i=3:                   (7,9)
+
+  Pairs checked:
+  ┌───┬───┬───┬───┬───┐
+  │   │ 1 │ 3 │ 5 │ 7 │ 9 │
+  ├───┼───┼───┼───┼───┤
+  │ 1 │   │ ✗ │ ✗ │ ✗ │ ✓ │
+  │ 3 │   │   │ ✗ │ ✓ │ ✗ │
+  │ 5 │   │   │   │ ✗ │ ✗ │
+  │ 7 │   │   │   │   │ ✗ │
+  └───┴───┴───┴───┴───┘
+  Total pairs = n(n-1)/2 ≈ n²/2 → O(n²)
+```
 
 ```go
 package main
@@ -370,6 +477,19 @@ func main() {
 
 **Rule:** Sequential loops = add. Nested loops = multiply.
 
+```
+  Sequential (ADD):            Nested (MULTIPLY):
+
+  for a { ... }   O(a)         for a {
+  for b { ... }   O(b)           for b { ... }  O(a × b)
+  ───────────────────         }
+  Total: O(a + b)              ───────────────────
+                               Total: O(a × b)
+
+  a=100, b=200:                a=100, b=200:
+  100 + 200 = 300              100 × 200 = 20,000
+```
+
 ---
 
 ## Example 9: O(2ⁿ) — Exponential Growth
@@ -411,9 +531,29 @@ func main() {
 }
 ```
 
----
+```
+  Exponential call tree for climbStairs(5):
 
-## Example 10: Comparing Complexities Side by Side
+                    cs(5)
+                  /       \
+              cs(4)        cs(3)
+             /    \        /    \
+          cs(3)  cs(2)  cs(2)  cs(1)
+          /  \    / \    / \
+       cs(2) cs(1) ...  ...  ...
+       / \
+    cs(1) cs(0)
+
+  Each level doubles the calls:
+  Level 0: 1 call
+  Level 1: 2 calls
+  Level 2: 4 calls
+  Level 3: 8 calls
+  ...
+  Total ≈ 2ⁿ calls
+
+  n=10: ~1,000     n=20: ~1,000,000     n=30: ~1,000,000,000
+```
 
 ```go
 package main

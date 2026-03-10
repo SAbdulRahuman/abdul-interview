@@ -43,6 +43,35 @@ func main() {
 
 **Solution:** T(n) = O(n)
 
+**Textual Figure — Unrolling T(n) = T(n-1) + O(1):**
+
+```
+  Call chain for factorial(5):
+
+  factorial(5)  ─▶  5 × factorial(4)
+  factorial(4)  ─▶  4 × factorial(3)
+  factorial(3)  ─▶  3 × factorial(2)
+  factorial(2)  ─▶  2 × factorial(1)
+  factorial(1)  ─▶  1  (base case)
+
+  Work per call: O(1)      (just one multiplication)
+  Number of calls: n
+
+  T(n) = T(n-1) + 1
+       = T(n-2) + 1 + 1
+       = T(n-3) + 1 + 1 + 1
+       = ...                      Unrolling k steps:
+       = T(n-k) + k
+       = T(0) + n  (when k=n)     ┌───────────────┐
+       = O(n)                     │  Pattern: n   │
+                                  │  constant-    │
+  Work ▲                          │  cost steps   │
+  1    │ ■ ■ ■ ■ ■               └───────────────┘
+       └───────────▶ calls
+       1  2  3  4  5
+  Total = 1+1+1+1+1 = 5 = n = O(n)
+```
+
 ---
 
 ## Example 2: Binary Recursion — T(n) = 2T(n-1) + O(1)
@@ -76,6 +105,36 @@ func main() {
 ```
 
 **Solution:** T(n) = O(2ⁿ)
+
+**Textual Figure — Exponential Recursion Tree for fib(5):**
+
+```
+  T(n) = 2T(n-1) + O(1) → doubles at each level
+
+                    fib(5)
+                   /      \
+              fib(4)        fib(3)
+             /     \        /    \
+         fib(3)  fib(2)  fib(2) fib(1)
+         /    \    / \
+     fib(2) fib(1) ...    ← Explosive growth!
+
+  Level 0:  1 call        = 2⁰
+  Level 1:  2 calls       = 2¹
+  Level 2:  4 calls       = 2²
+  Level 3:  8 calls       = 2³
+  ...         ...           ...
+  Level n:  2ⁿ calls      = 2ⁿ
+
+  Total calls: 2⁰ + 2¹ + 2² + ... + 2ⁿ = 2ⁿ⁺¹ - 1 = O(2ⁿ)
+
+  Unrolling:
+  T(n) = 2T(n-1) + 1
+       = 2[2T(n-2)+1] + 1  = 4T(n-2) + 3
+       = 4[2T(n-3)+1] + 3  = 8T(n-3) + 7
+       = 2ᵏ·T(n-k) + (2ᵏ - 1)
+       = 2ⁿ·T(0) + (2ⁿ - 1) = O(2ⁿ)
+```
 
 ---
 
@@ -126,6 +185,34 @@ func main() {
 
 **Solution:** T(n) = O(n log n)
 
+**Textual Figure — Merge Sort Recurrence Tree:**
+
+```
+  T(n) = 2T(n/2) + O(n)
+
+  Level 0:      [  n elements  ]           work = n
+                /              \
+  Level 1:  [n/2]            [n/2]          work = n/2 + n/2 = n
+            /    \           /    \
+  Level 2: [n/4] [n/4]   [n/4] [n/4]       work = 4 × n/4 = n
+            ...    ...    ...    ...
+  Level k:  2ᵏ nodes, each size n/2ᵏ        work = 2ᵏ × n/2ᵏ = n
+            ...    ...    ...    ...
+  Level log n: [1] [1] ... [1] [1]          work = n × 1 = n
+
+  Each level does O(n) total work
+  Number of levels: log₂(n)
+  ────────────────────────────────
+  Total: n × log n = O(n log n)
+
+  Work per level:
+  n   │ ███████████████  Level 0
+  n   │ ███████████████  Level 1
+  n   │ ███████████████  Level 2
+  n   │ ███████████████  Level 3 (log n levels)
+      └──────────────────
+```
+
 ---
 
 ## Example 4: T(n) = T(n/2) + O(1) — Binary Search
@@ -165,6 +252,39 @@ func main() {
 ```
 
 **Solution:** T(n) = O(log n)
+
+**Textual Figure — Binary Search Halving:**
+
+```
+  T(n) = T(n/2) + O(1)
+
+  Search for 7 in [1, 3, 5, 7, 9, 11, 13, 15]
+
+  Step 1: [1, 3, 5, 7, 9, 11, 13, 15]  mid=7, compare
+                       ↑                  n=8 → O(1)
+  Step 2: [1, 3, 5, 7]                   mid=3, too small
+                    ↑                     n=4 → O(1)
+  Step 3: [5, 7]                          mid=5, too small
+               ↑                          n=2 → O(1)
+  Step 4: [7]                             found!
+           ↑                              n=1 → O(1)
+
+  Unrolling:
+  T(n) = T(n/2) + 1
+       = T(n/4) + 1 + 1
+       = T(n/8) + 1 + 1 + 1
+       = T(n/2ᵏ) + k
+  When n/2ᵏ = 1 → k = log₂(n)
+  T(n) = O(log n)
+
+  Search space shrinks:
+  n    │ ████████████████
+  n/2  │ ████████
+  n/4  │ ████
+  n/8  │ ██
+  1    │ █  → done after log₂(n) steps
+       └──────────────────
+```
 
 ---
 
@@ -219,6 +339,38 @@ func main() {
 
 **Solution:** T(n) = O(n) — geometric series sums to 2n
 
+**Textual Figure — Geometric Series for T(n) = T(n/2) + n:**
+
+```
+  T(n) = T(n/2) + n
+
+  Level 0:  process n elements         work = n
+  Level 1:  process n/2 elements       work = n/2
+  Level 2:  process n/4 elements       work = n/4
+  Level 3:  process n/8 elements       work = n/8
+  ...          ...                     ...
+  Level k:  process 1 element          work = 1
+
+  Total = n + n/2 + n/4 + n/8 + ... + 1
+
+  Visualizing the geometric series:
+  n     │ ████████████████
+  n/2   │ ████████
+  n/4   │ ████
+  n/8   │ ██
+  n/16  │ █
+        └────────────────
+  Sum approaches 2n (geometric series: r=1/2)
+
+  ┌─────────────────────────────────────┐
+  │  n × (1 + 1/2 + 1/4 + 1/8 + ...)│
+  │  = n × 2 = 2n = O(n)            │
+  │                                  │
+  │  Key insight: work HALVES each   │
+  │  level → dominated by FIRST level│
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: T(n) = 3T(n/3) + O(n) — Three-Way Divide
@@ -262,6 +414,31 @@ func main() {
     threeWayProcess(nums, 0)
     fmt.Println("Complexity: O(n log n)")
 }
+```
+
+**Textual Figure — Three-Way Divide Recurrence Tree:**
+
+```
+  T(n) = 3T(n/3) + O(n)
+
+  Level 0:         [  9 elements  ]              work = 9
+                 /       |        \
+  Level 1:    [3]       [3]       [3]            work = 3+3+3 = 9
+             / | \    / | \     / | \
+  Level 2: [1][1][1][1][1][1] [1][1][1]          work = 9×1 = 9
+
+  3 branches × n/3 each = n total at every level
+  Number of levels: log₃(n)
+
+  Work per level:
+  n   │ ███████████████   Level 0
+  n   │ ███████████████   Level 1
+  n   │ ███████████████   Level 2 (log₃ n levels)
+      └──────────────────
+
+  Same pattern as merge sort but base-3:
+  a=3, b=3, f(n)=n → log₃(3)=1, n¹=n
+  a = bᵏ → O(n log n)
 ```
 
 ---
@@ -310,6 +487,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Tree Traversal T(n) = 2T(n/2) + O(1):**
+
+```
+  T(n) = 2T(n/2) + O(1)
+  Visit each node, O(1) work per node
+
+  Tree:         1          Level 0: 1 node,  O(1) work
+               / \
+              2   3        Level 1: 2 nodes, O(2) work
+             / \ / \
+            4  5 6  7      Level 2: 4 nodes, O(4) work
+
+  Level 0:  1 node  × O(1) = O(1)     = 2⁰
+  Level 1:  2 nodes × O(1) = O(2)     = 2¹
+  Level 2:  4 nodes × O(1) = O(4)     = 2²
+  ...           ...         ...
+  Level k:  2ᵏ              = 2ᵏ
+
+  Total = 1 + 2 + 4 + ... + n/2 + n
+  ┌────────────────────────────────────────┐
+  │  = 2ⁿ⁺¹ - 1 = 2n - 1 = O(n)             │
+  │                                         │
+  │  Key: O(1) per node, n nodes → O(n)      │
+  │  Dominated by leaves (bottom level)       │
+  └────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: T(n) = T(n-1) + O(n) — Selection Sort
@@ -351,6 +555,36 @@ func main() {
 
 **Solution:** T(n) = O(n²) — arithmetic sum
 
+**Textual Figure — Arithmetic Sum for T(n) = T(n-1) + n:**
+
+```
+  T(n) = T(n-1) + O(n)
+
+  Selection sort on [64, 25, 12, 22, 11]:
+
+  Call 1: scan 5 elements → find min(11)    work = 5
+  Call 2: scan 4 elements → find min(12)    work = 4
+  Call 3: scan 3 elements → find min(22)    work = 3
+  Call 4: scan 2 elements → find min(25)    work = 2
+  Call 5: scan 1 element  → done            work = 1
+
+  Stacking the work:
+  5 │ █████
+  4 │ ████
+  3 │ ███         Total = 5+4+3+2+1
+  2 │ ██                 = n(n+1)/2
+  1 │ █                  = O(n²)
+    └──────────
+
+  This forms a triangle:
+  ●  Total area = ½ × base × height = ½ × n × n = O(n²)
+
+  Contrast with T(n) = T(n/2) + n:
+  ──────────────────────────────────────
+  T(n-1)+n: n + (n-1) + (n-2) + ... → O(n²)  (arithmetic)
+  T(n/2)+n: n + n/2 + n/4 + ...     → O(n)    (geometric)
+```
+
 ---
 
 ## Example 9: T(n) = T(n/3) + T(2n/3) + O(n)
@@ -383,6 +617,36 @@ func main() {
     unevenDivide(27, 0)
     fmt.Println("\nComplexity: O(n log n)")
 }
+```
+
+**Textual Figure — Uneven Split Recurrence:**
+
+```
+  T(n) = T(n/3) + T(2n/3) + O(n)
+
+  Tree is NOT balanced — right side is deeper:
+
+              n=27                          work = 27
+             /      \
+          n=9       n=18                    work = 9+18 = 27
+         /   \      /    \
+       n=3   n=6  n=6   n=12               work = 3+6+6+12 = 27
+       / \    ...   ...   / \
+      1   2             4    8
+                              \
+                               5
+                                \
+                                 3 ← deepest path
+
+  Left branch depth:  log₃(n)    (divides by 3)
+  Right branch depth: log₃₂(n)  (divides by 3/2)
+
+  Every level still totals O(n)!
+  ┌────────────────────────────────────────┐
+  │  Depth = longest path = log₃₂(n)      │
+  │  Work per level ≤ n                    │
+  │  Total = O(n × log₃₂ n) = O(n log n)  │
+  └────────────────────────────────────────┘
 ```
 
 ---
@@ -434,6 +698,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Deriving Recurrences from Code:**
+
+```
+  Example A: exampleA(n-1) + exampleA(n-1)
+  ──────────────────────────────────────────
+  2 calls with (n-1) → T(n) = 2T(n-1) + O(1)
+  Pattern: each call DOUBLES, depth = n
+  Total: 2ⁿ = O(2ⁿ)
+
+  Example B: sum(nums) + exampleB(nums[:mid])
+  ──────────────────────────────────────────
+  O(n) loop + 1 call with n/2 → T(n) = T(n/2) + O(n)
+  Geometric series: n + n/2 + n/4 + ... = 2n = O(n)
+
+  Example C: 3 × exampleC(n/2)
+  ──────────────────────────────────────────
+  3 calls with n/2 → T(n) = 3T(n/2) + O(1)
+  Master: a=3, b=2 → log₂(3) ≈ 1.585
+  T(n) = O(n^1.585)
+
+  How to read code for recurrences:
+  ┌─────────────────────────────────────────────┐
+  │ 1. Count recursive calls          → a      │
+  │ 2. How does input size reduce?    → n/b    │
+  │    or n-1?                                  │
+  │ 3. What work is done per call?    → f(n)   │
+  │ 4. Combine: T(n) = a·T(n/b) + f(n)         │
+  └─────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 11: Common Recurrences Summary
@@ -467,6 +761,43 @@ func main() {
         fmt.Printf("%-30s %-15s %-35s\n", r.Recurrence, r.Solution, r.Example)
     }
 }
+```
+
+**Textual Figure — Recurrence Families:**
+
+```
+  Subtract Recurrences (n → n-1):
+  ──────────────────────────────────────────────────
+  T(n) = T(n-1) + O(1)  →  Depth=n, work=1  →  O(n)
+      ●─●─●─●─●─●  (linear chain)
+
+  T(n) = T(n-1) + O(n)  →  Depth=n, work=n  →  O(n²)
+      ●─●─●─●─●─●  (triangle sum: n+(n-1)+...+1)
+
+  T(n) = 2T(n-1) + O(1)  →  Depth=n, branches=2  →  O(2ⁿ)
+           ●                 (exponential tree)
+          / \
+         ●   ●
+        / \ / \
+       ● ● ● ●
+
+  Divide Recurrences (n → n/b):
+  ──────────────────────────────────────────────────
+  T(n) = T(n/2) + O(1)   →  O(log n)     (binary search)
+  T(n) = T(n/2) + O(n)   →  O(n)         (geometric sum)
+  T(n) = 2T(n/2) + O(1)  →  O(n)         (tree traversal)
+  T(n) = 2T(n/2) + O(n)  →  O(n log n)   (merge sort)
+  T(n) = 3T(n/2) + O(1)  →  O(n^1.585)   (branching > splitting)
+
+  Pattern:
+  ┌─────────────────────────────────────────────────┐
+  │  Subtract (n-1): arithmetic → polynomial/exp    │
+  │  Divide (n/b):   geometric  → logarithmic       │
+  │                                                  │
+  │  More recursive calls (a↑) → faster growth       │
+  │  Bigger split (b↑)         → slower growth       │
+  │  More per-call work (f↑)   → depends on balance  │
+  └─────────────────────────────────────────────────┘
 ```
 
 ---

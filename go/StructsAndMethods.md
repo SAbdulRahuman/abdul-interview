@@ -32,6 +32,27 @@ Methods in Go are functions with a **receiver** argument. The receiver binds a f
 
 ## Defining Methods
 
+**Tutorial: Attaching Methods to a Struct**
+
+Go has no classes — instead you attach methods to types by declaring a **receiver** between `func` and the method name. This example defines two value-receiver methods on a `Circle` struct. Notice the receiver `(c Circle)` gives the method a copy of the struct, so reading fields is fine but mutations would not affect the caller.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Method Declaration Anatomy                      │
+│                                                          │
+│  func (c Circle) Area() float64 { ... }                  │
+│        ▲           ▲        ▲                            │
+│        │           │        └─ return type                │
+│        │           └─ method name                        │
+│        └─ receiver (copy of Circle)                      │
+│                                                          │
+│  Calling:                                                │
+│  c := Circle{Radius: 5}                                  │
+│  c.Area()   ─►  (c Circle).Area()                        │
+│                  copy of c passed in                      │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -60,6 +81,28 @@ func main() {
 ---
 
 ## Value Receivers vs Pointer Receivers
+
+**Tutorial: Copy vs Address — Choosing the Right Receiver**
+
+A value receiver `(c Counter)` works on a copy — mutations inside the method vanish when it returns. A pointer receiver `(c *Counter)` receives the memory address, so `c.Count++` modifies the original struct. Go automatically takes the address or dereferences as needed at the call site, so `c.Increment()` works whether `c` is a value or a pointer.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Value Receiver              Pointer Receiver       │
+│                                                          │
+│  c := Counter{0}                c := Counter{0}          │
+│       ┌──────┐                       ┌──────┐            │
+│  c    │  0   │                  c    │  0   │            │
+│       └──┬───┘                       └──┬───┘            │
+│          │ copy                         │ &c (address)   │
+│          ▼                              ▼                │
+│  ┌────────────┐                 ┌────────────┐           │
+│  │ copy: 0    │ ← method sees   │ *ptr → c   │ ← same   │
+│  │ copy++ = 1 │   its own copy  │ c.Count++  │   memory  │
+│  └────────────┘                 └────────────┘           │
+│  c is still 0 ✗                 c is now 1 ✓            │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -105,6 +148,30 @@ func main() {
 ---
 
 ## When to Use Pointer Receivers
+
+**Tutorial: Pointer Receiver Guidelines — Mutate, Large, Consistent**
+
+Use a pointer receiver when: (1) the method mutates the receiver's state, (2) the struct is large and copying is expensive, or (3) for consistency if any method already uses a pointer receiver. This example models a `Database` with mutable state — every method uses a pointer receiver, even `Get` which only reads, to keep the method set uniform.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Decision: Value or Pointer Receiver?             │
+│                                                          │
+│  ┌─ Does method MUTATE state? ──► YES ──► *T (pointer)   │
+│  │                                                       │
+│  ├─ Is struct LARGE (many fields)? ──► YES ──► *T        │
+│  │                                                       │
+│  ├─ Do OTHER methods use *T? ──► YES ──► *T (consistent) │
+│  │                                                       │
+│  └─ None of the above? ──► T (value) is fine             │
+│                                                          │
+│  Database example:                                       │
+│  Connect()  → mutates connections  → *Database           │
+│  Set(k,v)   → mutates data map    → *Database            │
+│  Get(k)     → reads only BUT      → *Database            │
+│               consistency wins                           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -162,6 +229,37 @@ A type's **method set** determines which interfaces it satisfies:
 - **Value type (T)** — only value-receiver methods
 - **Pointer type (*T)** — both value-receiver AND pointer-receiver methods
 
+**Tutorial: Method Sets and Interface Satisfaction**
+
+The method set rules matter most when passing values to interface parameters. A value `buf` of type `Buffer` can satisfy `Sizer` (value-receiver methods only), but only `&buf` satisfies `Resizer` (which requires a pointer-receiver method). This is the most common source of "X does not implement Y" compile errors.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Method Set Rules                                 │
+│                                                          │
+│  type Buffer struct { data []byte }                      │
+│  func (b Buffer)  Size() int    ← value receiver        │
+│  func (b *Buffer) Resize(n int) ← pointer receiver      │
+│                                                          │
+│  Interface satisfaction:                                 │
+│                                                          │
+│  buf := Buffer{}                                         │
+│  ┌──────────────────────────────────────────────┐        │
+│  │ Type    │ Method Set          │ Satisfies     │        │
+│  ├─────────┼─────────────────────┼───────────────┤        │
+│  │ Buffer  │ { Size }            │ Sizer ✓       │        │
+│  │         │                     │ Resizer ✗     │        │
+│  ├─────────┼─────────────────────┼───────────────┤        │
+│  │ *Buffer │ { Size, Resize }    │ Sizer ✓       │        │
+│  │         │                     │ Resizer ✓     │        │
+│  └─────────┴─────────────────────┴───────────────┘        │
+│                                                          │
+│  var s Sizer = buf    ✓  (value-receiver in T's set)    │
+│  var r Resizer = buf  ✗  COMPILE ERROR                  │
+│  var r Resizer = &buf ✓  (*T has both method kinds)     │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -212,6 +310,31 @@ func main() {
 
 ## Exported vs Unexported
 
+**Tutorial: Visibility by Naming Convention — Uppercase vs Lowercase**
+
+Go controls visibility with a single rule: identifiers starting with an **uppercase** letter are exported (visible outside the package), and **lowercase** are unexported (package-private). This applies to struct fields, methods, types, and functions alike. The code below shows `Name` and `Email` as exported fields while `age` is hidden from external packages.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Exported vs Unexported Visibility                  │
+│                                                          │
+│  type User struct {                                      │
+│      Name  string   ← Uppercase = EXPORTED  (public)    │
+│      Email string   ← Uppercase = EXPORTED  (public)    │
+│      age   int      ← lowercase = UNEXPORTED (private)  │
+│  }                                                       │
+│                                                          │
+│  From another package:                                   │
+│  ┌─────────────────────────────────┐                     │
+│  │  u.Name  ✓  accessible         │                     │
+│  │  u.Email ✓  accessible         │                     │
+│  │  u.age   ✗  compile error      │                     │
+│  └─────────────────────────────────┘                     │
+│                                                          │
+│  Same package: all fields accessible ✓                   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -244,6 +367,36 @@ func main() {
 ---
 
 ## Struct Embedding — Composition Over Inheritance
+
+**Tutorial: Embedding Structs for Method Promotion**
+
+Go replaces inheritance with **embedding**: placing a type inside a struct without a field name promotes all its fields and methods to the outer type. `Dog` embeds `Animal`, so `dog.Name` and `dog.Move()` work directly. If `Dog` defines its own `Speak()`, it **shadows** the embedded version — but you can still call `dog.Animal.Speak()` explicitly. Multi-level embedding chains promotions further.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Struct Embedding — Promotion & Shadowing           │
+│                                                          │
+│  ┌────────────────┐                                      │
+│  │    Animal       │  Name string                        │
+│  │    Speak()      │  Move()                             │
+│  └───────┬────────┘                                      │
+│          │ embed                                         │
+│          ▼                                               │
+│  ┌────────────────┐                                      │
+│  │    Dog          │  Breed string                       │
+│  │    Speak()      │  ◄── shadows Animal.Speak()         │
+│  │    Move()       │  ◄── promoted from Animal           │
+│  │    Name         │  ◄── promoted from Animal           │
+│  └───────┬────────┘                                      │
+│          │ embed                                         │
+│          ▼                                               │
+│  ┌────────────────┐                                      │
+│  │  ServiceDog     │  Task string                        │
+│  │  Speak(), Move()│  ◄── promoted through Dog           │
+│  │  Name, Breed    │  ◄── promoted through Dog           │
+│  └────────────────┘                                      │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -309,6 +462,38 @@ func main() {
 
 ## Constructor Pattern
 
+**Tutorial: NewXxx Constructor Functions**
+
+Go has no built-in constructors. By convention, you write a `NewXxx` function that validates inputs, sets defaults, and returns a pointer (often with an error). This pattern gives you full control over initialization — the `Server` struct below keeps its fields unexported, and `NewServer` is the only way to create a valid instance with a sensible `maxConn` default.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Constructor Pattern Flow                           │
+│                                                          │
+│  caller                                                  │
+│    │                                                     │
+│    │  NewServer("localhost", 8080)                        │
+│    ▼                                                     │
+│  ┌──────────────────────────┐                             │
+│  │  Validate inputs         │                             │
+│  │  host == "" ? → error    │                             │
+│  │  port < 1 ?   → error    │                             │
+│  └──────────┬───────────────┘                             │
+│             │ ok                                         │
+│             ▼                                            │
+│  ┌──────────────────────────┐                             │
+│  │  &Server{                │                             │
+│  │    host:    "localhost", │                             │
+│  │    port:    8080,        │                             │
+│  │    maxConn: 100, ← default                            │
+│  │  }                       │                             │
+│  └──────────┬───────────────┘                             │
+│             │                                            │
+│             ▼                                            │
+│  return (*Server, nil)                                   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -356,6 +541,32 @@ func main() {
 ---
 
 ## Methods on Non-Struct Types
+
+**Tutorial: Methods on Named Types — Slices, Floats, and More**
+
+You can attach methods to any **named type**, not just structs. Define `type StringSlice []string` and you can add `Join`, `Contains`, and `Add` methods to it. The same works for numeric types like `Celsius` and `Fahrenheit`. Note that `Add` uses a pointer receiver because `append` may reallocate the underlying array — you must write back through the pointer with `*ss = append(*ss, s)`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Methods on Named Types                             │
+│                                                          │
+│  type StringSlice []string                               │
+│       ▲                                                  │
+│       │ named type wraps built-in []string               │
+│       │                                                  │
+│  ┌────┴────────────────────────────────────┐              │
+│  │  (ss StringSlice) Join(sep) string      │ value recv  │
+│  │  (ss StringSlice) Contains(t) bool      │ value recv  │
+│  │  (ss *StringSlice) Add(s string)        │ ptr recv    │
+│  └─────────────────────────────────────────┘              │
+│                                                          │
+│  type Celsius float64   ──► ToFahrenheit() Fahrenheit    │
+│  type Fahrenheit float64 ──► ToCelsius() Celsius         │
+│                                                          │
+│  Cannot add methods to unnamed types:                    │
+│  func (s []string) Bad() {} ← COMPILE ERROR             │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

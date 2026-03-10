@@ -38,6 +38,25 @@ These patterns are reusable solutions for common concurrency problems in Go. The
 
 A fixed number of goroutines process jobs from a shared channel.
 
+**Tutorial: Fixed Worker Pool with WaitGroup Coordination**
+
+This example creates 3 worker goroutines that pull jobs from a shared `jobs` channel and push results to a `results` channel. The `sync.WaitGroup` tracks when all workers finish, then closes the results channel so the main goroutine can range over it. Notice how jobs are buffered to allow non-blocking sends, and that `close(jobs)` causes workers' `range` loops to terminate naturally.
+
+```
+┌────────────────────────────────────────────────────┐
+│   main()                                           │
+│   ┌────────────┐     ┌──────────┐                    │
+│   │ jobs chan  │────►│ Worker 1 │──┐                 │
+│   │ (buffered │────►│ Worker 2 │──┼─► results chan  │
+│   │  cap=10)  │────►│ Worker 3 │──┘   (buffered)  │
+│   └────────────┘     └──────────┘                    │
+│   close(jobs) ►                                     │
+│   workers range-exit  wg.Wait()                     │
+│                       close(results)                │
+│                       main ranges over results      │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -93,6 +112,26 @@ func main() {
 ---
 
 ## Fan-In — Merge Multiple Channels
+
+**Tutorial: Merging Multiple Producer Channels into One**
+
+Fan-in combines outputs from multiple independent producer goroutines into a single channel. Each producer runs concurrently and sends to its own channel. The `fanIn` function spawns one goroutine per input channel to forward values to a merged output, using a `WaitGroup` to close the merged channel when all inputs are exhausted. This pattern is essential when you have multiple data sources that a single consumer needs to read from.
+
+```
+┌────────────────────────────────────────────────────┐
+│  producer(1) ──► ch1 ──┐                             │
+│  producer(2) ──► ch2 ──┼──► fanIn() ─► merged chan  │
+│  producer(3) ──► ch3 ──┘          │                │
+│                                  ▼                │
+│                          main ranges over          │
+│                          merged channel            │
+│                                                    │
+│  Inside fanIn():                                   │
+│  for each ch:                                      │
+│    go func(c) { for v := range c { merged <- v } } │
+│  wg.Wait() ─► close(merged)                        │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -151,6 +190,28 @@ func main() {
 
 ## Fan-Out — Distribute Tasks
 
+**Tutorial: Distributing Work Across Multiple Workers**
+
+Fan-out is the inverse of fan-in: a single input is distributed across multiple worker goroutines for parallel processing. Here, 10 inputs are sent into a shared `jobs` channel and 4 workers compete to receive and process them. Each worker squares the input value. The `WaitGroup` ensures the `results` channel is closed only after all workers finish. This pattern maximizes throughput for CPU-bound or I/O-bound work.
+
+```
+┌────────────────────────────────────────────────────┐
+│  inputs [1..10]                                    │
+│       │                                            │
+│       ▼                                            │
+│  ┌────────────┐                                    │
+│  │ jobs chan  │  (all inputs sent)                  │
+│  └────┬───┬───┘                                    │
+│       │   │    competing reads                     │
+│   ┌───▼┐ ┌▼───┐ ┌────┐ ┌────┐                    │
+│   │ W0 │ │ W1 │ │ W2  │ │ W3  │  4 workers       │
+│   └─┬──┘ └─┬─┘ └─┬──┘ └─┬──┘  process(d)=d*d   │
+│     └────┼─────┼─────┘                             │
+│          ▼                                         │
+│   results chan ──► collected by main                │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -208,6 +269,26 @@ func main() {
 ## Pipeline Pattern
 
 Each stage reads from an input channel, processes data, and writes to an output channel.
+
+**Tutorial: Multi-Stage Pipeline with Channel Chaining**
+
+This example builds a three-stage pipeline: `generate` produces numbers, `square` transforms them, and `filter` keeps values above a threshold. Each stage runs in its own goroutine and communicates via channels. The pipeline provides natural backpressure — a slow consumer automatically slows the producer. Notice how each stage closes its output channel via `defer close(out)` to signal downstream stages that no more data is coming.
+
+```
+┌────────────────────────────────────────────────────┐
+│  Stage 1           Stage 2          Stage 3        │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    │
+│  │ generate │─ch►│  square  │─ch►│  filter  │    │
+│  │ 1..10   │    │  n*n     │    │  n > 20  │    │
+│  └──────────┘    └──────────┘    └────┬─────┘    │
+│                                      ▼             │
+│  Data flow: 5 ─► 25 ─► 25 ✓          main()       │
+│              3 ─►  9 ─► (dropped)    fmt.Println  │
+│                                                    │
+│  Close propagation:                                │
+│  close(gen) ► close(sq) ► close(filt) ► range ends  │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -268,6 +349,28 @@ func main() {
 
 ## Rate Limiting
 
+**Tutorial: Controlling Request Throughput with Tickers and Burst Buffers**
+
+This example demonstrates two rate limiting strategies. The first uses `time.NewTicker` for steady-rate processing — each request waits for a tick before proceeding. The second creates a bursty rate limiter using a buffered channel pre-filled with tokens, allowing an initial burst of 3 requests before falling back to steady rate. Watch how `<-limiter.C` blocks until the next tick, creating precise timing control.
+
+```
+┌────────────────────────────────────────────────────┐
+│  Steady Rate (200ms interval):                     │
+│                                                    │
+│  req1 ── 200ms ── req2 ── 200ms ── req3 ...       │
+│  ┌────┐  tick  ┌────┐  tick  ┌────┐              │
+│  │ R1 │─────►│ R2 │─────►│ R3 │ ...           │
+│  └────┘       └────┘       └────┘              │
+│                                                    │
+│  Bursty Rate (burst=3, then 200ms):                │
+│                                                    │
+│  ┌──┐┌──┐┌──┐                                      │
+│  │R1││R2││R3│─ instant (pre-filled tokens)          │
+│  └──┘└──┘└──┘                                      │
+│  ── 200ms ── R4 ── 200ms ── R5                  │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -325,6 +428,28 @@ func main() {
 
 ## Semaphore — Limit Concurrency
 
+**Tutorial: Buffered Channel as a Counting Semaphore**
+
+This pattern uses a buffered channel of capacity N to limit the number of goroutines executing concurrently. Each goroutine acquires a slot by sending to the channel (`sem <- struct{}{}`) and releases it by receiving (`<-sem`). If the channel is full, the send blocks until a slot opens. This is simpler than `golang.org/x/sync/semaphore` and works well for basic concurrency limiting. The `defer` ensures the slot is released even if the goroutine panics.
+
+```
+┌────────────────────────────────────────────────────┐
+│  sem := make(chan struct{}, 3)  ← max 3 concurrent  │
+│                                                    │
+│  Goroutines 1..10:                                 │
+│                                                    │
+│  ┌───┐ ┌───┐ ┌───┐       ┌───┐ ┌───┐              │
+│  │ G1│ │ G2│ │ G3│       │ G4│ │ G5│  (waiting)  │
+│  └─┬─┘ └─┬─┘ └─┬─┘       └─┬─┘ └─┬─┘              │
+│    │     │     │             │     │ blocked on   │
+│  ┌─▼─────▼─────▼─┐         │     │ sem <- {}    │
+│  │ sem [#] [#] [#]  │         │     │              │
+│  │ (3 slots full)   │         │     │              │
+│  └──────────────────┘         │     │              │
+│  G1 finishes: <-sem ► G4 enters           ...      │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -361,6 +486,25 @@ func main() {
 ---
 
 ## errgroup — Goroutines with Error Collection
+
+**Tutorial: Managing Goroutine Groups with Error Propagation**
+
+The `errgroup` package from `golang.org/x/sync` provides a structured way to run multiple goroutines and collect the first error. `g.Go(func() error)` launches goroutines, and `g.Wait()` blocks until all finish, returning the first non-nil error. When created with `errgroup.WithContext`, the context is cancelled on the first error, allowing other goroutines to detect the failure and abort early. This is cleaner than manually managing `WaitGroup` + error channels.
+
+```
+┌────────────────────────────────────────────────────┐
+│  errgroup.WithContext(ctx)                         │
+│         │                                          │
+│  g.Go ──┼─► fetchURL("example.com")    ✓ ok        │
+│  g.Go ──┼─► fetchURL("go.dev")         ✓ ok        │
+│  g.Go ──┼─► fetchURL("bad.example")    ✗ error!    │
+│  g.Go ──┼─► fetchURL("pkg.go.dev")     ctx cancel │
+│         │                                          │
+│  g.Wait() ──► returns first error                  │
+│               ("failed to fetch bad.example.com")   │
+│               ctx cancelled ► other goroutines stop │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -410,6 +554,29 @@ func main() {
 
 ## singleflight — Deduplicate Concurrent Calls
 
+**Tutorial: Preventing Thundering Herd with singleflight**
+
+When multiple goroutines request the same expensive resource simultaneously (like a cache miss), `singleflight.Group.Do` ensures only one goroutine executes the function while all others wait and share the result. The `shared` return value indicates whether the result was shared with other callers. This prevents thundering herd problems where N concurrent cache misses trigger N redundant database queries.
+
+```
+┌────────────────────────────────────────────────────┐
+│  10 goroutines call Do("my-key", fn) simultaneously│
+│                                                    │
+│  G1 ──┐                                             │
+│  G2 ──┼── all same key                              │
+│  G3 ──┼──────┐                                       │
+│  ... │      ▼                                       │
+│  G10 ┘  ┌───────────────────┐                       │
+│       │ expensiveLookup()  │  Only ONE executes    │
+│       │ (executes once)    │                       │
+│       └────────┬──────────┘                       │
+│              │  result                              │
+│       ┌──────┼───────┐                              │
+│       ▼      ▼       ▼                              │
+│  G1(shared) G2    G10  ← all get same result      │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -454,6 +621,28 @@ func main() {
 ---
 
 ## Pub/Sub Pattern
+
+**Tutorial: In-Process Publish/Subscribe with Channels**
+
+This publish/subscribe implementation uses a map of topic names to subscriber channel slices. `Subscribe` creates a buffered channel and appends it to the topic. `Publish` sends the message to all channels registered for that topic. `Close` closes all channels for a topic, signaling subscribers to stop. The `RWMutex` ensures concurrent reads (publishes) don't conflict with writes (subscribe/close). Buffered subscriber channels prevent a slow consumer from blocking the publisher.
+
+```
+┌────────────────────────────────────────────────────┐
+│  PubSub                                            │
+│  ┌──────────────────────────────────────────┐    │
+│  │ subs["news"] = [ sub1_ch, sub2_ch ]          │    │
+│  └──────────────────────────────────────────┘    │
+│                                                    │
+│  Publish("news", msg)                              │
+│       │                                            │
+│       ├──► sub1_ch ──► goroutine 1: "Sub1: msg"     │
+│       └──► sub2_ch ──► goroutine 2: "Sub2: msg"     │
+│                                                    │
+│  Close("news")                                     │
+│       close(sub1_ch), close(sub2_ch)               │
+│       range loops exit naturally                    │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -534,6 +723,29 @@ func main() {
 ---
 
 ## Circuit Breaker Pattern
+
+**Tutorial: Protecting Services with a State-Machine Circuit Breaker**
+
+The circuit breaker pattern prevents cascading failures by tracking error counts and transitioning between three states: Closed (normal, requests pass through), Open (too many failures, requests immediately rejected), and Half-Open (testing if the service has recovered). When failures exceed `maxFailures`, the breaker opens. After a timeout, it transitions to half-open to allow a test request. A success resets to closed; a failure re-opens. This avoids hammering a failing service.
+
+```
+┌────────────────────────────────────────────────────┐
+│     Circuit Breaker State Machine                  │
+│                                                    │
+│     ┌──────────┐   failures >= max   ┌────────┐    │
+│     │  CLOSED  │────────────────►│  OPEN  │    │
+│     │ (normal) │                   │ (fail) │    │
+│     └────┬─────┘                   └───┬────┘    │
+│          ▲                             │          │
+│          │  success         timeout elapsed       │
+│          │                             │          │
+│     ┌────┼───────┐                   │          │
+│     │ HALF-OPEN   │◄─────────────────┘          │
+│     │  (testing)  │   try one request              │
+│     └────────────┘                                │
+│     fail ► re-open    success ► closed              │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -628,6 +840,30 @@ func main() {
 
 ## Graceful Shutdown
 
+**Tutorial: Cleanly Stopping an HTTP Server on OS Signals**
+
+This example starts an HTTP server in a goroutine, then waits for `SIGINT` or `SIGTERM` signals. When a signal arrives, it calls `srv.Shutdown(ctx)` with a 5-second timeout, giving in-flight requests time to complete before forcing close. This is critical for production services — abrupt termination can drop active connections and corrupt in-progress work. The `signal.Notify` + channel pattern is the idiomatic way to handle OS signals in Go.
+
+```
+┌────────────────────────────────────────────────────┐
+│  main()                                            │
+│    │                                               │
+│    ├─► go srv.ListenAndServe()  (background)       │
+│    │         serving requests...                    │
+│    │                                               │
+│    ├─► signal.Notify(quit, SIGINT, SIGTERM)        │
+│    │                                               │
+│    ├─► <-quit   (blocks until Ctrl+C / kill)       │
+│    │                                               │
+│    ├─► ctx, cancel = WithTimeout(5s)               │
+│    │                                               │
+│    └─► srv.Shutdown(ctx)                           │
+│          ├─ stops accepting new connections          │
+│          ├─ waits for in-flight requests (≤5s)       │
+│          └─ returns (server stopped)                 │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -682,6 +918,25 @@ func main() {
 ---
 
 ## Producer-Consumer
+
+**Tutorial: Classic Producer-Consumer with Buffered Channel**
+
+This example demonstrates the producer-consumer pattern where 2 producers generate random items and 3 consumers process them. The buffered channel acts as a bounded queue, decoupling production speed from consumption speed. The `prodWg` WaitGroup tracks when all producers finish, then closes the channel to signal consumers. The `consWg` ensures main waits for all consumers to drain remaining items before exiting.
+
+```
+┌────────────────────────────────────────────────────┐
+│  Producer 1 ──┐                                      │
+│               ├─► ch (buffered, cap=5)              │
+│  Producer 2 ──┘        │                             │
+│                       ├──► Consumer 1              │
+│  prodWg.Wait()         ├──► Consumer 2              │
+│       │                └──► Consumer 3              │
+│       ▼                                            │
+│  close(ch) ──► consumers' range loops exit          │
+│                                                    │
+│  consWg.Wait() ──► main exits                      │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -743,6 +998,26 @@ func main() {
 
 ## Timeout & Cancellation
 
+**Tutorial: Context-Based Timeout for Long Operations**
+
+This example uses `context.WithTimeout` to set a 2-second deadline on a 5-second operation. The `longOperation` function uses `select` to race between completing work (`time.After`) and context cancellation (`ctx.Done()`). Whichever fires first wins. Since the timeout (2s) is shorter than the operation (5s), the context is cancelled and `ctx.Err()` returns `context.DeadlineExceeded`. Always call `defer cancel()` to release context resources.
+
+```
+┌────────────────────────────────────────────────────┐
+│  WithTimeout(ctx, 2s)                              │
+│       │                                            │
+│       ▼                                            │
+│  longOperation(ctx):                               │
+│  select {                                          │
+│     case <-time.After(5s):  ← completes at 5s      │
+│     case <-ctx.Done():      ← fires at 2s  ✓ WINS  │
+│  }                                                 │
+│       │                                            │
+│       ▼                                            │
+│  "context deadline exceeded"                       │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -776,6 +1051,28 @@ func main() {
 ---
 
 ## Or-Done Channel Pattern
+
+**Tutorial: Safely Reading from Channels with Cancellation Support**
+
+The or-done pattern wraps a channel read so it also responds to context cancellation. Without it, a goroutine reading from a channel could block indefinitely if the sender stalls or the pipeline shuts down. The `orDone` function uses nested `select` statements: the outer one reads from the input channel or context, and the inner one forwards the value or responds to context cancellation. This prevents goroutine leaks in pipeline architectures.
+
+```
+┌────────────────────────────────────────────────────┐
+│  Without orDone:               With orDone:         │
+│                                                    │
+│  producer ──► ch ──► consumer  producer ─► ch        │
+│  (stalls)     (blocks!)             │              │
+│               goroutine leaks!   orDone(ctx, ch)   │
+│                                     │              │
+│                                  select {          │
+│                                    <-ctx.Done() ✓  │
+│                                    <-ch          │  │
+│                                  }              │  │
+│                                     ▼              │
+│                                  consumer (safe) │  │
+│                                  cancel() ► exit    │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -837,6 +1134,28 @@ func main() {
 ---
 
 ## Heartbeat Pattern
+
+**Tutorial: Detecting Stalled Goroutines with Heartbeats**
+
+The heartbeat pattern has a worker goroutine periodically send signals on a heartbeat channel to prove it's alive. The caller monitors this channel and uses a timeout to detect if the worker has stalled. The heartbeat send is non-blocking (`select` with `default`) so a missed heartbeat doesn't block the worker. This is useful in long-running or distributed systems where you need health monitoring of background goroutines.
+
+```
+┌────────────────────────────────────────────────────┐
+│  heartbeatWorker(ctx, 50ms)                        │
+│       │                                            │
+│       ├─► heartbeat chan  ──► monitor (main)        │
+│       │    (periodic {})       select {             │
+│       │                          <-heartbeat: ok    │
+│       └─► results chan   ──►      <-results: data   │
+│            (work output)          <-timeout: stuck! │
+│                                 }                   │
+│                                                    │
+│  Timeline:                                         │
+│  ──┬───┬───┬───┬───┬───┬────────────────────────  │
+│    ♥   R   ♥   R   ♥   R  ...                       │
+│    beat result beat result                         │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -920,6 +1239,27 @@ func main() {
 
 ## Bridge Channel — Channel of Channels
 
+**Tutorial: Flattening a Channel of Channels into a Single Stream**
+
+The bridge pattern takes a `<-chan <-chan int` (a channel that produces channels) and flattens it into a single `<-chan int`. It consumes each inner channel sequentially, forwarding all values to the output. This is useful when pipeline stages produce batches as separate channels — the bridge lets the consumer read a single unified stream. The `done` channel enables clean shutdown by breaking out of the forwarding loop.
+
+```
+┌────────────────────────────────────────────────────┐
+│  chanStream (<-chan <-chan int)                      │
+│    │                                               │
+│    ├─► ch-A [0, 1, 2]                              │
+│    ├─► ch-B [3, 4, 5]                              │
+│    └─► ch-C [6, 7, 8]                              │
+│                                                    │
+│  bridge(done, chanStream)                          │
+│    │                                               │
+│    ▼  out (<-chan int)                              │
+│    0, 1, 2, 3, 4, 5, 6, 7, 8  (flattened)         │
+│                                                    │
+│  Reads ch-A to completion, then ch-B, then ch-C   │
+└────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -983,6 +1323,28 @@ func main() {
 ---
 
 ## Tee Channel — Split One Channel Into Two
+
+**Tutorial: Duplicating a Channel Stream to Two Independent Consumers**
+
+The tee pattern splits one input channel into two output channels, where each output receives every value from the input. It uses a clever technique: after reading a value, it sends to both outputs using a `select` with local copies. After sending to one, it nils that copy to prevent double-sending, ensuring both outputs get the value before proceeding to the next input. This is useful when two consumers need the same data stream.
+
+```
+┌────────────────────────────────────────────────────┐
+│                                                    │
+│  input ch: [1, 2, 3, 4, 5]                         │
+│       │                                            │
+│       ▼                                            │
+│  tee(done, ch)                                     │
+│       ├──► out1: [1, 2, 3, 4, 5]  ─► consumer A    │
+│       │                                            │
+│       └──► out2: [1, 2, 3, 4, 5]  ─► consumer B    │
+│                                                    │
+│  Both outputs receive ALL values from input.        │
+│  o1, o2 := out1, out2                              │
+│  select { o1<-val ► o1=nil; o2<-val ► o2=nil }    │
+│  (send to both, nil after each send)               │
+└────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

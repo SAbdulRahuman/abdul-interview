@@ -118,6 +118,30 @@ func main() {
 
 ## strings Package
 
+The `strings` package provides a rich set of functions for searching, transforming, splitting, joining, trimming, and building strings. Since Go strings are immutable, every operation returns a **new** string — the original is never modified. For efficient concatenation in a loop, use `strings.Builder` which accumulates bytes in an internal buffer and produces the final string in one allocation.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│               strings Package — Key Operations              │
+│                                                              │
+│  Search        Transform       Split/Join       Trim        │
+│  ──────        ─────────       ──────────       ────        │
+│  Contains()    ToUpper()       Split()          TrimSpace() │
+│  HasPrefix()   ToLower()       Join()           Trim()      │
+│  HasSuffix()   Title()         Fields()         TrimLeft()  │
+│  Index()       Map()           SplitAfter()     TrimRight() │
+│  Count()       Replace()                        TrimPrefix()│
+│                ReplaceAll()                     TrimSuffix()│
+│                                                              │
+│  Builder (efficient concat):                                 │
+│  ┌─────────────────────────────────────────────┐             │
+│  │ builder.WriteString("Go")  ► internal buf   │             │
+│  │ builder.WriteString(" is") ► grows in place │             │
+│  │ builder.String()           ► final string   │             │
+│  └─────────────────────────────────────────────┘             │
+└──────────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -188,6 +212,31 @@ func main() {
 
 ## strconv Package
 
+**Tutorial: Converting Between Strings and Numeric Types**
+
+The `strconv` package handles all conversions between strings and basic Go types (int, float, bool). The most common pair is `Atoi` (ASCII-to-integer) and `Itoa` (integer-to-ASCII). For more control — like parsing hex or binary — use `ParseInt` with a base and bit-size argument. Always check the returned `error` from parse functions, as invalid input will not panic but will return a descriptive error.
+
+```
+┌────────────────────────────────────────────────────────────┐
+│              strconv — Conversion Flow                     │
+│                                                            │
+│  String ──────────────────────────────► Numeric            │
+│    "42"   ── Atoi(s) ──────────────►  42  (int)           │
+│    "FF"   ── ParseInt(s, 16, 64) ──►  255 (int64)         │
+│    "1010" ── ParseInt(s, 2, 64) ───►  10  (int64)         │
+│    "3.14" ── ParseFloat(s, 64) ────►  3.14 (float64)      │
+│    "true" ── ParseBool(s) ─────────►  true (bool)         │
+│                                                            │
+│  Numeric ──────────────────────────────► String            │
+│    42     ── Itoa(n) ──────────────►  "42"                │
+│    255    ── FormatInt(n, 16) ─────►  "ff"                │
+│    false  ── FormatBool(b) ────────►  "false"             │
+│                                                            │
+│  ⚠ Always check error: _, err := strconv.Atoi("bad")     │
+│    err → strconv.Atoi: parsing "bad": invalid syntax      │
+└────────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -235,6 +284,35 @@ func main() {
 ---
 
 ## fmt Package Verbs
+
+**Tutorial: Formatting Output with Printf Verbs**
+
+The `fmt` package uses **verbs** (like `%s`, `%d`, `%v`) as placeholders inside format strings. The three struct verbs — `%v`, `%+v`, `%#v` — give increasing levels of detail: default values, field names, and full Go syntax. Numeric verbs let you print in decimal (`%d`), binary (`%b`), octal (`%o`), or hex (`%x`). The `%w` verb in `fmt.Errorf` wraps errors for use with `errors.Is` and `errors.As`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│              fmt Verbs — Quick Reference                 │
+│                                                          │
+│  ┌─────── General ───────┐  ┌─────── Numeric ──────────┐ │
+│  │ %v   default value    │  │ %d  decimal (42)         │ │
+│  │ %+v  with field names │  │ %b  binary  (101010)     │ │
+│  │ %#v  Go syntax repr   │  │ %o  octal   (52)         │ │
+│  │ %T   type name        │  │ %x  hex     (2a)         │ │
+│  └───────────────────────┘  └──────────────────────────┘ │
+│                                                          │
+│  ┌─────── String ────────┐  ┌─────── Other ────────────┐ │
+│  │ %s   plain string     │  │ %f  float (3.140000)     │ │
+│  │ %q   quoted string    │  │ %e  scientific notation  │ │
+│  └───────────────────────┘  │ %p  pointer address      │ │
+│                              │ %w  error wrapping       │ │
+│                              └──────────────────────────┘ │
+│                                                          │
+│  User{"Alice",30}                                        │
+│    %v  ► {Alice 30}                                      │
+│    %+v ► {Name:Alice Age:30}                             │
+│    %#v ► main.User{Name:"Alice", Age:30}                │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -285,6 +363,35 @@ func main() {
 
 ## unicode/utf8 Package
 
+**Tutorial: Low-Level UTF-8 Decoding and Validation**
+
+The `unicode/utf8` package provides functions to inspect, validate, and decode UTF-8 encoded strings at the byte level. Use `RuneCountInString` to count characters (not bytes), `DecodeRuneInString` to extract the first rune and its byte width, and `ValidString` to verify a byte sequence is well-formed UTF-8. This package is essential when you need precise control over multi-byte character boundaries.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│         unicode/utf8 — Decoding Walk-Through                 │
+│                                                              │
+│  s := "Hello, 世界!"                                         │
+│                                                              │
+│  Bytes: [48][65][6C][6C][6F][2C][20][E4 B8 96][E7 95 8C][21]│
+│          H   e   l   l   o   ,  ░   世(3B)    界(3B)    !   │
+│                                                              │
+│  DecodeRuneInString(s):                                      │
+│    ┌──────────┐                                              │
+│    │ ptr ──►H │  rune='H'  size=1                            │
+│    └──────────┘                                              │
+│                                                              │
+│  DecodeRuneInString("世界"):                                  │
+│    ┌──────────────┐                                          │
+│    │ ptr ──►E4 B8 96 │  rune='世'  size=3                    │
+│    └──────────────┘                                          │
+│                                                              │
+│  RuneLen('A') = 1    RuneLen('世') = 3                       │
+│  ValidString(s) = true                                       │
+│  ValidString("\xff\xfe") = false                             │
+└──────────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -323,6 +430,33 @@ func main() {
 ---
 
 ## String Concatenation Performance
+
+**Tutorial: Why `+=` Is Slow and How Builder Fixes It**
+
+Because strings are immutable in Go, every `+=` in a loop allocates a brand-new string and copies all previous content — resulting in O(n²) time. `strings.Builder` solves this by writing into a growable internal `[]byte` buffer, producing the final string in one call. `bytes.Buffer` works similarly but is heavier (it implements more interfaces). For a pre-existing slice of strings, `strings.Join` is the cleanest and most efficient option.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│       String Concatenation — Performance Comparison          │
+│                                                              │
+│  += operator (O(n²) in loop):                                │
+│  ┌─────┐  ┌──────────┐  ┌────────────────┐  ← new alloc     │
+│  │"a"  │  │"a" + "b" │  │"ab" + "c"      │     each time    │
+│  └─────┘  └──────────┘  └────────────────┘                   │
+│    1 byte   2+1 copy      3+1 copy         total: O(n²)     │
+│                                                              │
+│  strings.Builder (O(n)):                                     │
+│  ┌──────────────────────────────────────┐                    │
+│  │ internal buffer (grows in place)     │                    │
+│  │ [a][b][c][d][e]...                   │ ← appends only    │
+│  └──────────────────────────────────────┘                    │
+│    .String() ► final string (one alloc)                      │
+│                                                              │
+│  strings.Join (best for slices):                             │
+│  ["Go", "is", "great"] ──► "Go is great"                    │
+│    pre-calculates total length, one allocation               │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

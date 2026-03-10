@@ -59,6 +59,28 @@ func main() {
 }
 ```
 
+**Textual Figure — Case 2: Binary Search**
+
+```
+  T(n) = 1·T(n/2) + O(n⁰)
+  a=1, b=2, k=0 → log₂(1)=0 = k → Case 2
+
+  Recurrence tree:
+  Level 0:  [1 problem, size n]      work = 1
+  Level 1:  [1 problem, size n/2]    work = 1
+  Level 2:  [1 problem, size n/4]    work = 1
+  ...              ...                ...
+  Level log₂n: [1 problem, size 1]   work = 1
+
+  It's a single chain (1 branch):
+  ● → ● → ● → ● → ... → ●
+  1   1   1   1          1    (log₂n nodes)
+
+  Total = 1 × log₂n = O(log n)
+
+  Case 2 formula: O(nᵏ · log n) = O(n⁰ · log n) = O(log n) ✓
+```
+
 ---
 
 ## Example 2: Merge Sort — T(n) = 2T(n/2) + O(n)
@@ -105,6 +127,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Case 2: Merge Sort**
+
+```
+  T(n) = 2·T(n/2) + O(n)
+  a=2, b=2, k=1 → log₂(2)=1 = k → Case 2
+
+         [    n    ]              work at level = n
+        /           \
+     [n/2]        [n/2]           work = n/2+n/2 = n
+    /    \        /    \
+  [n/4] [n/4]  [n/4] [n/4]       work = 4×n/4 = n
+   ...    ...    ...   ...
+  [1][1][1][1]...[1][1][1][1]    work = n×1 = n
+
+  Problems  × Size = Work per level
+  ─────────────────────────────────
+   2⁰ = 1   × n    = n
+   2¹ = 2   × n/2  = n
+   2² = 4   × n/4  = n      ← same at every level!
+   ...        ...    n
+   2^(log n) × 1   = n
+  ─────────────────────────────────
+  log₂n levels × n work = O(n log n)
+
+  Case 2: O(nᵏ · log n) = O(n · log n) ✓
+```
+
 ---
 
 ## Example 3: Tree Traversal — T(n) = 2T(n/2) + O(1)
@@ -142,6 +191,33 @@ func main() {
     fmt.Println("Nodes:", countNodes(root)) // 7
     fmt.Println("Master Theorem: a=2, b=2, k=0 → Case 1 → O(n)")
 }
+```
+
+**Textual Figure — Case 1: Tree Traversal**
+
+```
+  T(n) = 2·T(n/2) + O(1)
+  a=2, b=2, k=0 → log₂(2)=1 > 0=k → Case 1
+
+  Recursion dominates (leaves do most work):
+
+  Level 0:  1 node, O(1) work          total = 1
+  Level 1:  2 nodes, O(1) each         total = 2
+  Level 2:  4 nodes, O(1) each         total = 4
+  Level 3:  8 nodes, O(1) each         total = 8
+  ...          ...                     ...
+  Level log n: n nodes, O(1) each      total = n ← dominates!
+
+  Work per level:
+  1    │ ▪
+  2    │ ▪▪
+  4    │ ▪▪▪▪
+  8    │ ▪▪▪▪▪▪▪▪
+  n    │ ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪  ← leaves dominate
+       └──────────────────
+
+  Total = 1+2+4+...+n = 2n-1 = O(n)
+  Case 1: O(n^log₂2) = O(n¹) = O(n) ✓
 ```
 
 ---
@@ -188,6 +264,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Case 1: Strassen's vs Standard**
+
+```
+  Standard Matrix Multiply:
+  T(n) = 8·T(n/2) + O(n²)             a=8, b=2, k=2
+  log₂(8) = 3 > 2 → Case 1 → O(n³)
+
+  Strassen's Trick: reduce 8 → 7 subproblems!
+  T(n) = 7·T(n/2) + O(n²)             a=7, b=2, k=2
+  log₂(7) ≈ 2.807 > 2 → Case 1 → O(n^2.807)
+
+  ┌──────────────────────────────────────────┐
+  │  Standard:  [A][B] = 8 sub-multiplies   │
+  │                                          │
+  │  ┌A₁₁ A₁₂┐   ┌B₁₁ B₁₂┐                │
+  │  │        │ × │        │ = 8 products    │
+  │  └A₂₁ A₂₂┘   └B₂₁ B₂₂┘                │
+  │                                          │
+  │  Strassen: clever algebra → 7 products   │
+  │                                          │
+  │  Exponent comparison:                    │
+  │    n=1024:  n³     = 1,073,741,824       │
+  │            n^2.807 ≈   591,000,000       │
+  │            Strassen saves ~45%!           │
+  └──────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Quickselect Average — T(n) = T(n/2) + O(n)
@@ -231,6 +334,35 @@ func main() {
     fmt.Println(quickSelect(nums, 4)) // 4
     fmt.Println("Master Theorem: a=1, b=2, k=1 → Case 3 → O(n)")
 }
+```
+
+**Textual Figure — Case 3: Quickselect**
+
+```
+  T(n) = 1·T(n/2) + O(n)
+  a=1, b=2, k=1 → log₂(1)=0 < 1=k → Case 3
+
+  Combine step dominates (root does most work):
+
+  Level 0:  1 problem, size n      work = n    ← dominates!
+  Level 1:  1 problem, size n/2    work = n/2
+  Level 2:  1 problem, size n/4    work = n/4
+  Level 3:  1 problem, size n/8    work = n/8
+  ...           ...                ...
+
+  Work per level:
+  n     │ ████████████████
+  n/2   │ ████████
+  n/4   │ ████
+  n/8   │ ██
+  1     │ █
+        └──────────────────
+
+  Total = n + n/2 + n/4 + ... = n × (1 + 1/2 + 1/4 + ...)
+        = n × 2 = 2n = O(n)
+
+  Case 3: O(nᵏ) = O(n¹) = O(n) ✓
+  Root level dominates — geometric series converges!
 ```
 
 ---
@@ -287,7 +419,35 @@ func main() {
     fmt.Printf("Karatsuba: O(n^log₂3) = O(n^%.3f)\n", math.Log2(3))
 }
 ```
+**Textual Figure — Case 1: Karatsuba 3 vs 4 Multiplies**
 
+```
+  T(n) = 3·T(n/2) + O(n)
+  a=3, b=2, k=1 → log₂(3)≈1.585 > 1=k → Case 1
+
+  Standard multiply: 4 sub-multiplies = O(n²)
+  ───────────────────────────────────
+    x = xH · 10^(n/2) + xL
+    y = yH · 10^(n/2) + yL
+
+    x·y = xH·yH × 10ⁿ + (xH·yL + xL·yH) × 10^(n/2) + xL·yL
+           (1)           (2)    (3)                (4)
+
+  Karatsuba trick: compute (2)+(3) with ONE multiply!
+  ───────────────────────────────────
+    z2 = xH·yH                 ← multiply 1
+    z0 = xL·yL                 ← multiply 2
+    z1 = (xH+xL)·(yH+yL)-z2-z0 ← multiply 3 (not 4!)
+
+  Recursion tree (a=3 branches, not 4):
+            n
+         /  |  \
+       n/2 n/2 n/2        3 subproblems
+      /|\ /|\ /|\
+      ... ... ...          3² = 9 subproblems
+
+  O(n^log₂3) = O(n^1.585) vs O(n^2)  → ~25% faster!
+```
 ---
 
 ## Example 7: T(n) = 4T(n/2) + O(n²) — Case 2
@@ -343,6 +503,31 @@ func main() {
 }
 ```
 
+**Textual Figure — Case 2: Quadrant Processing**
+
+```
+  T(n) = 4·T(n/2) + O(n²)
+  a=4, b=2, k=2 → log₂(4)=2 = k → Case 2
+
+  4×4 matrix → four 2×2 quadrants:
+  ┌─────┬─────┐      ┌───┐┌───┐
+  │ 1  2 │ 3  4 │      │ Q1 ││ Q2 │
+  │ 5  6 │ 7  8 │  →  └───┘└───┘
+  ├─────┼─────┤      ┌───┐┌───┐
+  │ 9 10 │11 12 │      │ Q3 ││ Q4 │
+  │13 14 │15 16 │      └───┘└───┘
+  └─────┴─────┘
+
+  Work per level:
+  Level 0:  1 × n²    = n²
+  Level 1:  4 × (n/2)² = 4 × n²/4 = n²
+  Level 2: 16 × (n/4)² = 16 × n²/16 = n²
+  ...        ...       = n²      ← same at every level!
+
+  n² at each of log₂(n) levels = O(n² log n)
+  Case 2: O(nᵏ · log n) = O(n² log n) ✓
+```
+
 ---
 
 ## Example 8: T(n) = 4T(n/2) + O(n) — Case 1
@@ -381,6 +566,30 @@ func main() {
     }
     fmt.Printf("\nMaster: a=4, b=2, k=1 → Case 1 → O(n^%.1f) = O(n²)\n", math.Log2(4))
 }
+```
+
+**Textual Figure — Case 1: 4-Way Recurse**
+
+```
+  T(n) = 4·T(n/2) + O(n)
+  a=4, b=2, k=1 → log₂(4)=2 > 1=k → Case 1
+
+  Leaves dominate (more branches than work shrinks):
+
+  Level 0:  1 × n       = n
+  Level 1:  4 × n/2     = 2n         ← growing!
+  Level 2: 16 × n/4     = 4n         ← growing!
+  Level 3: 64 × n/8     = 8n
+  ...           ...      ...
+  Level log n: 4^(log n) = n²       ← dominates!
+
+  Branching factor (4) > split factor (2):
+      n        ← O(n) work
+    / | \ \
+  n/2 n/2 n/2 n/2   ← 4 × O(n/2) = O(2n)
+  ...               ← grows by 2× each level
+
+  Total dominated by leaves: O(n^log₂4) = O(n²) ✓
 ```
 
 ---
@@ -430,9 +639,31 @@ func main() {
 }
 ```
 
----
+**Textual Figure — When Master Theorem Does NOT Apply:**
 
-## Example 10: Master Theorem Decision Flowchart
+```
+  ✘ T(n) = T(n/3) + T(2n/3) + O(n)     Unequal splits (use tree method)
+  ✘ T(n) = T(n-1) + O(n)                Subtract, not divide (unroll)
+  ✘ T(n) = 2T(n/2) + O(n log n)         Non-polynomial f(n)
+  ✘ T(n) = nT(n/2) + O(n)               Variable branching (a depends on n)
+
+  Master Theorem requires:
+  ┌────────────────────────────────────────────┐
+  │  T(n) = a · T(n/b) + O(nᵏ)              │
+  │  ─────────────────────────────────────│
+  │  ✓ a is a constant ≥ 1                  │
+  │  ✓ b is a constant > 1                  │
+  │  ✓ ALL subproblems are EQUAL size n/b    │
+  │  ✓ f(n) is polynomial in n               │
+  │  ✓ Input DIVIDES (n/b), not subtracts    │
+  └────────────────────────────────────────────┘
+
+  For subtract recurrences T(n-1)+n:
+  T(n) = n + (n-1) + (n-2) + ... + 1 = n(n+1)/2 = O(n²)
+  (Solve by unrolling, not Master Theorem)
+```
+
+---
 
 ```go
 package main
@@ -496,9 +727,39 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Master Theorem Decision Flowchart:**
 
-## Quick Reference
+```
+  Given: T(n) = a · T(n/b) + O(nᵏ)
+
+         START
+           │
+           ▼
+  ┌────────────────────┐
+  │ Compute log_b(a)     │
+  └─────────┬──────────┘
+            │
+            ▼
+    ┌─────────────────┐
+    │ Compare with k  │
+    └───┬─────┬─────┬─┘
+        │      │      │
+     >k │   =k │   <k │
+        ▼      ▼      ▼
+   Case 1  Case 2  Case 3
+   O(n^c)  O(nᵏ    O(nᵏ)
+   c=log_b(a) log n)
+
+  Quick examples:
+  ──────────────────────────────────────────
+  BinarySearch:  1·T(n/2)+1  → 0=0  Case2 → O(log n)
+  MergeSort:     2·T(n/2)+n  → 1=1  Case2 → O(n log n)
+  TreeTraversal: 2·T(n/2)+1  → 1>0  Case1 → O(n)
+  Quickselect:   1·T(n/2)+n  → 0<1  Case3 → O(n)
+  Strassen:      7·T(n/2)+n² → 2.8>2 Case1 → O(n^2.807)
+```
+
+---
 
 ```
 T(n) = a·T(n/b) + O(nᵏ)

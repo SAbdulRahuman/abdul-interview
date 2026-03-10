@@ -38,6 +38,25 @@ Go has built-in testing support — no external frameworks needed. Test files en
 
 ## Test Functions Basics
 
+**Tutorial: Defining Functions to Be Tested**
+
+Before writing tests, you define the production code in a regular `.go` file. Each function you want to test should have clear inputs and outputs. Here we define `Add` and `Divide`—simple functions that will be tested in a companion `_test.go` file. Notice `Divide` returns an error for invalid input, which is idiomatic Go.
+
+```
+┌─────────────────────────────────────────┐
+│       Source + Test File Convention       │
+│                                           │
+│  math.go          math_test.go            │
+│  ┌──────────┐     ┌───────────────┐       │
+│  │ func Add  │◄────│ func TestAdd  │       │
+│  │ func Div  │◄────│ func TestDiv  │       │
+│  └──────────┘     └───────────────┘       │
+│                                           │
+│  Same package: package math               │
+│  Test discovers functions automatically   │
+└─────────────────────────────────────────┘
+```
+
 ```go
 // File: math.go
 package math
@@ -52,6 +71,30 @@ func Divide(a, b float64) (float64, error) {
     }
     return a / b, nil
 }
+```
+
+**Tutorial: Writing Your First Test Function**
+
+Test files must end with `_test.go` and live in the same package. Test functions must start with `Test` followed by an uppercase letter, and accept `*testing.T`. Use `t.Errorf` to report failures while continuing the test, or `t.Fatal` to stop immediately. Go discovers and runs all `Test*` functions automatically—no registration needed.
+
+```
+┌──────────────────────────────────────────────┐
+│       t.Error vs t.Fatal Flow                │
+│                                              │
+│  TestDivide(t *testing.T)                    │
+│       │                                      │
+│       ├── err != nil?                        │
+│       │     YES ──► t.Fatal("...")            │
+│       │              └── STOP test ■          │
+│       │     NO  ──► continue                 │
+│       │                                      │
+│       ├── result != 5.0?                     │
+│       │     YES ──► t.Errorf("...")           │
+│       │              └── mark FAIL, continue │
+│       │     NO  ──► continue                 │
+│       │                                      │
+│       └── test ends ──► report PASS/FAIL     │
+└──────────────────────────────────────────────┘
 ```
 
 ```go
@@ -92,6 +135,30 @@ go test -run TestAdd   # run specific test
 ---
 
 ## Table-Driven Tests
+
+**Tutorial: The Idiomatic Go Testing Pattern**
+
+Table-driven tests define test cases as a slice of structs, then iterate with `t.Run` to create named subtests. This is the most common testing pattern in Go—it eliminates code duplication, makes adding cases trivial, and gives each case a descriptive name in test output. The `t.Run` subtests can be individually selected with `go test -run TestName/subtest_name`.
+
+```
+┌───────────────────────────────────────────────┐
+│       Table-Driven Test Flow                  │
+│                                               │
+│  tests := []struct{ name, a, b, want }        │
+│  ┌──────┬───┬───┬──────┐                      │
+│  │ name │ a │ b │ want │                      │
+│  ├──────┼───┼───┼──────┤                      │
+│  │ pos  │ 2 │ 3 │  5   │ ──► t.Run("pos")    │
+│  │ neg  │-2 │-3 │ -5   │ ──► t.Run("neg")    │
+│  │ mix  │-2 │ 3 │  1   │ ──► t.Run("mix")    │
+│  │ zero │ 0 │ 0 │  0   │ ──► t.Run("zero")   │
+│  └──────┴───┴───┴──────┘                      │
+│                     │                         │
+│                     ▼                         │
+│  Each subtest: result := Add(a, b)            │
+│                if result != want → t.Errorf   │
+└───────────────────────────────────────────────┘
+```
 
 ```go
 // File: calculator_test.go
@@ -159,6 +226,34 @@ func TestDivide_TableDriven(t *testing.T) {
 ---
 
 ## t.Parallel(), t.Helper(), t.Cleanup()
+
+**Tutorial: Advanced Test Control Helpers**
+
+`t.Parallel()` marks a subtest to run concurrently with other parallel tests—great for independent, slow tests. `t.Helper()` marks a function as a test helper so error messages point to the caller, not the helper. `t.Cleanup()` registers a teardown function that runs after the test completes (like `defer` but for test lifecycle). `t.TempDir()` creates and auto-cleans a temporary directory.
+
+```
+┌─────────────────────────────────────────────────┐
+│       Test Lifecycle & Helpers                  │
+│                                                 │
+│  TestParallel                                   │
+│  ├── t.Run("case1", func(t) {                   │
+│  │       t.Parallel() ──► runs concurrently ─┐  │
+│  │   })                                      │  │
+│  ├── t.Run("case2", func(t) {                │  │
+│  │       t.Parallel() ──► runs concurrently ─┤  │
+│  │   })                                      │  │
+│  └── waits for all parallel subtests ◄───────┘  │
+│                                                 │
+│  t.Helper() effect:                             │
+│  ┌────────────────────────────┐                 │
+│  │ WITHOUT: error at helper.go:5  ✗            │
+│  │ WITH:    error at test.go:12   ✓            │
+│  └────────────────────────────┘                 │
+│                                                 │
+│  t.Cleanup() order: LIFO (like defer)           │
+│  t.TempDir() ──► auto-removed after test        │
+└─────────────────────────────────────────────────┘
+```
 
 ```go
 package math
@@ -235,6 +330,32 @@ func TestSkipExample(t *testing.T) {
 
 ## Benchmarks
 
+**Tutorial: Measuring Performance with Go Benchmarks**
+
+Benchmark functions start with `Benchmark` and accept `*testing.B`. The key is the `b.N` loop—the framework automatically adjusts `b.N` to run enough iterations for statistically reliable timing. Use `b.Run` for sub-benchmarks, `b.ResetTimer()` to exclude setup time, and `-benchmem` flag to track allocations. Results show ns/op, bytes/op, and allocs/op.
+
+```
+┌───────────────────────────────────────────────┐
+│       Benchmark Execution Flow                │
+│                                               │
+│  go test -bench=BenchmarkAdd                  │
+│       │                                       │
+│       ▼                                       │
+│  Framework calibrates b.N:                    │
+│  ┌─────────────────────────────────┐          │
+│  │ Run 1:   b.N = 1        → fast │          │
+│  │ Run 2:   b.N = 100      → fast │          │
+│  │ Run 3:   b.N = 10000    → fast │          │
+│  │ Run 4:   b.N = 1000000  → ~1s  │ ◄─ done │
+│  └─────────────────────────────────┘          │
+│       │                                       │
+│       ▼                                       │
+│  Output: BenchmarkAdd-8  1000000  2.5 ns/op   │
+│                                               │
+│  b.ResetTimer() ──► excludes setup from time  │
+└───────────────────────────────────────────────┘
+```
+
 ```go
 package math
 
@@ -288,12 +409,69 @@ go test -bench=. -count=5           # run 5 times for statistics
 
 ## Test Coverage and Fuzzing
 
+**Tutorial: Measuring Code Coverage**
+
+Go has built-in coverage analysis—no external tools needed. The `-cover` flag shows a coverage percentage, `-coverprofile` generates a detailed report, and `go tool cover -html` renders an interactive HTML view highlighting covered (green) and uncovered (red) lines. Aim for meaningful coverage of critical paths rather than chasing 100%.
+
+```
+┌────────────────────────────────────────────┐
+│       Coverage Workflow                    │
+│                                            │
+│  go test -cover                            │
+│       │                                    │
+│       ▼                                    │
+│  "coverage: 85.7% of statements"           │
+│                                            │
+│  go test -coverprofile=cover.out           │
+│       │                                    │
+│       ▼                                    │
+│  go tool cover -html=cover.out             │
+│       │                                    │
+│       ▼                                    │
+│  ┌─── Browser View ─────────────────┐        │
+│  │  func Add(a, b int) int {      │ green  │
+│  │      return a + b              │ green  │
+│  │  }                             │        │
+│  │  func Unused() {               │ red    │
+│  │      // not tested             │ red    │
+│  │  }                             │        │
+│  └────────────────────────────────┘        │
+└────────────────────────────────────────────┘
+```
+
 ```bash
 # Coverage
 go test -cover                            # show coverage percentage
 go test -coverprofile=cover.out           # generate profile
 go tool cover -html=cover.out             # view in browser
 go tool cover -func=cover.out             # function-level coverage
+```
+
+**Tutorial: Property-Based Fuzz Testing**
+
+Fuzz testing (Go 1.18+) automatically generates random inputs to find edge cases you wouldn't think to test manually. You provide seed values via `f.Add()`, then define a fuzz function that asserts properties (invariants) rather than exact values. The fuzzer mutates inputs, tracking code coverage to explore new paths. It's excellent for finding panics, off-by-one errors, and boundary conditions.
+
+```
+┌────────────────────────────────────────────────┐
+│       Fuzz Testing Flow                        │
+│                                                │
+│  f.Add(1, 2)      ──► Seed corpus             │
+│  f.Add(0, 0)          (known test cases)       │
+│  f.Add(-1, 1)                                  │
+│       │                                        │
+│       ▼                                        │
+│  Fuzz engine generates random (a, b):          │
+│  ┌────────┬────────┬──────────────────┐        │
+│  │ a      │ b      │ Check property   │        │
+│  ├────────┼────────┼──────────────────┤        │
+│  │ 39182  │ -7721  │ Add(a,b)==a+b? ✓ │        │
+│  │ 0      │ MaxInt │ Add(a,b)==a+b? ✓ │        │
+│  │ ...    │ ...    │ keeps mutating.. │        │
+│  └────────┴────────┴──────────────────┘        │
+│       │                                        │
+│       ▼                                        │
+│  Failure? → saved to testdata/fuzz/            │
+└────────────────────────────────────────────────┘
 ```
 
 ```go
@@ -327,6 +505,36 @@ go test -fuzz=FuzzAdd -fuzztime=10s    # fuzz for 10 seconds
 ---
 
 ## httptest Package
+
+**Tutorial: Testing HTTP Handlers Without a Network**
+
+The `net/http/httptest` package provides two key tools: `httptest.NewRecorder()` captures handler output in memory (no real HTTP needed), and `httptest.NewServer()` spins up a real test server on localhost for integration testing. Use `NewRecorder` for fast unit tests of individual handlers, and `NewServer` when you need to test the full HTTP stack including middleware and routing.
+
+```
+┌─────────────────────────────────────────────────┐
+│       httptest Two Approaches                   │
+│                                                 │
+│  Approach 1: ResponseRecorder (unit test)       │
+│  ┌──────────────┐    ┌──────────────┐           │
+│  │  NewRequest   │───►│  handler()   │           │
+│  │  GET /health  │    │              │           │
+│  └──────────────┘    └──────┬───────┘           │
+│                             │ writes to         │
+│                             ▼                   │
+│                     ┌──────────────┐            │
+│                     │  Recorder    │            │
+│                     │  .Code = 200 │            │
+│                     │  .Body = {}  │            │
+│                     └──────────────┘            │
+│                                                 │
+│  Approach 2: NewServer (integration test)       │
+│  ┌──────────┐    ┌───────────┐    ┌──────────┐  │
+│  │ http.Get │───►│ localhost │───►│ handler  │  │
+│  │          │◄───│ :random   │◄───│          │  │
+│  └──────────┘    └───────────┘    └──────────┘  │
+│  defer server.Close()                           │
+└─────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -387,6 +595,33 @@ func TestWithServer(t *testing.T) {
 ---
 
 ## Example Tests
+
+**Tutorial: Tests That Double as Documentation**
+
+Example functions serve two purposes: they are runnable tests verified by `go test`, and they appear in `go doc` output as live documentation. The `// Output:` comment at the end specifies expected output—if it doesn't match, the test fails. Name them `ExampleFunctionName` for function-level docs, or `ExampleType_Method` for method-level docs.
+
+```
+┌──────────────────────────────────────────────┐
+│       Example Test Dual Purpose              │
+│                                              │
+│  func ExampleAdd() {                         │
+│      fmt.Println(Add(2, 3))                  │
+│      // Output:                              │
+│      // 5                                    │
+│  }                                           │
+│       │                    │                  │
+│       ▼                    ▼                  │
+│  ┌──────────┐      ┌──────────────┐          │
+│  │ go test  │      │ go doc math  │          │
+│  │ verifies │      │ shows as     │          │
+│  │ output=5 │      │ usage example│          │
+│  └──────────┘      └──────────────┘          │
+│                                              │
+│  Naming: ExampleAdd           → func Add     │
+│          ExampleAdd_negative  → variant      │
+│          ExampleUser_String   → method       │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package math

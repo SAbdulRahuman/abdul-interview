@@ -57,9 +57,34 @@ func main() {
 | Average | Target at random position | n/2 | O(n) |
 | Worst | Target at end or missing | n | O(n) |
 
----
+```
+  Linear Search — Three Cases Visualized:
 
-## Example 2: Bubble Sort — All Three Cases
+  Array: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+  Best case (target=10):     ✓
+                              ↑
+  Comparisons:               1                    O(1)
+
+  Average case (target=50):  ✗  ✗  ✗  ✗  ✓
+                              ↑  ↑  ↑  ↑  ↑
+  Comparisons:               5 = n/2              O(n)
+
+  Worst case (target=999):   ✗  ✗  ✗  ✗  ✗  ✗  ✗  ✗  ✗  ✗
+                              ↑  ↑  ↑  ↑  ↑  ↑  ↑  ↑  ↑  ↑
+  Comparisons:              10 = n                O(n)
+
+  Operations
+  ▲
+  │            ╱╱╱╱ Worst case O(n)
+  │        ╱╱╱╱
+  │    ╱╱╱╱
+  │╱╱╱╱                    Average case ≈ n/2
+  │───────────── ─ ─ ─
+  │                       Best case O(1)
+  │ ●   ●   ●   ●   ●
+  └────────────────────▶ n
+```
 
 ```go
 package main
@@ -106,9 +131,22 @@ func main() {
 }
 ```
 
----
+```
+  Bubble Sort — Best vs Worst:
 
-## Example 3: Quick Sort — Best vs Worst Pivot
+  Best (already sorted [1,2,3,4,5]):
+  Pass 1: (1<2✓)(2<3✓)(3<4✓)(4<5✓) → 0 swaps → STOP!
+  Comparisons: n-1 = 4  → O(n)       ██
+
+  Worst (reverse sorted [5,4,3,2,1]):
+  Pass 1: swap swap swap swap        → 4 swaps
+  Pass 2: swap swap swap              → 3 swaps
+  Pass 3: swap swap                   → 2 swaps
+  Pass 4: swap                        → 1 swap
+  Comparisons: 4+3+2+1 = 10 = n(n-1)/2 → O(n²)  ██████████
+
+  The gap between O(n) best and O(n²) worst is huge!
+```
 
 ```go
 package main
@@ -160,9 +198,23 @@ func main() {
 | Average | Random pivot | O(n log n) |
 | Worst | Always min/max | O(n²) |
 
----
+```
+  Quick Sort — Partition Quality:
 
-## Example 4: Binary Search — All Three Cases
+  Best case (median pivot):          Worst case (sorted, last pivot):
+
+       [5,1,9,3,7,2,8,4,6]               [1,2,3,4,5,6,7,8,9]
+         /      5      \                   [] [1] [2,3,4,5,6,7,8,9]
+    [1,3,2,4] [9,7,8,6]                        [] [2] [3,4,5,6,7,8,9]
+     /  2  \   / 7  \                               [] [3] [4,...9]
+   [1] [3,4] [6] [9,8]                                    ....
+
+  Depth:  log n = 3                  Depth:  n = 9
+  Work :  n per level                Work :  n per level
+  Total:  n × log n                  Total:  n × n = n²
+
+  Fix: use random pivot or median-of-three!
+```
 
 ```go
 package main
@@ -255,6 +307,28 @@ func main() {
 ```
 
 **Key insight:** Insertion sort is preferred when data is **nearly sorted** because its best case is O(n).
+
+```
+  Insertion Sort — Shift Pattern:
+
+  Already sorted [1,2,3,4,5,6,7,8]:
+  i=1: 2>1? no shift                 0 shifts
+  i=2: 3>2? no shift                 0 shifts
+  ...                                 0 shifts
+  Total shifts: 0  → O(n) ✓
+
+  Reverse sorted [8,7,6,5,4,3,2,1]:
+  i=1: shift 8 right, insert 7       1 shift
+  i=2: shift 8,7 right, insert 6     2 shifts
+  i=3: shift 8,7,6 right, insert 5   3 shifts
+  ...                                 ...
+  i=7: shift all 7 right, insert 1   7 shifts
+  Total: 1+2+3+4+5+6+7 = 28  → O(n²) ✗
+
+  Nearly sorted [1,2,4,3,5,6,8,7]:
+  Only 2 elements out of place → 2 shifts  → O(n) ✓
+  This is why insertion sort is great for "almost sorted" data.
+```
 
 ---
 
@@ -484,9 +558,27 @@ func main() {
 }
 ```
 
----
+```
+  BST Shape — Best vs Worst:
 
-## Example 10: Summary Comparison Table
+  Balanced (insert 50,25,75,12,37,62,87):    Skewed (insert 1,2,3,4,5,6,7):
+
+          50                                  1
+         /  \                                  \
+       25    75                                 2
+      / \   /  \                                 \
+    12  37 62  87                                 3
+                                                   \
+  Height: 3 = log₂(7)                              4
+  Search: O(log n)                                   \
+                                                      5
+                                                       \
+                                                        6
+                                                         \
+                                                          7
+                                                Height: 7 = n
+                                                Search: O(n) ← like linked list!
+```
 
 ```go
 package main

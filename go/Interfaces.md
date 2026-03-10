@@ -27,6 +27,30 @@ Interfaces in Go are **implicit** — a type satisfies an interface simply by im
 
 ## Implicit Interface Satisfaction
 
+**Tutorial: Defining and Satisfying Interfaces Implicitly**
+
+This example defines a `Shape` interface with two methods and two concrete types — `Rectangle` and `Circle` — that satisfy it by implementing both. There is no `implements` keyword; the compiler checks satisfaction when a value is assigned to an interface variable or passed to a function accepting the interface. The `printShape` function accepts any `Shape`, demonstrating polymorphism.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Implicit Satisfaction Check                      │
+│                                                          │
+│  Shape interface           Rectangle struct              │
+│  ┌──────────────────┐      ┌──────────────────┐          │
+│  │ Area() float64   │◄─────│ Area() ✓         │          │
+│  │ Perimeter() f64  │◄─────│ Perimeter() ✓    │          │
+│  └──────────────────┘      └──────────────────┘          │
+│          ▲                                               │
+│          │                 Circle struct                  │
+│          │                 ┌──────────────────┐           │
+│          └─────────────────│ Area() ✓         │           │
+│                    ◄───────│ Perimeter() ✓    │           │
+│                            └──────────────────┘           │
+│                                                           │
+│  printShape(s Shape) ──► dispatches to concrete methods   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -77,6 +101,27 @@ func main() {
 
 ## Empty Interface: interface{} / any
 
+**Tutorial: The Universal Container — any (interface{})**
+
+The empty interface `any` (alias for `interface{}` since Go 1.18) has zero methods, so every type satisfies it automatically. This example shows passing various types to a single function, building heterogeneous slices, and creating maps with mixed value types. Use `any` sparingly — you lose compile-time type safety and must use type assertions to recover the concrete value.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         any — Zero-Method Interface                      │
+│                                                          │
+│  any (interface{})                                       │
+│  ┌──────────────┐     int ─────────► satisfies ✓        │
+│  │ (no methods) │     string ──────► satisfies ✓        │
+│  └──────────────┘     bool ────────► satisfies ✓        │
+│                       []int ───────► satisfies ✓        │
+│                                                          │
+│  []any{ 1, "two", 3.0, true }                           │
+│  ┌─────┬───────┬───────┬──────┐                          │
+│  │ int │string │float64│ bool │  heterogeneous slice     │
+│  └─────┴───────┴───────┴──────┘                          │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -114,6 +159,36 @@ func main() {
 ---
 
 ## Interface Composition
+
+**Tutorial: Building Larger Interfaces from Small Ones**
+
+Go encourages composing larger interfaces by embedding smaller ones. Here, `ReadWriter` embeds `Reader` and `Writer`, while `ReadWriteCloser` embeds all three. The `File` struct satisfies `ReadWriteCloser` by implementing `Read`, `Write`, and `Close` — and automatically satisfies every smaller composed interface too. This mirrors how the standard library builds `io.ReadWriter` from `io.Reader` and `io.Writer`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Interface Composition Hierarchy                   │
+│                                                          │
+│  Reader        Writer        Closer                      │
+│  ┌──────┐     ┌──────┐     ┌───────┐                     │
+│  │Read()│     │Write()│    │Close()│                     │
+│  └──┬───┘     └──┬───┘     └──┬────┘                     │
+│     │            │            │                          │
+│     ▼            ▼            │                          │
+│  ReadWriter                   │                          │
+│  ┌──────────────┐             │                          │
+│  │ Reader       │             │                          │
+│  │ Writer       │             │                          │
+│  └──────┬───────┘             │                          │
+│         │                     │                          │
+│         ▼                     ▼                          │
+│  ReadWriteCloser                                         │
+│  ┌──────────────────────────────┐                        │
+│  │ Reader + Writer + Closer     │                        │
+│  └──────────────────────────────┘                        │
+│         ▲                                                │
+│         │  File satisfies ALL of them                    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -188,6 +263,29 @@ func main() {
 
 ## Type Assertion
 
+**Tutorial: Extracting Concrete Types from Interface Values**
+
+A type assertion `i.(ConcreteType)` extracts the underlying concrete value from an interface. The comma-ok form `val, ok := i.(Dog)` is safe — it returns `false` if the type doesn't match. Without comma-ok, a failed assertion panics at runtime. This example shows both safe and unsafe patterns, plus asserting from `any`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│          Type Assertion Flow                             │
+│                                                          │
+│  var a Animal = Dog{Name: "Rex"}                         │
+│                                                          │
+│  a.(Dog)  ──► dog = Dog{Name:"Rex"}, ok = true          │
+│  a.(Cat)  ──► cat = Cat{},           ok = false          │
+│                                                          │
+│  Interface value:                                        │
+│  ┌────────────────┐                                      │
+│  │ type: Dog      │──► matches Dog? ✓ → extract value   │
+│  │ value: {Rex}   │──► matches Cat? ✗ → ok = false      │
+│  └────────────────┘                                      │
+│                                                          │
+│  ⚠ Without comma-ok: a.(Cat) → PANIC!                  │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -233,6 +331,28 @@ func main() {
 ---
 
 ## Type Switch
+
+**Tutorial: Branching on Dynamic Type with a Type Switch**
+
+A type switch `switch v := val.(type)` lets you branch on the concrete type stored in an interface. Each `case` binds `v` to the correctly-typed value, giving you full type-safe access without manual assertions. This is the idiomatic way to handle `any` values when multiple types are expected, and `nil` can be matched as its own case.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         Type Switch Decision Tree                        │
+│                                                          │
+│  val.(type)                                              │
+│      │                                                   │
+│      ├── int ────────► "int: 42"                         │
+│      ├── float64 ────► "float64: 3.14"                   │
+│      ├── string ─────► "string: \"hello\" (len=5)"       │
+│      ├── bool ───────► "bool: true"                      │
+│      ├── []int ──────► "[]int with 2 elements"           │
+│      ├── nil ────────► "nil value"                       │
+│      └── default ────► "unknown type: ..."               │
+│                                                          │
+│  Each case binds v to the concrete typed value           │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -333,6 +453,33 @@ func main() {
 
 ## Nil Interface vs Interface Holding Nil Pointer (Critical Gotcha!)
 
+**Tutorial: The Nil Interface Trap — Type vs Value**
+
+This is Go's most common interface pitfall. An interface is nil only when **both** its type and value fields are nil. If you assign a typed nil pointer to an interface, the interface stores the type information and becomes non-nil — even though the underlying value is nil. The `riskyFunction` demonstrates the bug; `safeFunction` shows the fix: return `nil` directly rather than a typed nil pointer.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│         The Nil Interface Trap                           │
+│                                                          │
+│  riskyFunction(false):                                   │
+│  var err *MyError = nil                                  │
+│  return err  ──►  error interface:                       │
+│                   ┌─────────────────┐                    │
+│                   │ type: *MyError  │ ← NOT nil!         │
+│                   │ value: nil      │                    │
+│                   └─────────────────┘                    │
+│                   err == nil → false  ✗ UNEXPECTED       │
+│                                                          │
+│  safeFunction(false):                                    │
+│  return nil  ──►  error interface:                       │
+│                   ┌─────────────────┐                    │
+│                   │ type: nil       │                    │
+│                   │ value: nil      │                    │
+│                   └─────────────────┘                    │
+│                   err == nil → true   ✓ EXPECTED         │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -381,6 +528,34 @@ func main() {
 ---
 
 ## Common Standard Library Interfaces
+
+**Tutorial: Implementing Key Standard Library Interfaces**
+
+Go's standard library defines many small interfaces that types can implement for seamless integration. This example shows `fmt.Stringer` (controls how `fmt.Println` displays your type), `error` (custom error messages), `io.Reader`/`io.Writer` (stream-based I/O), and `sort.Interface` (custom sort ordering). Implementing these interfaces unlocks automatic behavior across the entire standard library.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Common Standard Library Interfaces                 │
+│                                                          │
+│  fmt.Stringer       error            io.Reader           │
+│  ┌───────────┐     ┌───────────┐    ┌──────────────┐    │
+│  │ String()  │     │ Error()   │    │ Read([]byte) │    │
+│  │  string   │     │  string   │    │ (int, error) │    │
+│  └─────┬─────┘     └─────┬─────┘    └──────┬───────┘    │
+│        │                 │                 │            │
+│  fmt.Println()     if err != nil    io.Copy, bufio,     │
+│  auto-calls        checks this      all accept Reader   │
+│  String()                                                │
+│                                                          │
+│  sort.Interface                                          │
+│  ┌────────────────────────────┐                           │
+│  │ Len() int                 │                           │
+│  │ Less(i, j int) bool       │                           │
+│  │ Swap(i, j int)            │                           │
+│  └────────────────────────────┘                           │
+│  sort.Sort() works with any implementation               │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -464,6 +639,33 @@ func main() {
 ---
 
 ## Best Practices
+
+**Tutorial: Interface Design Rules — Accept Interfaces, Return Structs**
+
+This example illustrates two key Go idioms. First, "accept interfaces, return concrete types" — functions take interface parameters for flexibility and testability but return concrete types so callers get full access without type assertions. Second, keep interfaces small (1-2 methods) following Go convention; large interfaces are hard to implement, hard to mock, and create tight coupling.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│        Interface Design Rules                            │
+│                                                          │
+│  ✅ Accept interface        ✅ Return concrete           │
+│  ┌────────────────────┐     ┌────────────────────┐       │
+│  │ func Process(       │     │ func New()          │       │
+│  │   l Logger,         │     │   ConsoleLogger     │       │
+│  │   id string,        │     │   { return ... }    │       │
+│  │ )                   │     └────────────────────┘       │
+│  └────────────────────┘                                  │
+│  Any Logger works ►         Caller gets full type ►      │
+│  testable, flexible         no type assertion needed     │
+│                                                          │
+│  ✅ Small interfaces        ❌ Large interfaces          │
+│  ┌──────────────┐           ┌──────────────────────┐     │
+│  │ 1-2 methods  │           │ 10+ methods          │     │
+│  │ easy to      │           │ hard to implement    │     │
+│  │ implement    │           │ hard to mock/test    │     │
+│  └──────────────┘           └──────────────────────┘     │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

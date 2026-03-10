@@ -32,6 +32,35 @@ Go's `net/http` package is production-ready out of the box — no external frame
 
 ## HTTP Server
 
+**Tutorial: Building a RESTful HTTP Server with Go 1.22+ Routing**
+
+This example demonstrates how to set up an HTTP server with both the classic `http.HandleFunc` and the new Go 1.22+ method-based routing. The new `ServeMux` supports patterns like `"GET /api/users/{id}"`, eliminating the need for third-party routers in most cases. Notice how `r.PathValue("id")` extracts path parameters, and how each handler receives the standard `http.ResponseWriter` and `*http.Request` pair.
+
+```
+┌─────────────────────────────────────────────────┐
+│          Go 1.22+ ServeMux Routing              │
+│                                                 │
+│  mux.HandleFunc("GET /api/users", listUsers)    │
+│  mux.HandleFunc("POST /api/users", createUser)  │
+│  mux.HandleFunc("GET /api/users/{id}", getUser) │
+│                                                 │
+│  Incoming: GET /api/users/42                    │
+│       │                                         │
+│       ▼                                         │
+│  ┌──────────┐   pattern match   ┌────────────┐  │
+│  │ ServeMux │──────────────────►│ getUser()  │  │
+│  └──────────┘                   └─────┬──────┘  │
+│                                       │         │
+│                          r.PathValue("id")="42" │
+│                                       │         │
+│                                       ▼         │
+│                               ┌──────────────┐  │
+│                               │ JSON response│  │
+│                               │ {"id":"42"} │  │
+│                               └──────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -97,6 +126,38 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 ---
 
 ## http.Handler Interface and Middleware
+
+**Tutorial: Implementing the http.Handler Interface and Middleware Chaining**
+
+This example shows the core abstraction of Go's HTTP ecosystem: the `http.Handler` interface with its single `ServeHTTP` method. You'll see how to build a struct-based handler, create middleware functions that wrap handlers (logging, auth), and chain them together. The key insight is that middleware is just a function that takes a handler and returns a new handler, enabling clean composition.
+
+```
+┌───────────────────────────────────────────────────┐
+│         Middleware Chain Execution Order           │
+│                                                   │
+│  Request arrives                                  │
+│       │                                           │
+│       ▼                                           │
+│  ┌──────────────────┐                             │
+│  │ loggingMiddleware │  log "→ GET /api/"         │
+│  │   next.ServeHTTP ─┼──┐                         │
+│  └──────────────────┘  │                          │
+│                        ▼                          │
+│  ┌──────────────────┐                             │
+│  │ authMiddleware    │  check Authorization hdr   │
+│  │   next.ServeHTTP ─┼──┐                         │
+│  └──────────────────┘  │                          │
+│                        ▼                          │
+│  ┌──────────────────┐                             │
+│  │ APIHandler       │  ServeHTTP writes response  │
+│  │   (core handler) │                             │
+│  └──────────────────┘                             │
+│       │                                           │
+│       ▼                                           │
+│  Response unwinds back through middleware          │
+│  loggingMiddleware logs "← GET /api/ (12ms)"      │
+└───────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -169,6 +230,36 @@ func main() {
 
 ## HTTP Client
 
+**Tutorial: Making HTTP Requests with a Custom Client**
+
+This example covers the three main ways to make HTTP requests in Go: simple `client.Get()`, `client.Post()` with a JSON body, and fully custom requests via `http.NewRequestWithContext`. Always create a custom `http.Client` with a `Timeout` — the default client has no timeout and can hang forever. Watch how `context.WithTimeout` provides per-request cancellation, and how `defer resp.Body.Close()` prevents resource leaks.
+
+```
+┌──────────────────────────────────────────────────┐
+│          HTTP Client Request Patterns            │
+│                                                  │
+│  Simple GET:                                     │
+│  client.Get(url) ──► resp, err                   │
+│                       └► resp.Body (io.ReadAll)  │
+│                                                  │
+│  POST with body:                                 │
+│  client.Post(url, contentType, body) ──► resp    │
+│                                                  │
+│  Custom request (full control):                  │
+│  ┌────────────────────────────┐                  │
+│  │ http.NewRequestWithContext │                  │
+│  │  ctx (timeout/cancel)     │                  │
+│  │  method: "GET"            │                  │
+│  │  headers: X-Custom, Accept│                  │
+│  └───────────┬────────────────┘                  │
+│              ▼                                   │
+│  client.Do(req) ──► resp ──► json.Decode         │
+│                                                  │
+│  ⚠ ALWAYS: defer resp.Body.Close()              │
+│  ⚠ ALWAYS: set client.Timeout                   │
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -236,6 +327,33 @@ func main() {
 
 ## Graceful Shutdown
 
+**Tutorial: Gracefully Shutting Down an HTTP Server**
+
+This example demonstrates the production pattern for server shutdown: run the server in a goroutine, listen for OS signals (SIGINT/SIGTERM) on a channel, then call `server.Shutdown(ctx)`. The `Shutdown` method stops accepting new connections while letting in-flight requests finish within the context's deadline. This prevents dropped requests during deployments and is essential for containerized environments like Kubernetes.
+
+```
+┌──────────────────────────────────────────────────┐
+│          Graceful Shutdown Flow                  │
+│                                                  │
+│  main goroutine          server goroutine        │
+│  ┌─────────────┐         ┌─────────────────┐     │
+│  │ signal.Notify│         │ ListenAndServe  │    │
+│  │ (SIGINT,    │         │  :8080          │     │
+│  │  SIGTERM)   │         │  ┌────────┐     │     │
+│  └──────┬──────┘         │  │handling│     │     │
+│         │                │  │requests│     │     │
+│  <-quit │                │  └────────┘     │     │
+│  ───────┤ Ctrl+C         └────────┬────────┘     │
+│         ▼                         │              │
+│  server.Shutdown(ctx)             │              │
+│    │ stop new connections ────────┤              │
+│    │ wait for in-flight ──────────┤              │
+│    │ (up to 30s timeout)          │              │
+│    ▼                              ▼              │
+│  "Server stopped"         returns ErrServerClosed│
+└──────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -291,6 +409,35 @@ func main() {
 ---
 
 ## TCP/UDP with net Package
+
+**Tutorial: Building a TCP Echo Server and Client**
+
+This example shows low-level networking with Go's `net` package. The server calls `net.Listen("tcp", ":9090")` to bind a port, then loops over `listener.Accept()` to handle incoming connections — each in its own goroutine for concurrency. The client uses `net.Dial` to connect. Notice the `bufio.Scanner` for line-delimited message reading, which is a common pattern in text-based TCP protocols.
+
+```
+┌──────────────────────────────────────────────────┐
+│          TCP Server-Client Architecture          │
+│                                                  │
+│  Server                       Client             │
+│  ┌──────────────────┐         ┌──────────────┐   │
+│  │ net.Listen(":9090")│        │ net.Dial()   │  │
+│  └────────┬─────────┘         └──────┬───────┘   │
+│           ▼                          │           │
+│  ┌──────────────────┐                │           │
+│  │ listener.Accept()│◄───────────────┘           │
+│  └────────┬─────────┘    TCP handshake           │
+│           ▼                                      │
+│  ┌──────────────────┐                            │
+│  │ go handleConn()  │         "Hello, Server!\n"│
+│  │  scanner.Scan()  │◄──────────────────────────│
+│  │  fmt.Fprintf()   │──────────────────────────►│
+│  │  "Echo: Hello.."│         read response      │
+│  └──────────────────┘                            │
+│                                                  │
+│  Each connection is handled in a separate         │
+│  goroutine for concurrent clients                │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -356,6 +503,31 @@ func main() {
 ---
 
 ## net/url Package
+
+**Tutorial: Parsing and Building URLs with net/url**
+
+This example demonstrates Go's `net/url` package for safely parsing URLs into their components (scheme, host, path, query, fragment) and building URLs with properly encoded query parameters. Use `url.Parse` to decompose a URL string, `u.Query()` to access parameters as a map, and `q.Encode()` to safely build query strings. This is essential for constructing API calls without manual string concatenation.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  URL Structure (parsed by url.Parse)                 │
+│                                                      │
+│  https://example.com:8080/path/to/page?name=Alice#s1 │
+│  ├─────┤ ├──────────────┤├────────────┤├─────────┤├─┤│
+│  Scheme      Host           Path        RawQuery Frag│
+│                                                      │
+│  u.Query() returns url.Values (map[string][]string): │
+│  ┌──────────────────────────┐                        │
+│  │ "name" ──► ["Alice"]     │                        │
+│  │ "age"  ──► ["30"]        │                        │
+│  └──────────────────────────┘                        │
+│                                                      │
+│  Building URL:                                       │
+│  q.Set("q", "golang tutorial")                       │
+│  base.RawQuery = q.Encode()                          │
+│  ──► "q=golang+tutorial&page=1"  (auto-encoded)      │
+└──────────────────────────────────────────────────────┘
+```
 
 ```go
 package main

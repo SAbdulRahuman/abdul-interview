@@ -34,6 +34,27 @@ Reflection lets you inspect and manipulate types and values at **runtime**. It's
 
 ## reflect.TypeOf and reflect.ValueOf
 
+**Tutorial: Extracting Type and Value Information at Runtime**
+
+`reflect.TypeOf(v)` returns a `reflect.Type` describing the static type, while `reflect.ValueOf(v)` wraps the actual data in a `reflect.Value`. You can use `.Int()`, `.String()`, or `.Interface()` on a `reflect.Value` to extract the underlying data. This is the foundation of all reflection—every other operation builds on these two entry points.
+
+```
+┌────────────────────────────────────────────────┐
+│          reflect.TypeOf / reflect.ValueOf      │
+│                                                │
+│  var x int = 42                                │
+│       │                                        │
+│       ▼                                        │
+│  reflect.TypeOf(x)  ──► reflect.Type           │
+│       │                    └── "int"            │
+│       ▼                                        │
+│  reflect.ValueOf(x) ──► reflect.Value          │
+│                            ├── .Int()  → 42    │
+│                            └── .Interface()    │
+│                                  └── 42 (any)  │
+└────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -67,6 +88,32 @@ func main() {
 ---
 
 ## Kind vs Type
+
+**Tutorial: Understanding Kind (Category) vs Type (Specific Name)**
+
+Every Go type has both a `Kind` (the broad category like `int`, `struct`, `slice`) and a `Type` (the specific named type like `UserID` or `User`). A custom `type UserID int` has Type `"main.UserID"` but Kind `reflect.Int`. When writing generic reflection code, you typically switch on `Kind` to handle categories, not specific type names.
+
+```
+┌──────────────────────────────────────────────┐
+│          Kind vs Type                        │
+│                                              │
+│  type UserID int                             │
+│  ┌────────────┬──────────────────┐           │
+│  │ .Name()    │ "UserID"         │ ◄─ Type   │
+│  │ .Kind()    │ reflect.Int      │ ◄─ Kind   │
+│  └────────────┴──────────────────┘           │
+│                                              │
+│  type User struct { ... }                    │
+│  ┌────────────┬──────────────────┐           │
+│  │ .Name()    │ "User"           │ ◄─ Type   │
+│  │ .Kind()    │ reflect.Struct   │ ◄─ Kind   │
+│  └────────────┴──────────────────┘           │
+│                                              │
+│  Many custom types → same Kind               │
+│  type Age int   ──► Kind = reflect.Int       │
+│  type Score int ──► Kind = reflect.Int       │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -111,6 +158,34 @@ func main() {
 
 ## Settability
 
+**Tutorial: Making Reflected Values Modifiable**
+
+By default, `reflect.ValueOf(x)` operates on a copy—you can read but not write. To modify the original variable through reflection, pass a pointer and call `.Elem()` to dereference it. This mirrors Go's value semantics: just as a function receiving a value parameter can't modify the caller's variable, reflection on a value copy can't modify the original. Always check `.CanSet()` before calling `.Set*()` methods.
+
+```
+┌────────────────────────────────────────────────┐
+│          Settability Flow                      │
+│                                                │
+│  x := 42                                      │
+│                                                │
+│  reflect.ValueOf(x)                            │
+│       │                                        │
+│       ▼                                        │
+│  Value{ copy of 42 }  CanSet() = false ✗       │
+│                                                │
+│  reflect.ValueOf(&x)                           │
+│       │                                        │
+│       ▼                                        │
+│  Value{ *int ptr }                             │
+│       │  .Elem()                               │
+│       ▼                                        │
+│  Value{ points to x }  CanSet() = true ✓       │
+│       │  .SetInt(100)                          │
+│       ▼                                        │
+│  x == 100  (original modified!)                │
+└────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -145,6 +220,40 @@ func main() {
 ---
 
 ## Iterating Struct Fields and Reading Tags
+
+**Tutorial: Inspecting Struct Metadata at Runtime**
+
+Reflection can iterate over a struct's fields, read their names, types, values, and struct tags. This is exactly how `encoding/json` maps JSON keys to struct fields using `json:"..."` tags. Use `reflect.Type.NumField()` to get the count, `.Field(i)` to get a `StructField` descriptor, and `field.Tag.Get("tagname")` to extract tag values. Only exported (uppercase) fields are visible to reflection from outside the package.
+
+```
+┌──────────────────────────────────────────────────┐
+│       Struct Field Inspection                    │
+│                                                  │
+│  type User struct {                              │
+│      Name  string `json:"name"`                  │
+│      Email string `json:"email"`                 │
+│      Age   int    `json:"age"`                   │
+│  }                                               │
+│                                                  │
+│  t := reflect.TypeOf(User{})                     │
+│  t.NumField() ──► 3                              │
+│       │                                          │
+│       ▼                                          │
+│  ┌─ Field(0) ───────────────────────┐            │
+│  │  Name: "Name"                    │            │
+│  │  Type: string                    │            │
+│  │  Tag.Get("json") → "name"       │            │
+│  └──────────────────────────────────┘            │
+│  ┌─ Field(1) ───────────────────────┐            │
+│  │  Name: "Email"                   │            │
+│  │  Tag.Get("json") → "email"      │            │
+│  └──────────────────────────────────┘            │
+│  ┌─ Field(2) ───────────────────────┐            │
+│  │  Name: "Age"                     │            │
+│  │  Tag.Get("json") → "age"        │            │
+│  └──────────────────────────────────┘            │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -199,6 +308,37 @@ func main() {
 
 ## Creating Values with Reflection
 
+**Tutorial: Constructing Data Structures Dynamically**
+
+Reflection can create new values, slices, and maps at runtime without knowing their types at compile time. `reflect.New(t)` allocates a new zero value (like `new(T)`), `reflect.MakeSlice` creates a slice, and `reflect.MakeMap` creates a map. This is how ORMs and deserialization libraries build structs from database rows or JSON data without compile-time type knowledge.
+
+```
+┌───────────────────────────────────────────────┐
+│       Dynamic Value Creation                  │
+│                                               │
+│  reflect.New(intType)                         │
+│       │                                       │
+│       ▼                                       │
+│  *int (pointer to zero value)                 │
+│       │ .Elem().SetInt(42)                    │
+│       ▼                                       │
+│  *int ──► 42                                  │
+│                                               │
+│  reflect.MakeSlice(sliceType, 0, 5)           │
+│       │                                       │
+│       ▼                                       │
+│  []int{}  ──Append──► []int{1, 2, 3}          │
+│                                               │
+│  reflect.MakeMap(mapType)                     │
+│       │                                       │
+│       ▼                                       │
+│  map[string]int{}                             │
+│       │ SetMapIndex("age", 30)                │
+│       ▼                                       │
+│  map[string]int{"age": 30}                    │
+└───────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -234,6 +374,35 @@ func main() {
 ---
 
 ## Calling Functions with Reflection
+
+**Tutorial: Dynamic Function Invocation via reflect.Value.Call**
+
+You can invoke any function dynamically using `reflect.ValueOf(fn).Call(args)`, where `args` is a `[]reflect.Value`. The return values also come back as `[]reflect.Value`. This enables plugin systems, RPC frameworks, and dependency injection containers that call functions without knowing their signatures at compile time. Be sure argument types match exactly—reflection panics on type mismatches.
+
+```
+┌──────────────────────────────────────────────┐
+│       Reflection Function Call               │
+│                                              │
+│  func add(a, b int) int                      │
+│                                              │
+│  addFn := reflect.ValueOf(add)               │
+│       │                                      │
+│       ▼                                      │
+│  args := []reflect.Value{                    │
+│      ValueOf(3),                             │
+│      ValueOf(5),                             │
+│  }                                           │
+│       │                                      │
+│       ▼                                      │
+│  result := addFn.Call(args)                  │
+│       │                                      │
+│       ▼                                      │
+│  result[0].Int() ──► 8                       │
+│                                              │
+│  ⚠ Panics if arg types don't match!         │
+│  ⚠ Panics if wrong number of arguments!     │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -271,6 +440,32 @@ func main() {
 ---
 
 ## Laws of Reflection and reflect.DeepEqual
+
+**Tutorial: The Three Laws and Deep Comparison**
+
+Go's reflection follows three laws: (1) you can go from an interface value to a reflection object via `ValueOf`/`TypeOf`, (2) you can go back from a reflection object to an interface value via `.Interface()`, and (3) to modify a reflected value, it must be settable (obtained via pointer). `reflect.DeepEqual` performs recursive comparison of complex types (slices, maps, nested structs) and is commonly used in tests where `==` doesn't work.
+
+```
+┌──────────────────────────────────────────────────┐
+│       Three Laws of Reflection                   │
+│                                                  │
+│  Law 1: interface{} ──► Reflection Object        │
+│     var x float64 = 3.14                         │
+│     reflect.ValueOf(x) ──► reflect.Value         │
+│                                                  │
+│  Law 2: Reflection Object ──► interface{}        │
+│     v.Interface().(float64) ──► 3.14             │
+│                                                  │
+│  Law 3: Settability requires pointer             │
+│     reflect.ValueOf(&x).Elem().SetFloat(2.71)    │
+│                                                  │
+│  ┌──────────────── DeepEqual ──────────────────┐ │
+│  │  []int{1,2,3} == []int{1,2,3}  → true      │ │
+│  │  []int{1,2,3} == []int{1,2,4}  → false     │ │
+│  │  Recursively checks all nested values       │ │
+│  └─────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -318,6 +513,31 @@ func main() {
 ---
 
 ## Performance and Use Cases
+
+**Tutorial: When to Use (and Avoid) Reflection**
+
+Reflection is powerful but carries significant performance overhead—typically 10-100x slower than direct operations due to runtime type checks, interface boxing, and loss of compiler optimizations. Use it only where the flexibility justifies the cost: serialization (JSON/XML), ORMs, dependency injection, and testing utilities. Since Go 1.18, prefer generics for type-safe polymorphism without runtime overhead.
+
+```
+┌──────────────────────────────────────────────┐
+│       Reflection Performance Trade-off       │
+│                                              │
+│  Direct call:      x + y       ~1 ns        │
+│  Reflection call:  Call(args)  ~100 ns       │
+│                                              │
+│  ✓ Use reflection for:                       │
+│  ├── JSON/XML serialization                  │
+│  ├── ORM field mapping                       │
+│  ├── Dependency injection                    │
+│  ├── Test assertions (DeepEqual)             │
+│  └── Config loading                          │
+│                                              │
+│  ✗ Avoid reflection in:                      │
+│  ├── Hot loops / request handlers            │
+│  ├── Anywhere generics can work              │
+│  └── Performance-critical paths              │
+└──────────────────────────────────────────────┘
+```
 
 ```go
 package main

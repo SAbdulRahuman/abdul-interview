@@ -39,6 +39,22 @@ func main() {
 }
 ```
 
+**Textual Figure — Basic O(1) Array Indexing:**
+
+```
+  arr = [10, 20, 30, 40, 50]
+
+  Index:    0     1     2     3     4
+          ┌─────┬─────┬─────┬─────┬─────┐
+          │ 10  │ 20  │ 30  │ 40  │ 50  │
+          └─────┴─────┴─────┴─────┴─────┘
+                        ↑
+  arr[0] = 10   ← O(1)  arr[2] = 30
+  arr[4] = 50   ← O(1)
+
+  Read / Write are both O(1) — just address arithmetic
+```
+
 ---
 
 ## Example 2: Simulating Negative Indexing
@@ -65,6 +81,25 @@ func main() {
     fmt.Println(negIndex(s, 0))   // 10
     fmt.Println(negIndex(s, 2))   // 30
 }
+```
+
+**Textual Figure — Negative Indexing (Python-style):**
+
+```
+  s = [10, 20, 30, 40, 50]    len = 5
+
+  Positive:  0    1    2    3    4
+           ┌────┬────┬────┬────┬────┐
+           │ 10 │ 20 │ 30 │ 40 │ 50 │
+           └────┴────┴────┴────┴────┘
+  Negative: -5   -4   -3   -2   -1
+
+  Formula: if i < 0, use len(s) + i
+    negIndex(s, -1) → 5 + (-1) = 4 → s[4] = 50
+    negIndex(s, -3) → 5 + (-3) = 2 → s[2] = 30
+    negIndex(s, -5) → 5 + (-5) = 0 → s[0] = 10
+
+  Go doesn't support this natively — must wrap it yourself!
 ```
 
 ---
@@ -99,9 +134,28 @@ func main() {
 }
 ```
 
----
+**Textual Figure — 2D to 1D Index Mapping:**
 
-## Example 4: 1D ↔ 2D Index Conversion
+```
+  3×4 matrix:
+        col:  0    1    2    3
+  row 0:   [  1,   2,   3,   4 ]    flat: 0  1  2  3
+  row 1:   [  5,   6,   7,   8 ]    flat: 4  5  6  7
+  row 2:   [  9,  10,  11,  12 ]    flat: 8  9  10 11
+
+  Formula: flatIndex = row × cols + col
+
+  matrix[0][2] = 3  →  flat[0×4+2] = flat[2] = 3   ✓
+  matrix[2][3] = 12 →  flat[2×4+3] = flat[11] = 12 ✓
+
+  Memory layout (row-major):
+  ┌─┬─┬─┬─┬─┬─┬─┬─┬─┬──┬──┬──┐
+  │1│2│3│4│5│6│7│8│9│10│11│12│
+  └─┴─┴─┴─┴─┴─┴─┴─┴─┴──┴──┴──┘
+  │-- row 0 --│-- row 1 --│--- row 2 ---│
+```
+
+---
 
 ```go
 package main
@@ -127,6 +181,27 @@ func main() {
 ```
 
 **Why?** Flattening 2D arrays into 1D is common in competitive programming and cache-friendly code.
+
+**Textual Figure — 1D ↔ 2D Conversion:**
+
+```
+  flat = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]   cols = 4
+
+  1D → 2D:  row = i / cols    col = i % cols
+  ───────────────────────────────────
+  flat[0]  → 0/4=0, 0%4=0 → (0,0)   val=1
+  flat[5]  → 5/4=1, 5%4=1 → (1,1)   val=6
+  flat[11] → 11/4=2, 11%4=3 → (2,3) val=12
+
+  2D → 1D:  flatIdx = row × cols + col
+  ───────────────────────────────────
+  (2,3) → 2×4+3 = 11 → flat[11] = 12  ✓
+
+  Visual:
+  flat: | 1  2  3  4 | 5  6  7  8 | 9  10 11 12 |
+        |-- row 0 ---|- row 1 ----|- row 2 -----|
+             i=0..3     i=4..7      i=8..11
+```
 
 ---
 
@@ -175,9 +250,41 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Diagonal Indexing in a Matrix:**
 
-## Example 6: Spiral Order Indexing
+```
+  5×5 matrix:
+        0    1    2    3    4
+  0 [  1,   2,   3,   4,   5 ]
+  1 [  6,   7,   8,   9,  10 ]
+  2 [ 11,  12,  13,  14,  15 ]
+  3 [ 16,  17,  18,  19,  20 ]
+  4 [ 21,  22,  23,  24,  25 ]
+
+  Main diagonal (i == j):       1, 7, 13, 19, 25
+       ╲
+        1
+          7
+           13
+             19
+               25
+
+  Anti-diagonal (i + j == n-1):  5, 9, 13, 17, 21
+                                  /
+                               5
+                             9
+                           13
+                         17
+                       21
+
+  Diagonal property:
+  ┌────────────────────────────────────┐
+  │ Same diagonal → i - j = constant │
+  │ Same anti-diag → i + j = constant│
+  └────────────────────────────────────┘
+```
+
+---
 
 ```go
 package main
@@ -232,9 +339,38 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Spiral Order Traversal:**
 
-## Example 7: Stride-based Access
+```
+  3×4 matrix:
+  ┌────┬────┬────┬────┐
+  │  1 │  2 │  3 │  4 │  → right (top row)
+  ├────┼────┼────┼────┤
+  │  5 │  6 │  7 │  8 │           ↓ down (right col)
+  ├────┼────┼────┼────┤
+  │  9 │ 10 │ 11 │ 12 │  ← left (bottom row)
+  └────┴────┴────┴────┘
+    ↑ up (left col)
+
+  Traversal path:
+    1 → 2 → 3 → 4
+                  ↓
+    5    6 ← 7    8
+    ↑              ↓
+    9 ← 10 ← 11 ← 12
+
+  Result: [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7]
+
+  Boundary pointers:
+    top=0  bottom=2  left=0  right=3
+    After each pass, shrink inward:
+    right pass → top++
+    down pass  → right--
+    left pass  → bottom--
+    up pass    → left++
+```
+
+---
 
 ```go
 package main
@@ -268,9 +404,31 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Stride-based Access Patterns:**
 
-## Example 8: Circular Indexing (Ring Buffer)
+```
+  data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  Index:  0  1  2  3  4  5  6  7  8  9  10  11
+
+  Stride = 3 (every 3rd element):
+          ↓        ↓        ↓        ↓
+         [0, _, _, 3, _, _, 6, _, _, 9, __,  __]
+  Result: 0  3  6  9
+
+  Stride = 2 (even-indexed):
+          ↓     ↓     ↓     ↓     ↓      ↓
+         [0, _, 2, _, 4, _, 6, _, 8, __,  10, __]
+  Result: 0  2  4  6  8  10
+
+  Reverse stride = 2 (from end):
+             ↓     ↓     ↓     ↓     ↓     ↓
+         [_, 1, _, 3, _, 5, _, 7, _, 9, __,  11]
+  Result: 11  9  7  5  3  1
+
+  Use cases: downsampling, channel interleaving, SIMD-style access
+```
+
+---
 
 ```go
 package main
@@ -301,9 +459,35 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Circular Indexing (Ring Buffer):**
 
-## Example 9: Index Mapping — Coordinate Transforms
+```
+  buf = [10, 20, 30, 40, 50]     n = 5
+
+  Circular layout:
+          ┌────┐
+     ┌────┤ 30 ├────┐       Index mapping:
+     │ 20 │ [2] │ 40 │       idx = (start + step) % n
+     │ [1]└────┘ [3] │
+     └──┐          ┌─┘       start=2:
+        │ 10   50  │         step 0: (2+0)%5 = 2 → 30
+        │ [0]  [4] │         step 1: (2+1)%5 = 3 → 40
+        └──────────┘         step 2: (2+2)%5 = 4 → 50
+                             step 3: (2+3)%5 = 0 → 10  ← wraps!
+  Linear view:               step 4: (2+4)%5 = 1 → 20
+  [10, 20, 30, 40, 50]
+          ↑ start=2
+          30 → 40 → 50 → 10 → 20 → 30 → 40 → 50
+                    wrap ↗
+
+  Backward: idx = ((start - step) % n + n) % n
+    step 0: 2 → 30
+    step 1: 1 → 20
+    step 2: 0 → 10
+    step 3: 4 → 50  ← wraps backward!
+```
+
+---
 
 ```go
 package main
@@ -342,9 +526,37 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Coordinate Transforms:**
 
-## Example 10: Bounds Checking and Safe Access
+```
+  90° Clockwise Rotation: (i,j) → (j, n-1-i)
+
+  Original:        After 90° CW:
+  ┌───┬───┬───┐    ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │    │ 7 │ 4 │ 1 │
+  ├───┼───┼───┤    ├───┼───┼───┤
+  │ 4 │ 5 │ 6 │ →  │ 8 │ 5 │ 2 │
+  ├───┼───┼───┤    ├───┼───┼───┤
+  │ 7 │ 8 │ 9 │    │ 9 │ 6 │ 3 │
+  └───┴───┴───┘    └───┴───┴───┘
+
+  Example: (0,0)→(0,2)  (0,2)→(2,2)  (2,2)→(2,0)  (2,0)→(0,0)
+
+  Transpose: (i,j) ↔ (j,i)  — swap across main diagonal
+
+  Original:        Transposed:
+  ┌───┬───┬───┐    ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │    │ 1 │ 4 │ 7 │
+  ├───┼───┼───┤    ├───┼───┼───┤
+  │ 4 │ 5 │ 6 │ →  │ 2 │ 5 │ 8 │
+  ├───┼───┼───┤    ├───┼───┼───┤
+  │ 7 │ 8 │ 9 │    │ 3 │ 6 │ 9 │
+  └───┴───┴───┘    └───┴───┴───┘
+
+  Tip: 90° CW = Transpose + Reverse each row
+```
+
+---
 
 ```go
 package main
@@ -387,6 +599,38 @@ func main() {
     fmt.Println("Neighbors of (1,1):", neighbors4(grid, 1, 1)) // [2 8 4 6]
     fmt.Println("Neighbors of (0,0):", neighbors4(grid, 0, 0)) // [4 2] — corner
 }
+```
+
+**Textual Figure — Bounds Checking & Neighbor Access:**
+
+```
+  safeGet — safe 1D access:
+  s = [10, 20, 30]    len = 3
+        0    1    2
+  ─ ─ ─┌────┬────┬────┐─ ─ ─
+ X ← │ 10 │ 20 │ 30 │ → X      X = out of bounds
+  ─ ─ ─└────┴────┴────┘─ ─ ─
+  idx -1 → -1 (default)    idx 5 → -1 (default)
+  idx  1 → 20 (valid)
+
+  neighbors4 — 4-directional grid neighbors:
+  ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │    For (1,1)=5:
+  ├───┼───┼───┤      UP    (0,1)=2  ✓
+  │ 4 │[5]│ 6 │      DOWN  (2,1)=8  ✓
+  ├───┼───┼───┤      LEFT  (1,0)=4  ✓
+  │ 7 │ 8 │ 9 │      RIGHT (1,2)=6  ✓
+  └───┴───┴───┘    Result: [2, 8, 4, 6]
+
+  For (0,0)=1 (corner):
+  ┌───┬───┬───┐      UP    (-1,0) ✗
+  │[1]│ 2 │ 3 │      DOWN  (1,0)=4 ✓
+  ├───┼───┼───┤      LEFT  (0,-1) ✗
+  │ 4 │ 5 │ 6 │      RIGHT (0,1)=2 ✓
+  ├───┼───┼───┤    Result: [4, 2]
+  │ 7 │ 8 │ 9 │
+  └───┴───┴───┘
+  dirs = [(-1,0), (1,0), (0,-1), (0,1)]
 ```
 
 ---

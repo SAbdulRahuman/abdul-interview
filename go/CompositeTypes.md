@@ -28,16 +28,32 @@ Composite types aggregate other values. Go has four composite types: **arrays**,
 
 Arrays in Go have a **fixed size** that is part of the type. `[3]int` and `[4]int` are completely different types. Arrays are **values** — assigning or passing an array creates a full copy.
 
+**Tutorial: Arrays — Fixed Size, Full Copy**
+
+Arrays have a fixed size baked into the type — `[3]int` and `[4]int` are completely different types that cannot be mixed. When you assign an array to another variable, Go copies all elements — modifying the copy has no effect on the original. The `[...]int{10, 20, 30, 40}` syntax lets the compiler count the elements for you. Arrays are comparable with `==` if their element types are comparable.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│     Array Value Semantics — Copy on Assignment           │
+│                                                          │
+│  original := [3]string{"a", "b", "c"}                    │
+│  copied := original                                      │
+│                                                          │
+│  Stack memory:                                           │
+│  ┌─────────────┐     ┌─────────────┐                     │
+│  │ original    │     │ copied      │  ← independent copy │
+│  │ [a] [b] [c] │     │ [a] [b] [c] │                     │
+│  └─────────────┘     └─────────────┘                     │
+│                                                          │
+│  copied[0] = "Z"                                         │
+│  ┌─────────────┐     ┌─────────────┐                     │
+│  │ original    │     │ copied      │                     │
+│  │ [a] [b] [c] │     │ [Z] [b] [c] │  ← only copy changed│
+│  └─────────────┘     └─────────────┘                     │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // Declaration
-    var a [3]int                    // [0 0 0] — zero valued
-    b := [3]int{1, 2, 3}           // explicit values
-    c := [...]int{10, 20, 30, 40}  // compiler counts: [4]int
 
     fmt.Println(a) // [0 0 0]
     fmt.Println(b) // [1 2 3]
@@ -113,20 +129,11 @@ A slice is a **descriptor** (24 bytes on 64-bit systems) that references a conti
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Slice Basics — Shared Backing Array**
+
+This example shows the critical difference between slices and arrays. When you create `sub := s[1:3]`, the slice `sub` doesn't copy data — it creates a new header pointing into the same backing array. Modifying `sub[0]` also changes `s[1]` because they share memory. The capacity of `sub` extends from its starting point to the end of the backing array, which is why `cap(sub) = 4` (indices 1 through 4).
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // Slice literal
-    s := []int{10, 20, 30, 40, 50}
-    fmt.Println("Slice:", s)
-    fmt.Println("Length:", len(s))   // 5
-    fmt.Println("Capacity:", cap(s)) // 5
-
-    // Slicing an existing slice
-    sub := s[1:3] // elements at index 1, 2
     fmt.Println("Sub:", sub)         // [20 30]
     fmt.Println("Sub len:", len(sub)) // 2
     fmt.Println("Sub cap:", cap(sub)) // 4 (from index 1 to end of underlying array)
@@ -138,6 +145,25 @@ func main() {
 ```
 
 ### Creating Slices
+
+**Tutorial: 5 Ways to Create Slices**
+
+Go offers multiple ways to create slices. The literal syntax `[]int{1, 2, 3}` is the simplest. `make([]T, len, cap)` pre-allocates capacity to avoid reallocation during `append`. Slicing an array creates a slice that shares the array's memory. A nil slice (`var s []int`) and an empty slice (`[]int{}`) both have length 0 but differ: nil slices have no backing array, while empty slices point to a zero-size array.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       5 Slice Creation Methods Compared                  │
+│                                                          │
+│  Method             ptr    len  cap  == nil?             │
+│  ─────────────────  ────   ───  ───  ───────             │
+│  []int{1,2,3}       →arr   3    3    false               │
+│  make([]int, 3)     →arr   3    3    false               │
+│  make([]int, 3, 10) →arr   3    10   false               │
+│  arr[1:4]           →arr   3    4    false               │
+│  var s []int        nil    0    0    TRUE                 │
+│  []int{}            →arr   0    0    false               │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -198,17 +224,11 @@ When `append` exceeds the slice's capacity, Go allocates a new, larger backing a
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: append() and Reallocation**
+
+The key to understanding `append` is knowing when reallocation happens. When `append` would exceed the slice's capacity, Go allocates a new, larger array, copies existing elements, and returns a new slice header. After this, `old` and `s` point to different arrays — mutations to one don't affect the other. This is why you **must always** reassign: `s = append(s, 4)`.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    s := make([]int, 0, 3)
-    fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
-
-    // Append within capacity — no reallocation
-    s = append(s, 1, 2, 3)
     fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
     // len=3 cap=3 [1 2 3]
 
@@ -232,6 +252,27 @@ func main() {
 ```
 
 ### copy()
+
+**Tutorial: Independent Slice Copies**
+
+The `copy` function creates a true independent copy of slice data. It copies `min(len(dst), len(src))` elements and returns the count. After `copy`, `dst` and `src` have no shared memory — modifying one doesn't affect the other. This is essential when you need to pass slice data to another goroutine safely.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       copy() — True Deep Copy                            │
+│                                                          │
+│  src = [1, 2, 3, 4, 5]    dst = [0, 0, 0]               │
+│                                                          │
+│  n := copy(dst, src)  → n = 3 (min of len(dst), len(src))│
+│                                                          │
+│  src = [1, 2, 3, 4, 5]    dst = [1, 2, 3]               │
+│  └─ independent ─┘        └─ independent ─┘             │
+│                                                          │
+│  dst[0] = 999                                            │
+│  src → [1, 2, 3, 4, 5]  (unchanged!)                    │
+│  dst → [999, 2, 3]                                       │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -276,17 +317,11 @@ These look similar but behave differently in specific contexts (especially JSON 
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Nil vs Empty — Matters for JSON**
+
+Both nil and empty slices have `len=0` and `cap=0`. Both work with `append`, `range`, and `len`. The critical difference is JSON marshaling: a nil slice serializes to `null`, while an empty slice serializes to `[]`. Use `var s []int` (nil) as the default. Use `s := []int{}` (empty) when building APIs that need to return an empty JSON array `[]` instead of `null`.
+
 ```go
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-)
-
-func main() {
-    var nilSlice []int    // nil — no underlying array
-    emptySlice := []int{} // empty — has an (empty) underlying array
 
     fmt.Println(nilSlice == nil)  // true
     fmt.Println(emptySlice == nil) // false
@@ -314,6 +349,30 @@ func main() {
 ```
 
 ### Slice Tricks
+
+**Tutorial: Common Slice Operations**
+
+Go has no built-in `delete`, `insert`, or `reverse` functions for slices (though `slices` package in Go 1.21+ helps). These patterns show how to do it manually. Delete at index `i`: splice `s[:i]` and `s[i+1:]` together with `append`. Insert at index `i`: split, prepend the new element, and rejoin. Filter in-place: reuse the backing array with `nums[:0]` — avoiding allocation. Reverse: swap elements from both ends using Go's multi-assignment.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Delete Element at Index 2                          │
+│                                                          │
+│  s = [1, 2, 3, 4, 5]                                    │
+│           ↑ i=2                                          │
+│                                                          │
+│  s[:2] = [1, 2]       s[3:] = [4, 5]                    │
+│          └──────┬──────┘                                 │
+│       append(s[:2], s[3:]...)                             │
+│       = [1, 2, 4, 5]                                     │
+│                                                          │
+│       Filter (keep evens, reuse array):                  │
+│  nums  = [1, 2, 3, 4, 5, 6]                             │
+│  evens = nums[:0]  ← same array, len=0                   │
+│  → append 2, 4, 6 → [2, 4, 6]                           │
+│  (no new allocation!)                                    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -379,16 +438,11 @@ The three-index slice `a[low:high:max]` controls the **capacity** of the resulti
 └──────────────────────────────────────────────────────────┘
 ```
 
+**Tutorial: Full Slice Expression — Limiting Capacity**
+
+The three-index slice `s[1:3:3]` limits the capacity so `append` can't accidentally overwrite adjacent elements in the original array. With `sub1 := s[1:3]`, capacity is 4 (extends to end of array), and `append(sub1, 99)` would overwrite `s[3]`. With `sub2 := s[1:3:3]`, capacity is 2, so `append` triggers reallocation — creating a new array and leaving `s` untouched.
+
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    s := []int{1, 2, 3, 4, 5}
-
-    // Normal slice: sub can see beyond its length (up to original capacity)
-    sub1 := s[1:3]
     fmt.Printf("sub1: %v, len=%d, cap=%d\n", sub1, len(sub1), cap(sub1))
     // sub1: [2 3], len=2, cap=4
 
@@ -437,6 +491,27 @@ Maps are Go's built-in hash table type. They provide O(1) average-case lookups, 
 
 ### Creation and Operations
 
+**Tutorial: Map CRUD Operations**
+
+Maps are created with `make(map[K]V)` or a map literal. Accessing a missing key returns the zero value (no error) — use the comma-ok idiom `val, ok := m[key]` to distinguish "key not found" from "key has zero value." `delete(m, key)` removes a key (no-op if key doesn't exist). Iteration order is randomized by design — never depend on map ordering.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Map Operations — What Happens Internally           │
+│                                                          │
+│  scores["alice"] = 90    → hash("alice") → bucket → store│
+│  scores["alice"]         → hash("alice") → bucket → 90  │
+│  scores["dave"]          → hash("dave") → not found → 0 │
+│  val, ok := scores["dave"] → ok = false, val = 0        │
+│  delete(scores, "bob")   → hash("bob") → remove entry   │
+│                                                          │
+│  for k, v := range scores:                               │
+│    iteration 1: maybe "carol": 92                        │
+│    iteration 2: maybe "alice": 90                        │
+│    (ORDER IS RANDOM — different each run!)               │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -483,6 +558,26 @@ func main() {
 
 ### Nil Map Behavior
 
+**Tutorial: The Nil Map Trap**
+
+A `var m map[string]int` declaration creates a nil map. Reading from a nil map is safe — it always returns the zero value. But writing to a nil map causes a **runtime panic**. This is a common source of bugs. Always initialize maps before writing with `make()` or a map literal.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Nil Map — Read OK, Write PANICS                    │
+│                                                          │
+│  var m map[string]int   ← m is nil                       │
+│                                                          │
+│  m["key"]               → returns 0 (zero value)    ✓   │
+│  len(m)                 → returns 0                  ✓   │
+│  for k, v := range m   → no iterations              ✓   │
+│  m["key"] = 1           → PANIC!                     ✗   │
+│                                                          │
+│  Fix: m = make(map[string]int)                           │
+│       m["key"] = 1      → works                     ✓   │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -506,6 +601,10 @@ func main() {
 ```
 
 ### Maps Package (Go 1.21+)
+
+**Tutorial: maps and slices Standard Library**
+
+Go 1.21 introduced the `maps` and `slices` packages for common operations. `maps.Clone` creates a shallow copy of a map. `maps.Keys` and `maps.Values` return iterators, which can be collected and sorted using `slices.Sorted`. These replace the manual loop patterns that were previously required.
 
 ```go
 package main
@@ -570,6 +669,30 @@ Structs are Go's way of defining custom data types that group related fields. St
 
 ### Struct Definition and Initialization
 
+**Tutorial: 4 Ways to Create Structs**
+
+Named field initialization (`Person{Name: "Alice", Age: 30}`) is preferred because it's resilient to field reordering. Positional initialization (`Person{"Bob", 25, "..."}`) is fragile — if fields are reordered, values silently map to wrong fields. Partial initialization assigns zero values to unspecified fields. A zero-valued struct (`var p4 Person`) has all fields set to their zero values.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Struct Initialization — Memory State               │
+│                                                          │
+│  p1 := Person{Name:"Alice", Age:30, Email:"alice@..."}  │
+│  ┌─────────────────────────────────────────────┐         │
+│  │ Name:  "Alice"      │ string header → "Alice"│        │
+│  │ Age:   30            │ int = 30               │        │
+│  │ Email: "alice@..."   │ string header → "..."  │        │
+│  └─────────────────────────────────────────────┘         │
+│                                                          │
+│  p3 := Person{Name: "Carol"}                             │
+│  ┌─────────────────────────────────────────────┐         │
+│  │ Name:  "Carol"       │ string header → "Carol"│       │
+│  │ Age:   0             │ zero value (int)       │        │
+│  │ Email: ""            │ zero value (string)    │        │
+│  └─────────────────────────────────────────────┘         │
+└──────────────────────────────────────────────────────────┘
+```
+
 ```go
 package main
 
@@ -611,6 +734,10 @@ func main() {
 
 ### Anonymous / Embedded Fields (Struct Embedding)
 
+**Tutorial: Composition Over Inheritance**
+
+Struct embedding is Go's replacement for inheritance. When `Address` is embedded in `Employee` (no field name), its fields are "promoted" — you can access `emp.City` directly instead of `emp.Address.City`. Both refer to the same field. If `Employee` had its own `City` field, it would shadow the promoted one — you'd need `emp.Address.City` to access the embedded version.
+
 ```go
 package main
 
@@ -647,6 +774,24 @@ func main() {
 ```
 
 ### Struct Tags
+
+**Tutorial: Metadata for Serialization**
+
+Struct tags are string literals attached to fields that control how external tools (JSON encoder, database ORM, validators) process data. The `json:"first_name"` tag tells `json.Marshal` to use `"first_name"` as the JSON key instead of `"FirstName"`. The tag `json:"-"` omits the field entirely (used for sensitive data like passwords). The `omitempty` option omits fields with zero values from JSON output.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│       Struct Tags — Effect on JSON Output                │
+│                                                          │
+│  Field                Tag                  JSON output   │
+│  ─────                ───                  ───────────   │
+│  ID = 1               json:"id"            "id": 1      │
+│  FirstName = "Alice"  json:"first_name"    "first_name": "Alice"│
+│  Password = "secret"  json:"-"             (omitted!)    │
+│  Email = ""           json:"email,omitempty" (omitted!)  │
+│  Email = "a@b.com"    json:"email,omitempty" "email": "a@b.com"│
+└──────────────────────────────────────────────────────────┘
+```
 
 ```go
 package main
@@ -687,6 +832,10 @@ func main() {
 ```
 
 ### Struct Comparison
+
+**Tutorial: Comparing Structs**
+
+Structs are comparable with `==` only if all their fields are comparable types (basic types, arrays, structs of comparable types). Structs containing slices, maps, or functions cannot use `==` — the compiler rejects it at compile time. For deep comparison of non-comparable structs, use `reflect.DeepEqual` (but it's slower due to reflection).
 
 ```go
 package main
