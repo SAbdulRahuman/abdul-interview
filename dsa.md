@@ -3,6 +3,10 @@
 Data Structures and Algorithms Preparation Plan
 (Staff Software Engineer Interview)
 
+# pre-requisite
+* [Data Structures the Fun Way](https://learning.oreilly.com/library/view/data-structures-the/9781098156602/)
+* [Data Structures the Fun Way](https://learning.oreilly.com/library/view/data-structures-the/9781098156602/)
+
 ---
 
 # Phase 1 — Algorithm Complexity
