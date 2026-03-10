@@ -54,6 +54,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Dice Probability Distribution                  │
+├─────────────────────────────────────────────────┤
+│  Single die: each face P = 1/6 ≈ 0.1667         │
+│  ┌─┬─┬─┬─┬─┬─┐                                   │
+│  │1│2│3│4│5│6│  each ≈ 16.67%                  │
+│  └─┴─┴─┴─┴─┴─┘                                   │
+│                                                 │
+│  Two dice sum: triangle distribution             │
+│  Sum:  2  3  4  5  6  7  8  9 10 11 12          │
+│  Ways: 1  2  3  4  5  6  5  4  3  2  1          │
+│                    ▲                             │
+│                   ╱ ╲   peak at 7                │
+│                  ╱   ╲  P(7) = 6/36              │
+│                 ╱     ╲                            │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Expected Value Simulation
@@ -112,6 +132,28 @@ func main() {
 		fmt.Printf("  Coupon collector n=%2d: sim=%.1f, theory=%.1f\n", n, sim, theory)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Expected Value & Coupon Collector               │
+├─────────────────────────────────────────────────┤
+│  Geometric Distribution: roll until 6            │
+│    P(success) = 1/6                              │
+│    E[rolls] = 1/p = 6                            │
+│    □□□□■ ← avg 6 tries                          │
+│                                                 │
+│  Coupon Collector: collect all n types           │
+│    E = n × H(n) = n(1 + 1/2 + 1/3 + ... + 1/n) │
+│                                                 │
+│    n=5:  E ≈ 5 × 2.28 = 11.4                    │
+│    n=10: E ≈ 10 × 2.93 = 29.3                   │
+│    n=50: E ≈ 50 × 4.50 = 224.9                  │
+│                                                 │
+│  Phase waiting: after k types collected,         │
+│    P(new) = (n-k)/n → E[next] = n/(n-k)        │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -176,6 +218,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Linearity of Expectation                       │
+├─────────────────────────────────────────────────┤
+│  Fixed points in random permutation:             │
+│    X = X₁ + X₂ + ... + Xₙ   (Xᵢ = 1 if fixed) │
+│    P(Xᵢ = 1) = 1/n                               │
+│    E[X] = Σ E[Xᵢ] = n × (1/n) = 1              │
+│                                                 │
+│  Example: perm [2,0,1,3,4]                      │
+│    pos:  0 1 2 3 4                               │
+│    val:  2 0 1 3 4                               │
+│    fix:        ✓ ✓ ← positions 3,4 are fixed    │
+│    count = 2 (but E = 1 on average!)             │
+│                                                 │
+│  Inversions: E[inv] = n(n-1)/4                  │
+│    Each pair (i,j) has P(inversion) = 1/2        │
+│    E = C(n,2) × 1/2 = n(n-1)/4                  │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Monte Carlo — Estimate Pi
@@ -211,6 +275,28 @@ func main() {
 		fmt.Printf("  n=%8d: π ≈ %.6f  (error: %.4f%%)\n", n, est, err)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Monte Carlo π Estimation                        │
+├─────────────────────────────────────────────────┤
+│  Unit square [0,1]×[0,1] with quarter circle:    │
+│                                                 │
+│  1┌────────────┐                                 │
+│   │∙∙∙∙∙∙◡────│                                 │
+│   │∙∙∙∙∙╱   ○ │  ∙ = inside circle              │
+│   │∙∙∙∙╱  ○  ○│  ○ = outside circle             │
+│   │∙∙∙╱ ○     │                                 │
+│   │∙∙╱        │                                 │
+│  0└────────────┘                                 │
+│   0            1                                │
+│                                                 │
+│  π/4 = area of quarter circle                   │
+│  π ≈ 4 × (inside / total samples)               │
+│  More samples → better estimate (√ convergence) │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -265,6 +351,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Birthday Paradox                               │
+├─────────────────────────────────────────────────┤
+│  P(collision) as group size grows:               │
+│                                                 │
+│  People: 10    20    23    30    50    70       │
+│  P(%):   11.7  41.1  50.7  70.6  97.0  99.9    │
+│                                                 │
+│  100%│                          ────────        │
+│   75%│                    ╱                       │
+│   50%│───────────── ╱  ← 23 people!             │
+│   25%│            ╱                               │
+│    0%┴────────────────────────                │
+│      0    10  20  30  40  50                    │
+│                                                 │
+│  50% threshold ≈ √(πn/2) = √(573) ≈ 23.9       │
+│  Application: hash collision probability!        │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Random Walk
@@ -308,6 +416,28 @@ func main() {
 	fmt.Println("\n  E[X²] = n (variance)")
 	fmt.Println("  E[|X|] ≈ √(2n/π)")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  1D Random Walk                                 │
+├─────────────────────────────────────────────────┤
+│  Each step: +1 or -1 with P = 1/2               │
+│                                                 │
+│  pos                                            │
+│   3 │       ╱╲                                    │
+│   2 │     ╱  ╲                                   │
+│   1 │   ╱    ╲╱╲                                 │
+│   0 ─╱──────────╲──╲─── step                   │
+│  -1 │               ╲╱                            │
+│  -2 │                                            │
+│                                                 │
+│  After n steps:                                 │
+│    E[X]   = 0       (symmetric)                  │
+│    E[X²]  = n       (variance = n)               │
+│    E[|X|] ≈ √(2n/π) (RMS distance)              │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -359,6 +489,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Randomized Quick Select                        │
+├─────────────────────────────────────────────────┤
+│  arr = [3,1,4,1,5,9,2,6,5,3,5], find k=4       │
+│                                                 │
+│  pivot = 5 (random):                            │
+│    less:  [3,1,4,1,2,3]  (6 elements)           │
+│    equal: [5,5,5]        (3 elements)           │
+│    greater: [9,6]        (2 elements)           │
+│                                                 │
+│  k=4 < |less|=6 → recurse into less            │
+│    pivot = 2:                                   │
+│      less:  [1,1]   equal: [2]  greater: [3,4,3]│
+│    k=4 > 2+1=3 → recurse greater, k=4-3=1     │
+│    → answer = 3 (5th smallest, 0-indexed k=4)  │
+│                                                 │
+│  Expected O(n): each step eliminates ~half       │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Probabilistic Counting (HyperLogLog Idea)
@@ -404,6 +556,29 @@ func main() {
 	fmt.Printf("Estimated:     %.0f\n", est)
 	fmt.Printf("Note: Real HyperLogLog uses multiple registers for accuracy\n")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  HyperLogLog: Cardinality Estimation            │
+├─────────────────────────────────────────────────┤
+│  Idea: hash each element, count leading zeros   │
+│                                                 │
+│  hash("item_42") = 00010110...                  │
+│                     ↑↑↑                          │
+│                     3 leading zeros              │
+│                                                 │
+│  Max leading zeros seen = k                     │
+│  → Estimate: ~2ᵏ distinct elements              │
+│                                                 │
+│  Intuition: seeing k leading zeros means        │
+│    ~2ᵏ elements tried (P = 1/2ᵏ each)           │
+│                                                 │
+│  Real HyperLogLog: many registers              │
+│    → harmonic mean for better accuracy          │
+│    → O(1) space, O(1) per element!              │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -470,6 +645,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Randomized vs Deterministic QuickSort          │
+├─────────────────────────────────────────────────┤
+│  Deterministic (first element pivot):           │
+│    Sorted input → O(n²) worst case!             │
+│    [1,2,3,...,n] picks 1 as pivot each time    │
+│    → n + (n-1) + (n-2) + ... = O(n²)            │
+│                                                 │
+│  Randomized pivot:                              │
+│    ANY input → O(n log n) expected              │
+│    P(balanced split) > 1/2                      │
+│    Expected depth: O(log n)                     │
+│    Work per level: O(n)                         │
+│                                                 │
+│  Las Vegas: always correct, random time         │
+│  Monte Carlo: random correctness, bounded time  │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Probability Patterns Summary
@@ -500,6 +696,26 @@ func main() {
 		fmt.Printf("  %-20s %-28s %s\n", p.concept, p.formula, p.application)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Probability Patterns Toolkit                   │
+├─────────────────────────────────────────────────┤
+│  Expected value       → Σ x·P(x)               │
+│  Linearity of E      → E[X+Y]=E[X]+E[Y]        │
+│  Geometric dist      → E = 1/p                 │
+│  Coupon collector    → E = n·H(n)              │
+│  Birthday paradox    → ~√(πn/2)                │
+│  Random walk         → Var = n                 │
+│  Monte Carlo         → sample → estimate       │
+│  Randomized algs     → avoid worst-case         │
+│  HyperLogLog        → cardinality O(1) space   │
+│  Reservoir sampling  → k/n probability          │
+│                                                 │
+│  Key: linearity works for dependent vars!       │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

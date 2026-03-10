@@ -86,6 +86,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "apple", "app", "banana", "band"
+
+   Trie (array-based, [26] children per node):
+   ┌────────────────────────────────────────┐
+   │  (root)                               │
+   │   ├─ a                                │
+   │   │   └─ p                             │
+   │   │       └─ p ★        → "app"       │
+   │   │           └─ l                     │
+   │   │               └─ e ★  → "apple"   │
+   │   └─ b                                │
+   │       └─ a                             │
+   │           └─ n                          │
+   │               ├─ a                     │
+   │               │   └─ n                 │
+   │               │       └─ a ★ → "banana"│
+   │               └─ d ★      → "band"     │
+   └────────────────────────────────────────┘
+   ★ = isEnd (word boundary)
+
+   Search "apple":  root─a─p─p─l─e → isEnd=true  → FOUND
+   Search "app":    root─a─p─p    → isEnd=true  → FOUND
+   Search "ap":     root─a─p      → isEnd=false → NOT FOUND
+   Search "ban":    root─b─a─n    → isEnd=false → NOT FOUND
+```
+
 ---
 
 ## Example 2: Trie with HashMap Children
@@ -146,6 +175,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "hello", "café", "日本語" (HashMap children → Unicode support)
+
+   Trie (map[rune]*Node children):
+   ┌───────────────────────────────────────┐
+   │  (root)                              │
+   │   ├─ 'h' ─ 'e' ─ 'l' ─ 'l' ─ 'o' ★  │
+   │   │                    → "hello"     │
+   │   ├─ 'c' ─ 'a' ─ 'f' ─ 'é' ★        │
+   │   │                    → "café"      │
+   │   └─ '日' ─ '本' ─ '語' ★           │
+   │                    → "日本語"         │
+   └───────────────────────────────────────┘
+
+   Map-based nodes: each stores only the children that exist.
+   Array-based would need [26] fixed slots (no Unicode).
+   Map-based supports ANY character set.
+
+   Search "日本": root─'日'─'本' → isEnd=false → NOT FOUND
+   Search "日本語": root─'日'─'本'─'語' → isEnd=true → FOUND
+```
+
 ---
 
 ## Example 3: Count Nodes and Words
@@ -201,6 +254,35 @@ func main() {
 	// "banana" creates b,a,n,a,n,a = 6 new
 	// Total: 1 + 5 + 0 + 7 + 6 = 19
 }
+```
+
+**Textual Figure:**
+
+```
+Insert: "apple", "app", "application", "banana"
+
+   (root)  [nodeCount = 19]
+    ├─ a                       Nodes created:
+    │   └─ p                    "apple":  a,p,p,l,e     = 5 new
+    │       └─ p ★              "app":    shares a,p,p  = 0 new
+    │           └─ l            "application": shares a,p,p,l
+    │               ├─ e ★                 adds i,c,a,t,i,o,n = 7 new
+    │               └─ i      "banana": b,a,n,a,n,a = 6 new
+    │                   └─ c
+    │                       └─ a          Total: 1(root) + 5+0+7+6 = 19
+    │                           └─ t      Words: 4
+    │                               └─ i
+    │                                   └─ o
+    │                                       └─ n ★
+    └─ b
+        └─ a
+            └─ n
+                └─ a
+                    └─ n
+                        └─ a ★
+
+   Shared prefix "appl" saves 4 nodes for "application".
+   Each unique character prefix = one node in the trie.
 ```
 
 ---
@@ -276,6 +358,31 @@ func main() {
 	fmt.Println("Words starting with 'ap':", trie.CountPrefix("ap"))   // 4
 	fmt.Println("Exact 'app':", trie.CountWord("app"))                 // 1
 }
+```
+
+**Textual Figure:**
+
+```
+Insert: "apple", "app", "application", "apt"
+
+   (root)
+    └─ a (pCnt=4)
+        └─ p (pCnt=4)       ← CountPrefix("ap") = 4
+            ├─ p (pCnt=3)   ← CountPrefix("app") = 3
+            │     wCnt=1    ← CountWord("app") = 1 ★
+            │   └─ l (pCnt=2)
+            │       ├─ e (pCnt=1, wCnt=1) ★ → "apple"
+            │       └─ i (pCnt=1)
+            │           └─ c ─ a ─ t ─ i ─ o ─ n ★
+            │                               → "application"
+            └─ t (pCnt=1, wCnt=1) ★ → "apt"
+
+   pCnt = prefixCount (words passing through this node)
+   wCnt = wordCount (words ending at this node)
+
+   CountPrefix("app") = 3: apple + app + application
+   CountPrefix("ap")  = 4: apple + app + application + apt
+   CountWord("app")   = 1: only "app" ends here
 ```
 
 ---
@@ -370,6 +477,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "apple", "app" then Delete("apple")
+
+   Before Delete:               After Delete("apple"):
+   (root)                       (root)
+    └─ a                        └─ a
+        └─ p                       └─ p
+            └─ p ★  → "app"          └─ p ★  → "app"
+                └─ l                (l, e pruned ↑)
+                    └─ e ★ → "apple"
+
+   Delete "apple" traversal (recursive, depth-first):
+   ┌──────┬────────┬───────────┬─────────────────────────┐
+   │ Depth│ Node   │ Action    │ Reason                  │
+   ├──────┼────────┼───────────┼─────────────────────────┤
+   │  5   │ 'e'    │ isEnd=F   │ Unmark word end          │
+   │  5   │ 'e'    │ DELETE    │ No children, not isEnd   │
+   │  4   │ 'l'    │ DELETE    │ No children, not isEnd   │
+   │  3   │ 'p'[1] │ KEEP      │ isEnd=true (★ "app")      │
+   └──────┴────────┴───────────┴─────────────────────────┘
+```
+
 ---
 
 ## Example 6: Get All Words in Trie
@@ -431,6 +562,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "cat", "car", "card", "care", "bat", "bar"
+
+   (root)
+    ├─ b
+    │   └─ a
+    │       ├─ r ★         → "bar"
+    │       └─ t ★         → "bat"
+    └─ c
+        └─ a
+            ├─ r ★         → "car"
+            │   ├─ d ★     → "card"
+            │   └─ e ★     → "care"
+            └─ t ★         → "cat"
+
+   DFS collect traversal (lexicographic order):
+   root ─b→ ─a→ ─r★ → "bar"
+                  ─t★ → "bat"
+        ─c→ ─a→ ─r★ → "car"
+                   ─d★ → "card"
+                   ─e★ → "care"
+                  ─t★ → "cat"
+
+   Result: [bar, bat, car, card, care, cat]
+   Tries naturally yield lexicographic order via DFS!
+```
+
 ---
 
 ## Example 7: Longest Common Prefix via Trie
@@ -486,6 +646,32 @@ func main() {
 	fmt.Println(longestCommonPrefix([]string{"flower", "flow", "flight"})) // "fl"
 	fmt.Println(longestCommonPrefix([]string{"dog", "racecar", "car"}))    // ""
 }
+```
+
+**Textual Figure:**
+
+```
+Longest Common Prefix for ["flower", "flow", "flight"]:
+
+   (root)
+    └─ f   ← count=1, single child → continue
+        └─ l   ← count=1, single child → continue
+            ├─ o   ← count=2 → STOP (branching!)
+            │   └─ w ★ → "flow"
+            │       └─ e
+            │           └─ r ★ → "flower"
+            └─ i   ← (second branch)
+                └─ g
+                    └─ h
+                        └─ t ★ → "flight"
+
+   Walk from root while only 1 child and !isEnd:
+   root ─f→ (1 child) ─l→ (2 children) → STOP
+   LCP = "fl"
+
+   For ["dog", "racecar", "car"]:
+   root has 3 children (c, d, r) → STOP immediately
+   LCP = ""
 ```
 
 ---
@@ -549,6 +735,31 @@ func main() {
 	if v, ok := m.Get("help"); ok { fmt.Println("help:", v) }
 	if _, ok := m.Get("hel"); !ok { fmt.Println("hel: not found") }
 }
+```
+
+**Textual Figure:**
+
+```
+TrieMap: Put("hello", 42), Put("help", "assistance"), Put("world", 3.14)
+
+   (root)
+    ├─ h
+    │   └─ e
+    │       └─ l
+    │           ├─ l
+    │           │   └─ o ★  value: 42         → "hello"
+    │           └─ p ★      value: "assistance" → "help"
+    └─ w
+        └─ o
+            └─ r
+                └─ l
+                    └─ d ★  value: 3.14      → "world"
+
+   Get("hello"): root─h─e─l─l─o → isEnd=true, value=42
+   Get("help"):  root─h─e─l─p   → isEnd=true, value="assistance"
+   Get("hel"):   root─h─e─l     → isEnd=false → NOT FOUND
+
+   Trie as a map: O(L) lookup independent of # entries.
 ```
 
 ---
@@ -626,6 +837,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Word-level Trie from sentences:
+"i love go", "i love golang", "i love programming", "i am learning"
+
+   (root)
+    └─ "i"
+        ├─ "love"
+        │   ├─ "go" ★            → "i love go"
+        │   ├─ "golang" ★        → "i love golang"
+        │   └─ "programming" ★   → "i love programming"
+        └─ "am"
+            └─ "learning" ★      → "i am learning"
+
+   Each edge = a whole word (not a character).
+   Uses map[string]*Node for word-level children.
+
+   AutoComplete("i love"):
+     root ─"i"→ ─"love"→ collect subtree
+     → ["i love go", "i love golang", "i love programming"]
+
+   AutoComplete("i"):
+     root ─"i"→ collect entire subtree
+     → [all 4 sentences]
+```
+
 ---
 
 ## Example 10: Trie Space Analysis
@@ -677,6 +915,32 @@ func main() {
 	fmt.Println("  Array: O(ALPHABET × total_nodes) — could be O(26 × N × L)")
 	fmt.Println("  Map: O(total_unique_chars) — proportional to actual content")
 }
+```
+
+**Textual Figure:**
+
+```
+Trie Space: Array vs Map Children
+
+   Array-based node [26]*Node:      Map-based node map[rune]*Node:
+   ┌────────────────────────┐    ┌────────────────────┐
+   │ [a][b][c]...[z]        │    │ {a:↓, c:↓}          │
+   │  ↓  ·  ↓       ·       │    │  only used keys     │
+   │ 26 pointers always    │    │  + hash overhead    │
+   └────────────────────────┘    └────────────────────┘
+   ~208 bytes/node               Variable, ~8 bytes/entry
+
+   Example: node with 2 children ('a' and 'c')
+   Array: 26 slots, 24 wasted    Map: 2 entries, no waste
+
+   ┌─────────────┬───────────────┬───────────────┐
+   │             │ Array [26]     │ Map            │
+   ├─────────────┼───────────────┼───────────────┤
+   │ Lookup      │ O(1) direct   │ O(1) avg hash  │
+   │ Space/node  │ 26 × 8 bytes  │ k × ~16 bytes  │
+   │ Charset     │ a-z only      │ Any Unicode    │
+   │ Cache       │ Friendly      │ Less friendly  │
+   └─────────────┴───────────────┴───────────────┘
 ```
 
 ---

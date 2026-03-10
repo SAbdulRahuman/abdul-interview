@@ -46,6 +46,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────────┐
+│  Sieve of Eratosthenes: primes up to 30            │
+├─────────────────────────────────────────────────────┤
+│  Initial: 2 3 4 5 6 7 8 9 10 11 12 13 ... 29 30   │
+│                                                     │
+│  i=2: mark 4,6,8,10,12,14,16,18,20,22,24,26,28,30 │
+│   2 3 _ 5 _ 7 _ 9 __ 11 __ 13 __ 15 __ 17 ...     │
+│                                                     │
+│  i=3: mark 9,15,21,27  (start at 3²=9)            │
+│   2 3 _ 5 _ 7 _ _ __ 11 __ 13 __ __ __ 17 ...     │
+│                                                     │
+│  i=4: skip (not prime)                              │
+│  i=5: mark 25 (start at 5²=25, √30≈5.5 → done)   │
+│                                                     │
+│  Result: 2 3 5 7 11 13 17 19 23 29                 │
+│  (10 primes up to 30)                               │
+└─────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Count Primes (LeetCode 204)
@@ -80,6 +101,24 @@ func main() {
 		fmt.Printf("Primes < %6d: %d\n", n, countPrimes(n))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Count Primes < n                                │
+├──────────────────────────────────────────────────┤
+│  n       primes < n    π(n)/n                    │
+│  ──────  ──────────    ──────                    │
+│      10          4     0.400  (2,3,5,7)          │
+│     100         25     0.250                     │
+│   1,000        168     0.168                     │
+│  10,000      1,229     0.123                     │
+│ 100,000      9,592     0.096                     │
+│                                                  │
+│  Prime density ≈ 1/ln(n) by PNT                 │
+│  Sieve: O(n log log n) time, O(n) space          │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -147,6 +186,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Segmented Sieve: Primes in [lo, hi]             │
+├──────────────────────────────────────────────────┤
+│  Range: [100, 150]                               │
+│                                                  │
+│  Step 1: Basic sieve up to √150 ≈ 12            │
+│    Small primes: {2, 3, 5, 7, 11}               │
+│                                                  │
+│  Step 2: Create isPrime[0..50] for [100..150]    │
+│    Mark multiples of 2: 100,102,104,...          │
+│    Mark multiples of 3: 102,105,108,...          │
+│    Mark multiples of 5: 100,105,110,...          │
+│    Mark multiples of 7: 105,112,119,...          │
+│    Mark multiples of 11: 110,121,132,...         │
+│                                                  │
+│  Result: 101 103 107 109 113 127 131 137 139 149 │
+│  Memory: O(√hi + (hi-lo)) instead of O(hi)      │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Smallest Prime Factor (SPF) Sieve
@@ -192,6 +253,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Smallest Prime Factor (SPF) Sieve               │
+├──────────────────────────────────────────────────┤
+│  n:    2  3  4  5  6  7  8  9  10 11 12         │
+│  spf:  2  3  2  5  2  7  2  3   2 11  2         │
+│                                                  │
+│  Factorize 60 using SPF:                         │
+│    60 → spf[60]=2 → 60/2=30                     │
+│    30 → spf[30]=2 → 30/2=15                     │
+│    15 → spf[15]=3 → 15/3=5                      │
+│     5 → spf[5]=5  → 5/5=1   done                │
+│    Result: [2, 2, 3, 5]  ✓                       │
+│                                                  │
+│  Factorize 97: spf[97]=97 (prime!)               │
+│    Result: [97]                                  │
+│                                                  │
+│  O(n log log n) setup → O(log n) per factorize  │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Euler's Totient Sieve
@@ -228,6 +311,28 @@ func main() {
 	fmt.Println("  φ(p^k) = p^k - p^(k-1)")
 	fmt.Println("  φ is multiplicative: φ(ab) = φ(a)φ(b) if gcd(a,b)=1")
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Euler's Totient Sieve: φ(n)                     │
+├──────────────────────────────────────────────────┤
+│  n:    1  2  3  4  5  6  7  8  9 10 11 12       │
+│  φ(n): 1  1  2  2  4  2  6  4  6  4 10  4       │
+│                                                  │
+│  Algorithm: start with φ[i]=i, for each prime p: │
+│    for j=p, 2p, 3p,...: φ[j] -= φ[j]/p          │
+│                                                  │
+│  φ(12) computation:                              │
+│    init: 12                                      │
+│    p=2: 12 - 12/2 = 6                           │
+│    p=3: 6 - 6/3 = 4                             │
+│    Numbers 1..12 coprime to 12: {1,5,7,11} = 4  │
+│                                                  │
+│  Properties: φ(p) = p-1  (p prime)               │
+│              φ(p^k) = p^k - p^(k-1)             │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -273,6 +378,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Prime Gaps up to 1000                           │
+├──────────────────────────────────────────────────┤
+│  Gap  Between       First occurrence              │
+│  ───  ───────       ────────────────              │
+│   1   2 → 3         only consecutive primes       │
+│   2   3 → 5         twin primes                   │
+│   4   7 → 11                                     │
+│   6   23 → 29                                    │
+│   8   89 → 97                                    │
+│  14   113 → 127     largest gap up to ~150        │
+│  20   887 → 907     largest gap up to 1000        │
+│                                                  │
+│  Gaps grow slowly: max gap ≈ O(ln² n) expected  │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Goldbach's Conjecture Verifier
@@ -312,6 +436,25 @@ func main() {
 		fmt.Printf("  %2d = %d + %d\n", n, a, b)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Goldbach's Conjecture                           │
+├──────────────────────────────────────────────────┤
+│  Every even n > 2 is sum of two primes:           │
+│                                                  │
+│   4 = 2 + 2     10 = 3 + 7                       │
+│   6 = 3 + 3     12 = 5 + 7                       │
+│   8 = 3 + 5     14 = 3 + 11                      │
+│  20 = 3 + 17    30 = 7 + 23                       │
+│  50 = 3 + 47   100 = 3 + 97                       │
+│                                                  │
+│  Verification: iterate i=2..n/2, check           │
+│  isPrime[i] && isPrime[n-i]                      │
+│  Unproven but verified up to 4×10¹⁸              │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -354,6 +497,28 @@ func main() {
 	}
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Sum of Divisors Sieve: σ(n)                     │
+├──────────────────────────────────────────────────┤
+│  For each i=1..n, add i to σ[i], σ[2i], σ[3i]...│
+│                                                  │
+│  n=6: divisors = {1,2,3,6}                      │
+│    σ(6) = 1+2+3+6 = 12                          │
+│                                                  │
+│  Perfect numbers: σ(n) = 2n                      │
+│    6:  σ(6)=12=2×6   ✓ (1+2+3=6)               │
+│    28: σ(28)=56=2×28  ✓ (1+2+4+7+14=28)         │
+│                                                  │
+│  Abundant numbers: σ(n) > 2n                     │
+│    12: σ(12)=28>24                               │
+│    18: σ(18)=39>36                               │
+│                                                  │
+│  O(n log n) — harmonic series iterations         │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -401,6 +566,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Möbius Function μ(n)                              │
+├──────────────────────────────────────────────────┤
+│  n:    1  2  3  4  5  6  7  8  9 10 11 12       │
+│  μ(n): 1 -1 -1  0 -1  1 -1  0  0  1 -1  0       │
+│                                                  │
+│  Rules:                                          │
+│  • μ(1) = 1                                      │
+│  • μ(n) = 0 if n has squared prime factor         │
+│    (4=2² → 0,  8=2³ → 0,  9=3² → 0)            │
+│  • μ(n) = (-1)^k if n = p₁p₂...pₖ (squarefree)  │
+│    6=2×3 (k=2) → +1                              │
+│    30=2×3×5 (k=3) → -1                           │
+│                                                  │
+│  Use: Möbius inversion, inclusion-exclusion       │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Sieve Patterns Summary
@@ -435,6 +620,26 @@ func main() {
 	fmt.Println("  • Only check odd numbers (skip evens after 2)")
 	fmt.Println("  • Use bitset instead of bool array for 8x space savings")
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Sieve Variants Decision Tree                    │
+├──────────────────────────────────────────────────┤
+│  Need all primes ≤ n?                             │
+│    └→ Basic sieve: O(n log log n)                │
+│  Need primes in range [lo, hi]?                  │
+│    └→ Segmented sieve: O(√hi) memory             │
+│  Need fast factorization?                        │
+│    └→ SPF sieve: O(log n) per number             │
+│  Need φ(n) for all n?                            │
+│    └→ Euler totient sieve                        │
+│  Need divisor sum/count?                         │
+│    └→ Harmonic sieve: O(n log n)                 │
+│  Need Möbius function?                           │
+│    └→ Möbius sieve (inclusion-exclusion)          │
+└──────────────────────────────────────────────────┘
 ```
 
 ---

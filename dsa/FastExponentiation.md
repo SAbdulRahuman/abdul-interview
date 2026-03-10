@@ -47,6 +47,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Binary Exponentiation: 2^10                     │
+├────────────────────────────────────────────────┤
+│  exp = 10 = 1010 in binary                       │
+│                                                  │
+│  Iter  exp(bin)  exp&1  base     result           │
+│  ────  ───────  ─────  ───────  ──────           │
+│  init   1010       -     2        1              │
+│    1    1010       0     2²=4     1  (skip)      │
+│    2    0101       1     4²=16    1×4=4          │
+│    3    0010       0     16²=256  4  (skip)      │
+│    4    0001       1     256²     4×256=1024     │
+│                                                  │
+│  2^10 = 2^(8+2) = 2^8 × 2^2 = 256 × 4 = 1024    │
+│  Only 4 multiplies instead of 10!                │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Modular Exponentiation
@@ -83,6 +103,28 @@ func main() {
 	fmt.Printf("\n  Modular inverse of %d: %d (verify: %d * %d mod M = %d)\n",
 		a, inv, a, inv, a*inv%MOD)
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Modular Exponentiation                          │
+├────────────────────────────────────────────────┤
+│  Same as binary exp but multiply mod M at each   │
+│  step to prevent overflow                        │
+│                                                  │
+│  2^100 mod 10^9+7:                               │
+│  Iter  exp&1  base (mod M)       result (mod M)  │
+│    1     0    2²=4               1              │
+│    2     1    4²=16              1×4=4           │
+│    3     0    16²=256            4              │
+│    4     0    256² mod M         4              │
+│    5     1    ... mod M          4×(base) mod M  │
+│    ...   ...  keep squaring      keep reducing   │
+│                                                  │
+│  Modular inverse: a^(M-2) mod M  (Fermat’s)     │
+│  5^(10^9+5) mod 10^9+7 = inverse of 5           │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -135,6 +177,29 @@ func main() {
 		fmt.Printf("  fib(%d) mod 10^9+7 = %d\n", n, fibonacci(n))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Matrix Exponentiation — Fibonacci               │
+├────────────────────────────────────────────────┤
+│  ┌         ┐ n   ┌             ┐                    │
+│  │ F(n+1)  │   = │ 1   1 │ ^ n  * ┌ F(1) ┐          │
+│  │ F(n)    │     │ 1   0 │      │ F(0) │          │
+│  └         ┘     └       ┘      └      ┘          │
+│                                                  │
+│  Matrix raised to power n using binary exp:      │
+│  M^10 = M^8 × M^2  (same idea, square & mult)   │
+│                                                  │
+│  n=5: M^5 = M^4 × M^1                           │
+│    M^1 = [[1,1],[1,0]]                           │
+│    M^2 = [[2,1],[1,1]]                           │
+│    M^4 = [[5,3],[3,2]]                           │
+│    M^5 = M^4 × M^1 → result[0][1] = F(5) = 5   │
+│                                                  │
+│  O(8 × log n) = O(log n) for Fibonacci           │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -208,6 +273,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  General Linear Recurrence via Matrix Exp        │
+├────────────────────────────────────────────────┤
+│  Tribonacci: T(n) = T(n-1) + T(n-2) + T(n-3)    │
+│                                                  │
+│  ┌          ┐     ┌         ┐ n-2   ┌      ┐     │
+│  │ T(n)     │     │ 1  1  1 │       │ T(2) │     │
+│  │ T(n-1)   │  =  │ 1  0  0 │     × │ T(1) │     │
+│  │ T(n-2)   │     │ 0  1  0 │       │ T(0) │     │
+│  └          ┘     └         ┘       └      ┘     │
+│                                                  │
+│  3×3 matrix raised to power (n-2)                │
+│  using binary exponentiation                     │
+│                                                  │
+│  O(k³ log n) where k = recurrence order          │
+│  k=3 for tribonacci → O(27 log n)               │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Fast Power for Large Exponents (LeetCode 50 — Pow(x,n))
@@ -248,6 +334,26 @@ func main() {
 		fmt.Printf("  %.2f^%d = %.6f\n", t.x, t.n, myPow(t.x, t.n))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Pow(x, n) with Negative Exponents               │
+├────────────────────────────────────────────────┤
+│  myPow(2.0, -2):                                 │
+│    n < 0 → x = 1/x = 0.5, n = 2                 │
+│                                                  │
+│  exp = 2 = 10 in binary                          │
+│  Iter  exp&1   x            result               │
+│    1     0     0.5²=0.25    1.0   (skip)         │
+│    2     1     0.25²        1.0×0.25 = 0.25      │
+│                                                  │
+│  2.0^(-2) = 0.25 = 1/4  ✓                        │
+│                                                  │
+│  Handles: positive, negative, zero exponents     │
+│  Key: if n<0, use x=1/x and negate n             │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -298,6 +404,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Super Pow: a^b mod 1337                         │
+├────────────────────────────────────────────────┤
+│  b = [1, 0] means exponent = 10                  │
+│                                                  │
+│  Process digit by digit, left to right:          │
+│   digit=1: result = 1^10 × a^1 = a mod 1337     │
+│   digit=0: result = (a)^10 × a^0                │
+│            = a^10 × 1 = a^10 mod 1337            │
+│                                                  │
+│  Key identity:                                   │
+│    a^[d1,d2,...,dk] = (a^[d1,...,dk-1])^10        │
+│                       × a^dk                     │
+│                                                  │
+│  Each pow() call uses binary exponentiation      │
+│  Never compute the full exponent number!          │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Count Good Numbers (LeetCode 1922)
@@ -333,6 +460,27 @@ func main() {
 		fmt.Printf("  Good numbers of length %d: %d\n", n, countGoodNumbers(n))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Count Good Numbers (length n)                   │
+├────────────────────────────────────────────────┤
+│  Even positions: {0,2,4,6,8} → 5 choices          │
+│  Odd  positions: {2,3,5,7}   → 4 choices (primes) │
+│                                                  │
+│  n=4:  positions 0 1 2 3                         │
+│                  E O E O                         │
+│                  5 4 5 4                         │
+│                                                  │
+│  evenPos = (4+1)/2 = 2                           │
+│  oddPos  = 4/2     = 2                           │
+│  answer  = 5^2 × 4^2 = 25 × 16 = 400             │
+│                                                  │
+│  Both 5^evenPos and 4^oddPos computed via        │
+│  modPow (binary exponentiation mod 10^9+7)       │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -377,6 +525,27 @@ func main() {
 		fmt.Printf("  perm^%d = %v\n", k, result)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Permutation Exponentiation                      │
+├────────────────────────────────────────────────┤
+│  perm = [1,2,3,4,0]  (rotate left by 1)          │
+│                                                  │
+│  perm^1: [1,2,3,4,0]  apply once                 │
+│  perm^2: [2,3,4,0,1]  rotate left by 2           │
+│  perm^3: [3,4,0,1,2]  rotate left by 3           │
+│  perm^5: [0,1,2,3,4]  full cycle → identity!     │
+│                                                  │
+│  Binary exp on permutations:                     │
+│  k=5 = 101₂                                      │
+│    compose(base, result) when bit=1              │
+│    compose(base, base)   to square               │
+│                                                  │
+│  O(n log k) instead of O(nk)                     │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -444,6 +613,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Binary Lifting — K-th Ancestor                  │
+├────────────────────────────────────────────────┤
+│  Tree:        0                                  │
+│             / \                                  │
+│            1   2                                 │
+│           / \                                    │
+│          3   4                                   │
+│          |                                       │
+│          5                                       │
+│                                                  │
+│  up[0][i] = parent[i]      (2⁰ = 1st ancestor)  │
+│  up[1][i] = up[0][up[0][i]] (2¹ = 2nd ancestor) │
+│  up[j][i] = up[j-1][up[j-1][i]]                 │
+│                                                  │
+│  Query: 3rd ancestor of 5 (k=3 = 11₂)           │
+│    bit 0 (1): up[0][5] = 3                       │
+│    bit 1 (1): up[1][3] = up[0][up[0][3]]         │
+│                       = up[0][1] = 0             │
+│  Answer: 0 (root)                                │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Fast Exponentiation Patterns Summary
@@ -474,6 +668,29 @@ func main() {
 		fmt.Printf("  %-28s %-35s %s\n", p.technique, p.use, p.complexity)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Fast Exponentiation — Pattern Map                │
+├────────────────────────────────────────────────┤
+│  Core: Repeated Squaring                         │
+│  result=1, base=a                                │
+│  while exp > 0:                                  │
+│    if exp&1: result *= base                      │
+│    base *= base; exp >>= 1                       │
+│                                                  │
+│  Variants:                                       │
+│  ───────────────────────────────────────────  │
+│  Scalar  → O(log n), *= is integer multiply     │
+│  Modular → O(log n), mod M at every step         │
+│  Matrix  → O(k³ log n), *= is matrix multiply   │
+│  Perm    → O(n log k), *= is compose             │
+│  Lifting → up[j] = up[j-1] ∘ up[j-1]            │
+│  Float   → handle n<0 by x=1/x                  │
+│  Digit[] → process exponent digit by digit       │
+└────────────────────────────────────────────────┘
 ```
 
 ---

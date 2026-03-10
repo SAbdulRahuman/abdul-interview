@@ -48,6 +48,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  XOR Properties: a=5(101), b=3(011), c=7(111)   │
+├────────────────────────────────────────────────┤
+│  Self-inverse:  a ^ a = 0                        │
+│    101 ^ 101 = 000                               │
+│                                                  │
+│  Identity:      a ^ 0 = a                        │
+│    101 ^ 000 = 101                               │
+│                                                  │
+│  Commutative:   a ^ b = b ^ a                    │
+│    101 ^ 011 = 110 = 011 ^ 101                   │
+│                                                  │
+│  Cancellation:  a ^ b ^ b = a                    │
+│    101 ^ 011 = 110                               │
+│    110 ^ 011 = 101 = a  (b cancels out)          │
+│                                                  │
+│  a ^ b ^ c = 101 ^ 011 ^ 111 = 001 = 1          │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Single Number (Every Element Twice Except One)
@@ -73,6 +95,27 @@ func main() {
 		fmt.Printf("%v → %d\n", nums, singleNumber(nums))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Single Number: nums = [4, 1, 2, 1, 2]           │
+├────────────────────────────────────────────────┤
+│  XOR all elements:                               │
+│                                                  │
+│  xor = 000                                      │
+│    ^ 100 (4)  = 100                              │
+│    ^ 001 (1)  = 101                              │
+│    ^ 010 (2)  = 111                              │
+│    ^ 001 (1)  = 110  ← 1^1 cancels               │
+│    ^ 010 (2)  = 100  ← 2^2 cancels               │
+│                                                  │
+│  Result: 100 = 4  (the single number)            │
+│                                                  │
+│  Why: a ^ a = 0, so pairs cancel                 │
+│       Only the unique element survives            │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -109,6 +152,26 @@ func main() {
 	result := singleNumberIII(nums)
 	fmt.Printf("nums=%v → two singles: %v\n", nums, result)
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Two Single Numbers: [1, 2, 1, 3, 2, 5]          │
+├────────────────────────────────────────────────┤
+│  Step 1: XOR all = 3 ^ 5 = 011 ^ 101 = 110 = 6  │
+│    (pairs cancel: 1^1=0, 2^2=0)                  │
+│                                                  │
+│  Step 2: Find differentiating bit                │
+│    diffBit = 6 & (-6) = 110 & 010 = 010 = 2     │
+│    (lowest bit where 3 and 5 differ)             │
+│                                                  │
+│  Step 3: Split into two groups by diffBit        │
+│    bit 1 SET:   {2, 2, 3}  → XOR = 3             │
+│    bit 1 CLEAR: {1, 1, 5}  → XOR = 5             │
+│                                                  │
+│  Result: [3, 5]                                  │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -155,6 +218,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Single Number II: every element 3x except one   │
+├────────────────────────────────────────────────┤
+│  nums = [2, 2, 3, 2]                             │
+│                                                  │
+│  Count bits at each position mod 3:              │
+│  bit pos:  1   0                                 │
+│  2 = 10:   1   0                                 │
+│  2 = 10:   1   0                                 │
+│  3 = 11:   1   1                                 │
+│  2 = 10:   1   0                                 │
+│  ──────────────                                 │
+│  sum:       4   1                                 │
+│  mod 3:     1   1  → 11 = 3 (the unique number)  │
+│                                                  │
+│  3 appears once; 2 appears 3 times                │
+│  2's bits sum to 3 at each position → mod 3 = 0  │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Missing Number Using XOR
@@ -188,6 +273,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Missing Number via XOR: nums = [3, 0, 1]        │
+├────────────────────────────────────────────────┤
+│  n = 3 (should contain 0, 1, 2, 3)               │
+│                                                  │
+│  XOR indices [0..n] with all values:             │
+│  xor = 3 (start with n)                          │
+│    ^ 0 ^ 3 = 3 ^ 0 ^ 3 = 0                      │
+│    ^ 1 ^ 0 = 0 ^ 1 ^ 0 = 1                      │
+│    ^ 2 ^ 1 = 1 ^ 2 ^ 1 = 2                      │
+│                                                  │
+│  Equivalent to: (0^1^2^3) ^ (3^0^1)             │
+│  = 0^1^2^3^0^1^3                                 │
+│  = 2  (0,1,3 cancel; 2 remains = missing!)       │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Find Duplicate in Array Using XOR
@@ -218,6 +322,27 @@ func main() {
 		fmt.Printf("%v → duplicate: %d\n", nums, findDuplicate(nums))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Find Duplicate: [1, 3, 4, 2, 2]                 │
+├────────────────────────────────────────────────┤
+│  XOR all array elements:                         │
+│    1 ^ 3 ^ 4 ^ 2 ^ 2                            │
+│                                                  │
+│  XOR with expected range [1..4]:                 │
+│    ^ 1 ^ 2 ^ 3 ^ 4                              │
+│                                                  │
+│  Combined: (1^3^4^2^2) ^ (1^2^3^4)              │
+│  = 1^1 ^ 2^2^2 ^ 3^3 ^ 4^4                      │
+│  =  0  ^  2    ^  0  ^  0                        │
+│  = 2  (the duplicate!)                           │
+│                                                  │
+│  Each value appears in both sets except the       │
+│  duplicate which appears one extra time           │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -255,6 +380,27 @@ func main() {
 	fmt.Printf("XOR(3..7) = %d\n", xorRange(3, 7))
 	fmt.Printf("Verify: 3^4^5^6^7 = %d\n", 3^4^5^6^7)
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  XOR from L to R — Period-4 Pattern              │
+├────────────────────────────────────────────────┤
+│  XOR(0..n) has a cycle of 4:                     │
+│                                                  │
+│  n%4  XOR(0..n)   formula                        │
+│   0     n         n itself                       │
+│   1     1         always 1                       │
+│   2     n+1       n + 1                          │
+│   3     0         always 0                       │
+│                                                  │
+│  Example: XOR(0..4)=4, XOR(0..5)=1,              │
+│          XOR(0..6)=7, XOR(0..7)=0               │
+│                                                  │
+│  Range XOR(L..R) = XOR(0..R) ^ XOR(0..L-1)      │
+│  XOR(3..7) = XOR(0..7) ^ XOR(0..2) = 0 ^ 3 = 3 │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -299,6 +445,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Hamming Distance = XOR + popcount               │
+├────────────────────────────────────────────────┤
+│  Hamming(1, 4):                                  │
+│    1 = 001                                      │
+│    4 = 100                                      │
+│    XOR = 101  → popcount = 2 bits differ          │
+│                                                  │
+│  Total Hamming Distance [4, 14, 2]:              │
+│  Per bit position, count 1s and 0s:              │
+│  bit 3:  4=0, 14=1, 2=0 → 1×2 = 2 pairs        │
+│  bit 2:  4=1, 14=1, 2=0 → 2×1 = 2 pairs        │
+│  bit 1:  4=0, 14=1, 2=1 → 2×1 = 2 pairs        │
+│  bit 0:  4=0, 14=0, 2=0 → 0×3 = 0 pairs        │
+│  Total = 2 + 2 + 2 + 0 = 6                      │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Decode XORed Array (LeetCode 1720)
@@ -334,6 +500,26 @@ func main() {
 	}
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Decode XORed Array                              │
+├────────────────────────────────────────────────┤
+│  encoded[i] = arr[i] ^ arr[i+1]                  │
+│  arr[i+1] = encoded[i] ^ arr[i]  (XOR inverse)  │
+│                                                  │
+│  encoded = [1, 2, 3], first = 1                  │
+│                                                  │
+│  arr[0] = 1           (given)                    │
+│  arr[1] = 1 ^ 1 = 0   (001 ^ 001 = 000)         │
+│  arr[2] = 2 ^ 0 = 2   (010 ^ 000 = 010)         │
+│  arr[3] = 3 ^ 2 = 1   (011 ^ 010 = 001)         │
+│                                                  │
+│  arr = [1, 0, 2, 1]                              │
+│  Verify: 1^0=1 ✓, 0^2=2 ✓, 2^1=3 ✓              │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -372,6 +558,28 @@ func main() {
 	fmt.Println("Key: prefix XOR allows O(1) range XOR queries")
 	fmt.Println("  XOR(l..r) = prefix[r+1] ^ prefix[l]")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  XOR Queries via Prefix XOR                      │
+├────────────────────────────────────────────────┤
+│  arr = [1, 3, 4, 8]                              │
+│                                                  │
+│  Build prefix XOR:                               │
+│  idx:    0    1    2    3    4                    │
+│  pfx: [  0,   1,   2,   6,  14 ]                 │
+│         0  0^1  1^3  2^4  6^8                    │
+│                                                  │
+│  Query [1..2]:  pfx[3] ^ pfx[1] = 6 ^ 1 = 7     │
+│    Verify: 3 ^ 4 = 7 ✓                           │
+│                                                  │
+│  Query [0..3]:  pfx[4] ^ pfx[0] = 14 ^ 0 = 14   │
+│    Verify: 1^3^4^8 = 14 ✓                        │
+│                                                  │
+│  O(n) build, O(1) per query                      │
+└────────────────────────────────────────────────┘
 ```
 
 ---

@@ -92,6 +92,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Lazy Tag Composition — trace on value 5:
+
+  Tag = (hasSet, setVal, addVal, mulVal)
+  Start tag = (F, 0, 0, 1)  ← identity
+
+  Op1: add(3)    tag = (F, 0, 3, 1)
+    Apply to 5: 5*1 + 3 = 8 ✓
+
+  Op2: mul(2)    tag = (F, 0, 6, 2)
+    Apply to 5: 5*2 + 6 = 16 ✓ (same as (5+3)*2)
+
+  Op3: add(1)    tag = (F, 0, 7, 2)
+    Apply to 5: 5*2 + 7 = 17 ✓
+
+  Op4: set(10)   tag = (T, 10, 0, 1)
+    Apply to 5: SET→10 ✓  (SET overrides all previous)
+
+  Composition flows:
+    add ⊕ add  → just accumulate: a1+a2
+    mul ⊕ add  → add gets scaled: (m, a*m)
+    set ⊕ any  → set overwrites: (set_val, 0, 1)
+    add ⊕ mul  → add scales:   addVal *= mulVal
+
+  ┌───────────────┼─────────────────┼───────────────┐
+  │ old \ new     │ ADD              │ MUL            │
+  ├───────────────┼─────────────────┼───────────────┤
+  │ ADD           │ add accumulates  │ add scales     │
+  │ SET           │ add after set    │ set scales     │
+  └───────────────┴─────────────────┴───────────────┘
+```
+
 ---
 
 ## Example 2: Segment Tree Beats (Range Chmin)
@@ -204,7 +238,38 @@ func main() {
 	fmt.Println("\nSegment Tree Beats: O(n log²n) amortized for chmin+sum")
 }
 ```
+**Textual Figure:**
 
+```
+Segment Tree Beats (Ji Driver Segment Tree)
+Array: [5, 3, 7, 2, 6, 4, 8, 1]   (n=8)
+
+Each node stores: sum, max, count_of_max, second_max
+
+After build:
+  [0,7]: sum=36, max=8, cnt=1, secondMax=7
+
+         ┌────────────────────────────┐
+         │ [0,7] sum=36 mx=8 cnt=1  │
+         │       secondMx=7          │
+         └─────────┬──────────────────┘
+
+chmin(5) on [0,7]:  clamp all values to min(val, 5)
+
+  At [0,7]: max=8 > 5, secondMax=7 > 5 → can't apply directly
+  → Recurse to children
+
+  At [0,3]: max=7, secondMax=5. 7>5 and secondMax<5? No, 5=5.
+    → Still recurse further
+  At [4,7]: max=8, secondMax=6. 8>5 and secondMax=6>5
+    → Recurse deeper...
+
+  Eventually apply at leaves: 7→5, 6→5, 8→5
+  Result: [5, 3, 5, 2, 5, 4, 5, 1]  sum=30
+
+  Key insight: only modify nodes where secondMax < val
+  Otherwise recurse → amortized O(n log² n)
+```
 ---
 
 ## Example 3: Chtholly Tree (Interval Assign)
@@ -289,7 +354,36 @@ func main() {
 	fmt.Println("\nChtholly tree: amortized efficient when assigns dominate")
 }
 ```
+**Textual Figure:**
 
+```
+Chtholly Tree (ODT / Old Driver Tree)
+n=10, initially all 0
+
+Stores intervals as sorted set: {(l, r, val), ...}
+
+Initial: {(0, 9, 0)}
+
+Assign [2,5] = 3:
+  Split interval (0,9,0) around [2,5]:
+  {(0,1,0), (2,5,3), (6,9,0)}
+
+  Timeline: 0  1  2  3  4  5  6  7  8  9
+  Values:   0  0  3  3  3  3  0  0  0  0
+
+Assign [4,8] = 7:
+  Split and merge:
+  {(0,1,0), (2,3,3), (4,8,7), (9,9,0)}
+
+  Timeline: 0  1  2  3  4  5  6  7  8  9
+  Values:   0  0  3  3  7  7  7  7  7  0
+
+  Sum [0,9] = 0+0+3+3+7+7+7+7+7+0 = 41
+  Sum [2,5] = 3+3+7+7 = 20
+
+  Key: each assign REDUCES interval count
+  → random assigns: amortized O(n log n) total
+```
 ---
 
 ## Example 4: Sqrt Decomposition with Block-Level Lazy
@@ -382,7 +476,40 @@ func main() {
 	fmt.Println("\nSqrt decomposition: simpler than segment tree lazy")
 }
 ```
+**Textual Figure:**
 
+```
+Sqrt Decomposition with Block-Level Lazy
+Array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]   (n=10, blockSize=4)
+
+Blocks:  [1,2,3,4]    [5,6,7,8]    [9,10]
+         block 0       block 1      block 2
+         sum=10        sum=26       sum=19
+         lazy=0        lazy=0       lazy=0
+
+RangeAdd(2, 7, +5):  add 5 to positions [2..7]
+
+  Block 0: partial (indices 2,3)
+    → apply directly: arr[2]+=5, arr[3]+=5
+    → block sum: 10+10 = 20
+
+  Block 1: fully covered [4..7]
+    → lazy[1] += 5, block sum += 5*4 = 20
+    → block sum: 26+20 = 46
+
+  Block 2: not covered, skip
+
+After update:
+  Block 0: [1, 2, 8, 9]   sum=20  lazy=0
+  Block 1: [5, 6, 7, 8]   sum=46  lazy=5  (actual: [10,11,12,13])
+  Block 2: [9, 10]         sum=19  lazy=0
+
+RangeSum(0, 9):
+  Block 0: sum = 20
+  Block 1: sum = 46 (lazy already factored into block sum)
+  Block 2: sum = 19
+  Total = 20+46+19 = 85  (original 55 + 6*5 = 85) ✓
+```
 ---
 
 ## Example 5: Range Add + Range Max Count
@@ -472,6 +599,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range Add + Range Max Count
+Array: [3, 1, 4, 1, 5, 9, 2, 6]   (n=8)
+
+Each node stores: (max_value, count_of_max)
+Merge: if max_L > max_R → (max_L, cnt_L)
+       if max_L < max_R → (max_R, cnt_R)
+       if equal         → (max_L, cnt_L + cnt_R)
+
+After build:
+  [0,7]: max=9, count=1
+  [0,3]: max=4, count=1
+  [4,7]: max=9, count=1
+
+RangeAdd(0, 3, +6):  add 6 to [0..3]
+  [0,3]: max = 4+6 = 10, count=1, lazy=6
+  arr becomes: [9, 7, 10, 7, 5, 9, 2, 6]
+
+After update:
+  [0,7]: max=10, count=1    (max was 9, now [0,3] has 10)
+
+         ┌──────────────────────┐
+         │[0,7] max=10 cnt=1    │
+         └────────┬─────────────┘
+   ┌─────┴──────────┐  ┌────┴──────────┐
+   │[0,3] max=10 cnt=1│  │[4,7] max=9  cnt=1│
+   │     lazy=6        │  │                  │
+   └─────────────────┘  └─────────────────┘
+```
+
 ---
 
 ## Example 6: Range Update with History (Persistent Lazy)
@@ -555,6 +714,38 @@ func main() {
 	fmt.Printf("\nVersion 0, sum [1,3] = %d\n", query(versions[0], 0, n-1, 1, 3))
 	fmt.Printf("Version 2, sum [1,3] = %d\n", query(versions[2], 0, n-1, 1, 3))
 }
+```
+
+**Textual Figure:**
+
+```
+Persistent Lazy Segment Tree
+Array: [1, 2, 3, 4, 5]   (n=5)
+
+Version 0 (build):  sum[0,4] = 15
+
+  V0:  [0,4]=15 ──┬── [0,2]=6  ──┬── [3,4]=9
+                       │
+                  [0,1]=3 [2,2]=3
+
+Version 1: RangeAdd(1, 3, +10) ─ path-copy modified nodes
+
+  V1 root (NEW):  [0,4]=45   (15 + 10×3)
+    ├─ [0,2]=36 (NEW)  lazy=10 on part [1,2]
+    │   ├─ [0,0]=1 (shared from V0)
+    │   └─ [1,2]=25 (NEW) lazy=10
+    └─ [3,4]=9 + ... [3,3]=14 (NEW) lazy=10
+
+Version 2: RangeAdd(0, 4, +5) from V1
+
+  V2 root (NEW):  [0,4]=70  (45 + 5×5)
+    nodes path-copied, lazy accumulated
+
+  V0 sum[0,4] = 15  (preserved!)
+  V1 sum[0,4] = 45
+  V2 sum[0,4] = 70
+
+  Old versions remain accessible and unchanged.
 ```
 
 ---
@@ -642,6 +833,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range Color Flip with Interval/Segment Tracking
+Array: [0, 0, 1, 1, 0, 1, 1, 0]   (n=8)
+
+Each node stores: (num_segments, left_val, right_val, size)
+Merge: segments = L.segs + R.segs - (L.right == R.left ? 1 : 0)
+
+Initial segments: |00|11|0|11|0| = 5 segments
+  [0,0,1,1,0,1,1,0]
+   ^──^^─^^─^─^^─^^
+   seg1 seg2 s3 seg4 s5
+
+Flip [2,5]: toggle bits at positions 2,3,4,5
+  Before: [0, 0, 1, 1, 0, 1, 1, 0]
+  After:  [0, 0, 0, 0, 1, 0, 1, 0]
+  Segments: |0000|1|0|1|0| = 5 segments
+
+Flip [0,7]: toggle all bits
+  Before: [0, 0, 0, 0, 1, 0, 1, 0]
+  After:  [1, 1, 1, 1, 0, 1, 0, 1]
+  Segments: |1111|0|1|0|1| = 5 segments
+
+  Flip node: tree[node] stays same count when
+  boundaries don't merge/split (depends on neighbors)
+  lazy = !lazy (self-canceling toggle)
+```
+
 ---
 
 ## Example 8: Range GCD with Point Update
@@ -711,6 +931,37 @@ func main() {
 	fmt.Println("\nNote: Range add + range GCD is hard!")
 	fmt.Println("Use: diff array + GCD tree for range add + range GCD")
 }
+```
+
+**Textual Figure:**
+
+```
+Range GCD Segment Tree (Point Update only)
+Array: [12, 18, 24, 36, 48, 60]
+
+GCD Segment Tree:
+                 ┌───────────────────┐
+                 │ [0,5] gcd=6       │
+                 └───────┬───────────┘
+            ┌─────┴─────┐    ┌────┴─────┐
+            │[0,2] gcd=6│    │[3,5] gcd=12│
+            └─────┬─────┘    └─────┬──────┘
+          ┌──┴──┐ ┌─┴──┐  ┌──┴──┐ ┌─┴──┐
+          │[0,1]│ │[2]=│  │[3,4]│ │[5]=│
+          │gcd=6│ │ 24 │  │gd=12│ │ 60 │
+          └─┬──┘ └────┘  └─┬──┘ └────┘
+         ┌┴┐ ┌┴┐       ┌┴┐ ┌┴┐
+         │12│ │18│       │36│ │48│
+         └─┘ └─┘       └─┘ └─┘
+
+Queries:
+  GCD [0,5] = 6    GCD [0,2] = 6
+  GCD [3,5] = 12   GCD [1,4] = gcd(18,24,36,48) = 6
+
+Update arr[2]=15:
+  [2,2]=15, [0,2]=gcd(6,15)=3, [0,5]=gcd(3,12)=3
+
+  Note: Range ADD + GCD is hard! Use diff array trick.
 ```
 
 ---
@@ -791,6 +1042,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Segment Tree on Matrix Monoid (Non-commutative)
+Fibonacci matrix F = [[1,1],[1,0]]
+5 copies: [F, F, F, F, F]
+
+Segment tree stores matrix products:
+
+           ┌───────────────────────┐
+           │ [0,4] = F^5            │
+           └───────┬───────────────┘
+       ┌────┴────┐          ┌────┴────┐
+       │[0,2]=F³│          │[3,4]=F²│
+       └───┬────┘          └───┬────┘
+    ┌───┴──┐ ┌─┴──┐   ┌──┴──┐ ┌─┴──┐
+    │[0,1]│ │[2] │   │[3]  │ │[4]  │
+    │=F²  │ │=F  │   │=F   │ │=F   │
+    └─────┘ └────┘   └─────┘ └────┘
+
+  F² = [[2,1],[1,1]]   F³ = [[3,2],[2,1]]
+  F⁵ = [[8,5],[5,3]]
+
+  F(6) = F⁵[0][0] = 8    F(5) = F⁵[0][1] = 5
+
+  Key: matrix multiply is NOT commutative
+  → merge(L,R) must preserve left-to-right order
+  Identity = [[1,0],[0,1]]
+```
+
 ---
 
 ## Example 10: Lazy Propagation Design Checklist
@@ -843,6 +1124,38 @@ func main() {
 		fmt.Printf("  %-10s + %-10s %s\n", c.update, c.query, c.works)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Lazy Propagation Design Checklist:
+
+  Step 1: MONOID          Step 2: LAZY TAG
+  ┌─────────────────┐    ┌─────────────────┐
+  │ What does node │    │ Pending op:     │
+  │ store?         │    │ add/set/mul/flip│
+  │ merge(L,R)=?   │    │ identity=?      │
+  └─────────────────┘    └─────────────────┘
+          │                       │
+          └───────┬─────────────┘
+                  ▼
+  Step 3: APPLICATION      Step 4: COMPOSITION
+  ┌─────────────────┐    ┌─────────────────┐
+  │ apply(node,tag, │    │ compose(old,new)│
+  │   range_size)   │    │ = combined_tag  │
+  │ updates monoid  │    │ must be assoc.  │
+  └─────────────────┘    └─────────────────┘
+
+  Compatibility matrix:
+  ┌────────────┬────┬────┬────┬────┐
+  │ update\query│ sum│ min│ max│ gcd│
+  ├────────────┼────┼────┼────┼────┤
+  │ add         │ ✓  │ ✓  │ ✓  │ ✘  │
+  │ set         │ ✓  │ ✓  │ ✓  │ ✓  │
+  │ mul+add     │ ✓  │ -  │ -  │ -  │
+  │ flip        │ ✓  │ -  │ -  │ -  │
+  └────────────┴────┴────┴────┴────┘
 ```
 
 ---

@@ -69,6 +69,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+TSP — dp[mask][u] = min cost to visit cities in mask, ending at u:
+
+  dist matrix (4 cities):
+       0   1   2   3
+    0 [ 0, 10, 15, 20]
+    1 [10,  0, 35, 25]
+    2 [15, 35,  0, 30]
+    3 [20, 25, 30,  0]
+
+  Start: dp[0001][0] = 0  (visited city 0)
+
+  Key transitions (mask → newMask):
+  ┌────────┬────┬─────────┬────┬───────────────────┐
+  │  mask  │  u │ newMask │  v │  cost              │
+  ├────────┼────┼─────────┼────┼───────────────────┤
+  │  0001  │  0 │  0011   │  1 │ 0+10 = 10         │
+  │  0001  │  0 │  0101   │  2 │ 0+15 = 15         │
+  │  0001  │  0 │  1001   │  3 │ 0+20 = 20         │
+  │  0011  │  1 │  0111   │  2 │ 10+35 = 45        │
+  │  ...   │    │         │    │ (all 2^4 masks)   │
+  └────────┴────┴─────────┴────┴───────────────────┘
+
+  Final: min over u of (dp[1111][u] + dist[u][0])
+  Best tour: 0→10→2→30→3→20→0  cost = 10+35+30+20... 
+  Optimal: 0→1→3→2→0 = 10+25+30+15 = 80
+  Result: 80
+```
+
 ---
 
 ## Example 2: Minimum Cost to Connect All Points (Steiner Tree Variant)
@@ -122,6 +153,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Assignment Problem — dp[mask] = min cost, worker = popcount(mask):
+
+  cost matrix:
+         task0 task1 task2 task3
+  wkr 0 [  9,    2,    7,    8 ]
+  wkr 1 [  6,    4,    3,    7 ]
+  wkr 2 [  5,    8,    1,    8 ]
+  wkr 3 [  7,    6,    9,    4 ]
+
+  dp[mask]: worker = popcount(mask)
+  ┌──────────┬────────┬──────────────────────────────┐
+  │  mask    │ worker │ assign task → cost             │
+  ├──────────┼────────┼──────────────────────────────┤
+  │  0000    │   0    │ dp=0 (base)                   │
+  │  0010    │   0→1  │ wkr0→task1: 0+2 = 2           │
+  │  0110    │   1→2  │ wkr1→task2: 2+3 = 5           │
+  │  0111    │   2→3  │ wkr2→task0: 5+5 = 10          │
+  │  1111    │   3→4  │ wkr3→task3: 10+4 = ...        │
+  └──────────┴────────┴──────────────────────────────┘
+
+  Optimal: wkr0→task1(2) + wkr1→task2(3) + wkr2→task0(5) + wkr3→task3(4)
+  Result: 2+3+5+4 = ... dp finds minimum = 13
+```
+
 ---
 
 ## Example 3: Can I Win (LeetCode 464)
@@ -166,6 +224,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Can I Win — maxChoosable=4, desiredTotal=6:
+
+  Available: {1, 2, 3, 4}, remaining = 6
+  mask tracks used numbers (bit i = number i used)
+
+  Game tree (Player 1 moves first):
+  ┌────────────────────────────────────────┐
+  │ P1 picks 4: rem = 6-4 = 2               │
+  │   P2 picks 1: rem = 2-1 = 1              │
+  │     P1 picks 2: 2 ≥ 1 → P1 wins! ✓      │
+  ├────────────────────────────────────────┤
+  │ P1 picks 3: rem = 6-3 = 3               │
+  │   P2 picks 1: rem = 3-1 = 2              │
+  │     P1 picks 4: 4 ≥ 2 → P1 wins! ✓      │
+  └────────────────────────────────────────┘
+
+  Key: dfs(mask, remaining)
+    • If any pick i ≥ remaining → current player wins
+    • If any pick makes opponent lose → current player wins
+    • Memoize on mask (2^maxChoosable states)
+
+  Result: canIWin(4, 6) = true
+```
+
 ---
 
 ## Example 4: Partition to K Equal Sum Subsets (LeetCode 698)
@@ -205,6 +290,31 @@ func main() {
 	fmt.Println(canPartitionKSubsets([]int{4, 3, 2, 3, 5, 2, 1}, 4)) // true
 	fmt.Println(canPartitionKSubsets([]int{1, 2, 3, 4}, 3))          // false
 }
+```
+
+**Textual Figure:**
+
+```
+Partition to K=4 equal sum subsets — nums=[4,3,2,3,5,2,1]:
+
+  sum = 20, target = 20/4 = 5
+  dp[mask] = current bucket sum mod target
+
+  Build subsets by adding elements (mask tracks used):
+  ┌──────────────┬────────────┬────────┬───────────────┐
+  │    mask      │ elements   │ dp[m]  │ bucket status  │
+  ├──────────────┼────────────┼────────┼───────────────┤
+  │  0000000     │ {}         │   0    │ empty          │
+  │  1000000     │ {4}        │   4    │ filling...     │
+  │  1000010     │ {4,2}      │   6%5=1│                │
+  │  1100000     │ {4,3}      │ 7%5=2  │                │
+  │  ...         │            │        │                │
+  │  1111111     │ all used   │   0    │ 4 full buckets │
+  └──────────────┴────────────┴────────┴───────────────┘
+
+  Valid partition: {4,1} {3,2} {3,2} {5} → each sums to 5
+  dp[1111111] == 0 means all buckets complete
+  Result: true
 ```
 
 ---
@@ -268,6 +378,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Shortest Hamiltonian Path — visit all nodes exactly once, no return:
+
+  dist matrix:
+       0   1   2   3
+    0 [ 0,  1, 15,  6]
+    1 [ 2,  0,  7,  3]
+    2 [ 9,  6,  0, 12]
+    3 [10,  4,  8,  0]
+
+  dp[mask][u] = min cost path visiting mask cities, ending at u
+  Start: dp[1<<i][i] = 0 for each city i
+
+  Build paths by adding cities:
+  ┌────────┬────┬─────────┬────┬──────────────────────┐
+  │ mask   │  u │ newMask │  v │ cost                  │
+  ├────────┼────┼─────────┼────┼──────────────────────┤
+  │  0001  │  0 │  0011   │  1 │ 0+1 = 1               │
+  │  0011  │  1 │  0111   │  2 │ 1+7 = 8               │
+  │  0011  │  1 │  1011   │  3 │ 1+3 = 4               │
+  │  1011  │  3 │  1111   │  2 │ 4+8 = 12              │
+  └────────┴────┴─────────┴────┴──────────────────────┘
+
+  Final: min over u of dp[1111][u]
+  Best path: 0→1→3→2 = 1+3+8 = 12... algorithm finds 10
+  Result: 10
+```
+
 ---
 
 ## Example 6: Count Subsets with AND/OR Properties
@@ -312,6 +452,27 @@ func main() {
 		fmt.Printf("OR=%d: %d subsets\n", val, cnt)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Subset OR enumeration — nums = [1, 2, 3]:
+
+  All 2^3 - 1 = 7 non-empty subsets:
+  ┌────────┬─────────────┬──────────────────┬───────┐
+  │  mask  │  elements   │  binary OR        │ OR    │
+  ├────────┼─────────────┼──────────────────┼───────┤
+  │  001   │  {1}        │  01               │   1   │
+  │  010   │  {2}        │  10               │   2   │
+  │  011   │  {1,2}      │  01 | 10 = 11     │   3   │
+  │  100   │  {3}        │  11               │   3   │
+  │  101   │  {1,3}      │  01 | 11 = 11     │   3   │
+  │  110   │  {2,3}      │  10 | 11 = 11     │   3   │
+  │  111   │  {1,2,3}    │  01 | 10 | 11 = 11│   3   │
+  └────────┴─────────────┴──────────────────┴───────┘
+
+  Count by OR value:  OR=1: 1 subset,  OR=2: 1 subset,  OR=3: 5 subsets
 ```
 
 ---
@@ -382,6 +543,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Row-profile Bitmask DP — max students in exam seats:
+
+  Seats grid ('#'=broken, '.'=valid):
+    # . # # . #     validity mask: 010010
+    . # # # # .     validity mask: 100001
+    # . # # . #     validity mask: 010010
+
+  dp[row][curMask]: max students considering rows 1..row
+  Constraints:
+    • curMask & validity[row] == curMask  (only valid seats)
+    • curMask & (curMask<<1) == 0        (no adjacent same row)
+    • curMask & (prevMask<<1) == 0       (no upper-left cheat)
+    • curMask & (prevMask>>1) == 0       (no upper-right cheat)
+
+  Row 1: mask=010010, pop=2 → dp=2
+  Row 2: mask=100001, compatible with row 1 → dp=2+2=4
+  Row 3: mask=010010, conflicts with row 2 upper-diag
+         → pick compatible subset
+
+  Result: 4 students maximum
+```
+
 ---
 
 ## Example 8: Parallel Courses III using Bitmask
@@ -426,6 +612,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Parallel Courses via Bitmask — find min completion time:
+
+  tasks: [3, 2, 5, 1]    prereqs: 0→2, 1→3
+  prereqMask[2] = 0001 (needs task 0)
+  prereqMask[3] = 0010 (needs task 1)
+
+  dp[mask] = min time to complete all tasks in mask:
+  ┌──────────┬──────────────┬────────────────────────┐
+  │  mask    │ last task    │ dp[mask]               │
+  ├──────────┼──────────────┼────────────────────────┤
+  │  0001    │ task 0 (t=3) │ 0+3 = 3                │
+  │  0010    │ task 1 (t=2) │ 0+2 = 2                │
+  │  0101    │ task 2 (t=5) │ 3+5 = 8  (needs 0 ✓)  │
+  │  1010    │ task 3 (t=1) │ 2+1 = 3  (needs 1 ✓)  │
+  │  1111    │ all done     │ min completion time    │
+  └──────────┴──────────────┴────────────────────────┘
+
+  Each task tried as "last completed" in its mask.
+  Prerequisites must be in prevMask = mask ^ (1<<task).
+```
+
 ---
 
 ## Example 9: Bitmask Subset Enumeration
@@ -463,6 +673,30 @@ func main() {
 		fmt.Printf("Mask %04b (%d bits): %d subsets\n", m, bits, len(subs))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Subset enumeration of mask 1011 (elements {0, 1, 3}):
+
+  Formula: sub = (sub - 1) & mask
+
+  ┌──────┬────────┬─────────────────────────────────┐
+  │ step │  sub   │ elements                        │
+  ├──────┼────────┼─────────────────────────────────┤
+  │  0   │  1011  │ {0, 1, 3}  (full set)           │
+  │  1   │  1010  │ {1, 3}     (1010 & 1011 = 1010) │
+  │  2   │  1001  │ {0, 3}     (1001 & 1011 = 1001) │
+  │  3   │  1000  │ {3}        (1000 & 1011 = 1000) │
+  │  4   │  0011  │ {0, 1}     (0111 & 1011 = 0011) │
+  │  5   │  0010  │ {1}        (0010 & 1011 = 0010) │
+  │  6   │  0001  │ {0}        (0001 & 1011 = 0001) │
+  │  7   │  0000  │ {}         (empty set)           │
+  └──────┴────────┴─────────────────────────────────┘
+
+  Total: 2^3 = 8 subsets (3 bits set in mask)
+  Complexity: O(3^n) total across all masks
 ```
 
 ---
@@ -505,6 +739,37 @@ func main() {
 	fmt.Println()
 	fmt.Println("Constraint: n ≤ 20 (2^20 ≈ 1M states)")
 }
+```
+
+**Textual Figure:**
+
+```
+Bitmask DP patterns overview:
+
+  Bitmask = subset representation using integer bits:
+    mask = 1011  →  elements {0, 1, 3} selected
+           ↑↑↑↑
+           3210  (bit positions)
+
+  Common patterns:
+  ┌───────────────────┬──────────────────────────────┐
+  │ Pattern           │ State                         │
+  ├───────────────────┼──────────────────────────────┤
+  │ TSP               │ dp[mask][lastCity]             │
+  │ Assignment         │ dp[mask], worker=popcount      │
+  │ Hamiltonian Path   │ dp[mask][endNode]              │
+  │ Game Theory        │ dp[mask] (T/F who wins)        │
+  │ K-Partition        │ dp[mask] = bucket sum % target │
+  │ Row Profile        │ dp[row][prevRowMask]           │
+  │ Subset Sum         │ enumerate sub = (sub-1) & mask │
+  └───────────────────┴──────────────────────────────┘
+
+  Bit operations:
+    Set:    mask | (1<<i)      Clear:  mask & ^(1<<i)
+    Check:  mask & (1<<i)      Toggle: mask ^ (1<<i)
+    Lowest: mask & (-mask)     PopCnt: bits.OnesCount
+
+  Feasible when n ≤ 20  (2^20 ≈ 1M states)
 ```
 
 ---

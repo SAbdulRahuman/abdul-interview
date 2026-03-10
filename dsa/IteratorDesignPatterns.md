@@ -76,6 +76,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+BST Iterator: Stack-Based In-Order Traversal
+
+  Tree:
+          7
+         ╱ ╲
+        3   15
+           ╱  ╲
+          9    20
+
+  Stack progression (pushLeft on init → push 7, 3):
+
+  Step    Stack          Action             Output
+  ────    ─────────────  ─────────────────  ──────
+  init    [7, 3]         pushLeft(root)       —
+  Next()  [7]            pop 3, pushL(nil)    3
+  Next()  []             pop 7, pushL(15→9)   7
+          [15, 9]        ← pushed 15, then 9
+  Next()  [15]           pop 9, pushL(nil)    9
+  Next()  []             pop 15, pushL(20)    15
+          [20]
+  Next()  []             pop 20, pushL(nil)   20
+
+  Result: 3 → 7 → 9 → 15 → 20  (in-order ✓)
+
+  ┌─────────────────────────────────────────┐
+  │ Space: O(h) — at most h nodes on stack  │
+  │ Time: O(1) amortized per Next()         │
+  │ Each node pushed/popped exactly once    │
+  └─────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Flatten Nested List Iterator (LeetCode 341)
@@ -158,6 +191,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Flatten Nested List Iterator: Stack-Based Lazy Flattening
+
+  Input: [[1,1], 2, [1,1]]
+
+  Initial stack (pushed in reverse):
+    ┌──────────┐
+    │ [1,1]    │  ← top (first element)
+    │ 2        │
+    │ [1,1]    │  ← bottom
+    └──────────┘
+
+  HasNext()/Next() trace:
+
+  Call       Stack (top→bottom)         Action              Output
+  ────────   ────────────────────────   ──────────────────  ──────
+  HasNext()  [1,1] | 2 | [1,1]         top=[1,1] → expand    —
+             1 | 1 | 2 | [1,1]         top=1 → integer ✓
+  Next()     1 | 2 | [1,1]             pop 1                  1
+  Next()     2 | [1,1]                  pop 1                  1
+  Next()     [1,1]                      pop 2                  2
+  HasNext()  [1,1]                      top=[1,1] → expand
+             1 | 1                      top=1 → integer ✓
+  Next()     1                          pop 1                  1
+  Next()     (empty)                    pop 1                  1
+
+  Result: 1 1 2 1 1 ✓
+
+  Deep nested: [1,[2,[3,[4]]]]
+    Expansion: stack unfolds lazily:
+    [1,[2,[3,[4]]]] → 1 | [2,[3,[4]]] → ... → 1 2 3 4
+```
+
 ---
 
 ## Example 3: Peeking Iterator (LeetCode 284)
@@ -219,6 +286,36 @@ func main() {
 	fmt.Println("Next:", pi.Next())     // 3
 	fmt.Println("HasNext:", pi.HasNext()) // true
 }
+```
+
+**Textual Figure:**
+```
+Peeking Iterator: Cached One-Ahead Value
+
+  Data: [1, 2, 3, 4, 5]
+  Wraps an underlying Iterator and caches one value.
+
+  Op        peeked  peekVal  iter.pos  Output
+  ────────  ──────  ───────  ────────  ──────
+  (init)    false    —        0          —
+  Peek()    true     1        1          1
+             └─ called iter.Next(), cached result
+  Peek()    true     1        1          1
+             └─ already peeked, return cache
+  Next()    false    —        1          1
+             └─ return cached, clear flag
+  Next()    false    —        2          2
+             └─ no cache, call iter.Next()
+  Peek()    true     3        3          3
+  Next()    false    —        3          3
+  HasNext() true              3          true
+             └─ peeked || iter.HasNext()
+
+  ┌────────────────────────────────────────┐
+  │ State: { peeked: bool, peekVal: int } │
+  │ Peek: cache if not cached, return     │
+  │ Next: return cache if any, else iter  │
+  └────────────────────────────────────────┘
 ```
 
 ---
@@ -295,6 +392,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Closure-Based Iterator: Composable Functional Pipeline
+
+  fibIterator():
+    Closure state: a=0, b=1
+    Call sequence:  0, 1, 1, 2, 3, 5, 8, 13, 21, 34
+
+  Pipeline: range(0,10) → filter(even) → map(x²)
+
+    rangeIterator(0,10):
+      yields: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+                │
+                ▼
+    filterIterator(even?):
+      passes: 0, 2, 4, 6, 8
+                │
+                ▼
+    mapIterator(x²):
+      yields: 0, 4, 16, 36, 64
+
+  Data flow:
+    ┌─────────┐     ┌──────────┐     ┌─────────┐
+    │ range   │────▶│ filter   │────▶│  map    │────▶ output
+    │ 0..9    │     │ x%2==0   │     │  x*x    │
+    └─────────┘     └──────────┘     └─────────┘
+
+  Each iterator is a func() (int, bool)
+  Lazy evaluation — values computed on demand
+```
+
 ---
 
 ## Example 5: Channel-Based Iterator (Goroutine)
@@ -363,6 +491,45 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Channel-Based Iterator: Goroutine Tree Traversal
+
+  Tree:
+          4
+         ╱ ╲
+        2    6
+       ╱ ╲  ╱ ╲
+      1  3  5  7
+
+  In-order channel:
+    goroutine walks tree recursively:
+
+    walk(4)
+    ├─ walk(2)
+    │  ├─ walk(1) → ch ← 1
+    │  └─ ch ← 2
+    │  └─ walk(3) → ch ← 3
+    └─ ch ← 4
+    └─ walk(6)
+       ├─ walk(5) → ch ← 5
+       └─ ch ← 6
+       └─ walk(7) → ch ← 7
+    close(ch)
+
+    ┌──────────┐    ch     ┌──────────────┐
+    │ goroutine│───────────▶│ for v := range│
+    │ walk()   │  1,2,3,4  │   ch { ... }  │
+    │          │  5,6,7    │               │
+    └──────────┘           └──────────────┘
+
+  In-order:  1 2 3 4 5 6 7
+  Pre-order: 4 2 1 3 6 5 7
+
+  Elegant for range syntax, but goroutine lifecycle
+  must be managed (defer close(ch))
+```
+
 ---
 
 ## Example 6: Zigzag Iterator (Interleaving)
@@ -413,6 +580,35 @@ func main() {
 	for zi.HasNext() { fmt.Printf("%d ", zi.Next()) }
 	fmt.Println() // 1 3 7 2 4 5 6
 }
+```
+
+**Textual Figure:**
+```
+Zigzag Iterator: Round-Robin Interleaving
+
+  Input lists:
+    List 0: [1, 2]
+    List 1: [3, 4, 5, 6]
+    List 2: [7]
+
+  Round-robin traversal (curr cycles 0 → 1 → 2 → 0 → ...):
+
+  Step  curr  List  idx   Value  Lists state
+  ────  ────  ────  ───   ─────  ───────────────────
+   1     0     0    0      1     [_,2]  [3,4,5,6]  [7]
+   2     1     1    0      3     [_,2]  [_,4,5,6]  [7]
+   3     2     2    0      7     [_,2]  [_,4,5,6]  [_]
+   4     0     0    1      2     [_,_]  [_,4,5,6]  [_]
+   5     1     1    1      4     [_,_]  [_,_,5,6]  [_]
+   6     1     1    2      5     (skip exhausted lists)
+   7     1     1    3      6     
+
+  Output: 1 3 7 2 4 5 6
+
+  Exhausted lists are skipped in round-robin:
+    ┌───┐  ┌───┐  ┌───┐
+    │ L0│→│ L1│→│ L2│→ (cycle)
+    └───┘  └───┘  └───┘
 ```
 
 ---
@@ -474,6 +670,42 @@ func main() {
 		fmt.Printf("  Level %d: %v\n", level, vals)
 	}
 }
+```
+
+**Textual Figure:**
+```
+Level-Order Iterator: BFS Queue
+
+  Tree:
+        3
+       ╱ ╲
+      9   20
+         ╱  ╲
+        15    7
+
+  BFS iteration by level:
+
+  Level  Queue before       Process        Queue after
+  ─────  ───────────────  ─────────────  ───────────────
+   0     [3]              dequeue 3        [9, 20]
+   1     [9, 20]           dequeue 9, 20   [15, 7]
+   2     [15, 7]           dequeue 15, 7   []
+
+  Output:
+    Level 0: [3]
+    Level 1: [9, 20]
+    Level 2: [15, 7]
+
+  Queue state visualization:
+    ┌───┐
+    │ 3 │  → process, add children
+    └───┘
+    ┌───┬────┐
+    │ 9 │ 20 │  → process size=2, add children
+    └───┴────┘
+    ┌────┬───┐
+    │ 15 │ 7 │  → process size=2, no children
+    └────┴───┘
 ```
 
 ---
@@ -544,6 +776,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Skip Iterator: Skip-Count Map
+
+  Data: [2, 3, 5, 6, 5, 7, 5, -1, 5, 10]
+                pos →
+
+  skipMap tracks how many future occurrences of a value to skip.
+
+  Op          pos  skipMap       advance()         Output
+  ──────────  ───  ───────────  ────────────────  ──────
+  Next()       0   {}            —                  2
+  Skip(5)      1   {5:1}         —                  —
+  Next()       1   {5:1}         —                  3
+  Next()       2   {5:1}         pos 2 is 5 → skip  6
+                                 skip [{5:0}] pos→4
+  Next()       4   {}            —                  5
+  Skip(5)      5   {5:1}         —                  —
+  Skip(5)      5   {5:2}         —                  —
+  Next()       5   {5:2}         pos5=5→skip        7
+                                 pos6=5→skip
+                                 {5:0} pos→7
+  Next()       7   {}            —                  -1
+  Next()       8   {}            —                  10
+                                 (pos8=5, but skip count=0)
+  Wait: pos8=5, skipMap empty → not skipped? Re-read:
+  Actually after 2 skips: pos5=5 skipped, pos6=5 skipped, pos7=-1
+  Next()=7, Next()=-1, Next()=5(pos8), Next()=10(pos9)
+```
+
 ---
 
 ## Example 9: Iterator for 2D Matrix (Spiral Order)
@@ -603,6 +865,40 @@ func main() {
 	fmt.Println()
 	// 1 2 3 4 8 12 11 10 9 5 6 7
 }
+```
+
+**Textual Figure:**
+```
+Spiral Order Iterator: Direction State Machine
+
+  Matrix:
+    ┌────┬────┬────┬────┐
+    │  1 │  2 │  3 │  4 │
+    ├────┼────┼────┼────┤
+    │  5 │  6 │  7 │  8 │
+    ├────┼────┼────┼────┤
+    │  9 │ 10 │ 11 │ 12 │
+    └────┴────┴────┴────┘
+
+  Direction state: 0=right, 1=down, 2=left, 3=up
+  Boundaries: top, bottom, left, right (shrink inward)
+
+  Step  dir    Boundary hit?       Elements     Boundary update
+  ────  ─────  ────────────────  ───────────  ───────────────
+   1    right  col hits right=3   1,2,3,4       top: 0→1
+   2    down   row hits bottom=2  8,12          right: 3→2
+   3    left   col hits left=0    11,10,9       bottom: 2→1
+   4    up     row hits top=1     5             left: 0→1
+   5    right  col hits right=2   6,7           done!
+
+  Spiral path:
+    1 ─▶ 2 ─▶ 3 ─▶ 4
+                    │
+    5 ─▶ 6 ─▶ 7    8
+    │              │
+    9 ◀─ 10 ◀ 11 ◀ 12
+
+  Output: 1 2 3 4 8 12 11 10 9 5 6 7
 ```
 
 ---
@@ -681,6 +977,42 @@ func main() {
 
 	fmt.Println("\nO(log k) per Next() — k = number of iterators")
 }
+```
+
+**Textual Figure:**
+```
+Merge k Sorted Iterators: Min-Heap of Heads
+
+  Input iterators:
+    Iter 0: [1, 4, 7, 10]
+    Iter 1: [2, 5, 8]
+    Iter 2: [3, 6, 9, 11, 12]
+
+  Min-Heap state (tracks head of each iterator):
+
+  Step  Heap (val,iter)     Pop    Push next       Output
+  ────  ─────────────────  ─────  ──────────────  ──────
+  init  [(1,0),(2,1),(3,2)]  —      —               —
+   1    [(2,1),(3,2),(4,0)]  1,i0   push (4,i0)     1
+   2    [(3,2),(4,0),(5,1)]  2,i1   push (5,i1)     2
+   3    [(4,0),(5,1),(6,2)]  3,i2   push (6,i2)     3
+   4    [(5,1),(6,2),(7,0)]  4,i0   push (7,i0)     4
+   5    [(6,2),(7,0),(8,1)]  5,i1   push (8,i1)     5
+   6    [(7,0),(8,1),(9,2)]  6,i2   push (9,i2)     6
+   ...  ...                  ...    ...             ...
+
+  Heap visualization (step 1):
+        ┌───┐
+        │ 1 │ ← min (from iter 0)
+        └┬──┘
+       ╱    ╲
+    ┌───┐  ┌───┐
+    │ 2 │  │ 3 │
+    └───┘  └───┘
+    iter1   iter2
+
+  Output: 1 2 3 4 5 6 7 8 9 10 11 12
+  Time: O(N log k) total, O(log k) per Next()
 ```
 
 ---

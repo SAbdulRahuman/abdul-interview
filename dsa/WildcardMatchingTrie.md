@@ -88,6 +88,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+AddWord: "bad", "dad", "mad"
+
+   Trie:
+   (root)
+    ├─ b ─ a ─ d ★   → "bad"
+    ├─ d ─ a ─ d ★   → "dad"
+    └─ m ─ a ─ d ★   → "mad"
+
+   Search with '.' wildcard (try all 26 children):
+   ┌─────────┬───────────────────────────────────┐
+   │ Pattern │ Trie traversal                    │
+   ├─────────┼───────────────────────────────────┤
+   │ "pad"   │ p→no child → false               │
+   │ "bad"   │ b─a─d ★ → true                  │
+   │ ".ad"   │ .→try b,d,m: b─a─d★ → true       │
+   │ "b.."   │ b─.→a─.→d★ → true               │
+   │ "..."   │ .→b/d/m, .→a, .→d ★ → true      │
+   │ "...."  │ 4 dots but words are length 3 → F │
+   └─────────┴───────────────────────────────────┘
+   '.' = branch into all 26 possible children.
+```
+
 ---
 
 ## Example 2: Wildcard Match with Star
@@ -174,6 +199,38 @@ func main() {
 	fmt.Println("c*:", wt.Match("c*"))      // [car card care cat cattle]
 	fmt.Println("ca*e:", wt.Match("ca*e"))  // [care cattle]
 }
+```
+
+**Textual Figure:**
+
+```
+Words: ["cat","car","card","care","bat","bar","cattle"]
+
+   Trie:
+   (root)
+    ├─ b ─ a
+    │       ├─ r ★  → "bar"
+    │       └─ t ★  → "bat"
+    └─ c ─ a
+            ├─ r ★  → "car"
+            │   ├─ d ★ → "card"
+            │   └─ e ★ → "care"
+            └─ t ★  → "cat"
+                └─ t ─ l ─ e ★ → "cattle"
+
+   Pattern matching:
+   "ca." ('.'→try all):  c─a─[r★, t★] → [car, cat]
+
+   "c*" ('*'→match 0+ chars):
+     c → match 0: not isEnd
+     c─a → match 1: not isEnd
+     c─a─r ★, c─a─r─d ★, c─a─r─e ★, c─a─t ★, c─a─t─t─l─e ★
+     → [car, card, care, cat, cattle]
+
+   "ca*e" ('*'→any seq ending in 'e'):
+     c─a → *matches r─e → "care" ★
+     c─a → *matches t─t─l─e → "cattle" ★
+     → [care, cattle]
 ```
 
 ---
@@ -269,6 +326,38 @@ func main() {
 	fmt.Println("c[au]t:", rt.Search("c[au]t"))   // [cat cut]
 	fmt.Println(".ut:", rt.Search(".ut"))          // [but cut]
 }
+```
+
+**Textual Figure:**
+
+```
+Words: ["cat","car","cut","cup","bat","but"]
+
+   Trie:
+   (root)
+    ├─ b
+    │   ├─ a ─ t ★  → "bat"
+    │   └─ u ─ t ★  → "but"
+    └─ c
+        ├─ a
+        │   ├─ r ★     → "car"
+        │   └─ t ★     → "cat"
+        └─ u
+            ├─ p ★     → "cup"
+            └─ t ★     → "cut"
+
+   Regex-like pattern matching:
+   "[cb]at": parse [cb] → try 'c' and 'b' at pos 0
+     c─a─t ★ → "cat"     b─a─t ★ → "bat"
+     Result: [bat, cat]
+
+   "c[au]t": c → parse [au] → try 'a' and 'u' at pos 1
+     c─a─t ★ → "cat"     c─u─t ★ → "cut"
+     Result: [cat, cut]
+
+   ".ut": '.' at pos 0 → try all 26
+     b─u─t ★ → "but"     c─u─t ★ → "cut"
+     Result: [but, cut]
 ```
 
 ---
@@ -369,6 +458,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Words: ["hello","help","heap","heal","hero","halo"]
+
+   Trie:
+   (root)
+    └─ h
+        ├─ e
+        │   ├─ a
+        │   │   ├─ l ★  → "heal"
+        │   │   └─ p ★  → "heap"
+        │   ├─ l
+        │   │   ├─ l ─ o ★  → "hello"
+        │   │   └─ p ★      → "help"
+        │   └─ r ─ o ★      → "hero"
+        └─ a ─ l ─ o ★      → "halo"
+
+   Fuzzy search "helo" with maxEdits=1:
+   ┌──────────┬──────────────────────────────────┐
+   │ Match    │ Edit operation               │
+   ├──────────┼──────────────────────────────────┤
+   │ "hello"  │ Insert 'l': helo → hel+l+o    │
+   │ "hero"   │ Substitute: helo → hero (l→r) │
+   │ "help"   │ Substitute: helo → help (o→p) │
+   │ "heal"   │ Substitute: helo → heal (l→a) │
+   └──────────┴──────────────────────────────────┘
+   DFS tries all 3 edit types at each position.
+```
+
 ---
 
 ## Example 5: Pattern Search with Fixed Length
@@ -443,6 +562,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Words: ["cat","car","bat","bar","cap","cup"]
+
+   Trie:
+   (root)
+    ├─ b ─ a
+    │       ├─ r ★  → "bar"
+    │       └─ t ★  → "bat"
+    └─ c
+        ├─ a
+        │   ├─ p ★  → "cap"
+        │   ├─ r ★  → "car"
+        │   └─ t ★  → "cat"
+        └─ u ─ p ★  → "cup"
+
+   Pattern search (fixed length, '.' = any char):
+   "c.t": c → .(try a,u) → t
+          c─a─t ★ → count 1  ("cat")
+          c─u─(no t) → skip
+          Result: 1
+
+   "..t": .(b,c) → .(a,u) → t
+          b─a─t ★, c─a─t ★ → count 2
+          Result: 2
+
+   "ca.": c → a → .(p,r,t)
+          all 3 are isEnd → count 3  (cap, car, cat)
+
+   "...": all 26 → all 26 → all 26
+          count every 3-letter word = 6
+```
+
 ---
 
 ## Example 6: Multi-Pattern Search (Aho-Corasick Simplified)
@@ -498,6 +651,34 @@ func main() {
 		fmt.Printf("'%s' found at: %v\n", pattern, positions)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Text: "ahishershe", Patterns: ["he","she","his","hers"]
+
+   Pattern Trie:
+   (root)
+    ├─ h
+    │   ├─ e ★        → "he"
+    │   │   └─ r ─ s ★ → "hers"
+    │   └─ i ─ s ★    → "his"
+    └─ s ─ h ─ e ★    → "she"
+
+   Scan text, at each position walk trie:
+   pos 0: 'a' → no trie match
+   pos 1: 'h'─'i'─'s' ★ "his" found at 1
+   pos 2: 'i' → no match
+   pos 3: 's'─'h'─'e' ★ "she" found at 3
+   pos 4: 'h'─'e' ★ "he" found at 4
+          'h'─'e'─'r'─'s' ★ "hers" found at 4
+   pos 5: 'e' → no match
+   pos 6: 'r' → no match
+   pos 7: 's'─'h'─'e' ★ "she" found at 7
+   pos 8: 'h'─'e' ★ "he" found at 8
+
+   Result: he:[4,8] she:[3,7] his:[1] hers:[4]
 ```
 
 ---
@@ -572,6 +753,34 @@ func main() {
 	fmt.Println(globMatchDP("*", "anything"))        // true
 	fmt.Println(globMatchDP("h*xyz", "hello"))       // false
 }
+```
+
+**Textual Figure:**
+
+```
+Glob Pattern Matching (pattern vs text):
+
+   DP table for pattern="he*o" text="hello":
+        ""  h   e   l   l   o
+   ""  [ T   F   F   F   F   F ]
+   h   [ F   T   F   F   F   F ]
+   e   [ F   F   T   F   F   F ]
+   *   [ F   F   T   T   T   T ]  ← * propagates right
+   o   [ F   F   F   F   F   T ]  ← MATCH!
+
+   * matches 0+ chars: "" or "l" or "ll"
+   he*o matches "hello" → * consumes "ll"
+
+   Pattern matching rules:
+   ┌─────────┬─────────────────────────────┐
+   │ Pattern │ Rule                        │
+   ├─────────┼─────────────────────────────┤
+   │ *       │ dp[i][j] = dp[i-1][j]       │
+   │         │         OR dp[i][j-1]       │
+   │ ?       │ dp[i][j] = dp[i-1][j-1]     │
+   │ char    │ dp[i][j] = dp[i-1][j-1]     │
+   │         │   if p[i]==t[j]              │
+   └─────────┴─────────────────────────────┘
 ```
 
 ---
@@ -654,6 +863,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+File System Trie (path segment edges):
+
+   (root)
+    ├─ "src"
+    │   ├─ "main.go" ★     content: "package main"
+    │   └─ "utils.go" ★    content: "package utils"
+    ├─ "test"
+    │   └─ "main_test.go" ★  content: "test"
+    └─ "README.md" ★        content: "readme"
+
+   Glob "src/*" ('*' matches any one segment):
+     root ─src→ '*' matches all children:
+       ├─ "main.go"   → /src/main.go
+       └─ "utils.go"  → /src/utils.go
+
+   Glob "*" ('*' matches any one segment at root):
+     root → '*' matches all children:
+       ├─ "src"        → /src
+       ├─ "test"       → /test
+       └─ "README.md"  → /README.md
+
+   Each path segment = one trie edge (not per-char).
+```
+
 ---
 
 ## Example 9: Wildcard DNS Matching
@@ -732,6 +968,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+DNS Trie (reversed domain, TLD-first):
+
+   Records:
+   api.example.com → 1.1.1.1
+   *.example.com   → 2.2.2.2
+   example.com     → 3.3.3.3
+
+   Trie (built from TLD inward):
+   (root)
+    └─ "com"
+        └─ "example"  ip: "3.3.3.3"
+            ├─ "api" ★  ip: "1.1.1.1"
+            └─ "*" ★    ip: "2.2.2.2"  (wildcard)
+
+   Resolution (walk reversed domain parts):
+   ┌────────────────────┬─────────────────────────┬─────────┐
+   │ Domain             │ Path                    │ IP      │
+   ├────────────────────┼─────────────────────────┼─────────┤
+   │ api.example.com    │ com─example─api (exact) │ 1.1.1.1 │
+   │ web.example.com    │ com─example─* (wildcard)│ 2.2.2.2 │
+   │ test.example.com   │ com─example─* (wildcard)│ 2.2.2.2 │
+   │ example.com        │ com─example (direct)   │ 3.3.3.3 │
+   └────────────────────┴─────────────────────────┴─────────┘
+   Exact match tried first; wildcard "*" as fallback.
+```
+
 ---
 
 ## Example 10: Wildcard Matching Complexity Analysis
@@ -791,6 +1056,37 @@ func main() {
 	fmt.Println("  • Limit results (top-K) to avoid exponential blowup")
 	fmt.Println("  • Reverse insertion helps with suffix matching")
 }
+```
+
+**Textual Figure:**
+
+```
+Wildcard Matching in Tries — Complexity Summary:
+
+   Trie with words: ["cat","car","cut"]
+   (root)
+    └─ c
+        ├─ a ─ t ★ / r ★
+        └─ u ─ t ★
+
+   ┌───────────┬─────────────────┐
+   │ Wildcard  │ Search branching │
+   ├───────────┼─────────────────┤
+   │ c.t       │ c→[a,u]→t       │
+   │           │  2 branches     │
+   ├───────────┼─────────────────┤
+   │ c*        │ c→all subtree   │
+   │           │  visits all     │
+   ├───────────┼─────────────────┤
+   │ [au]      │ try a,u only    │
+   │           │  K branches     │
+   ├───────────┼─────────────────┤
+   │ fuzzy(1)  │ sub+ins+del     │
+   │           │  26^k branches  │
+   └───────────┴─────────────────┘
+
+   Key trade-off: more wildcards = exponential branching.
+   Trie structure limits branching to existing paths only.
 ```
 
 ---

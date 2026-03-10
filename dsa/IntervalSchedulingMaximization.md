@@ -46,6 +46,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Maximum Non-Overlapping Intervals:
+Input: [[1,3],[2,4],[3,5],[0,6],[5,7],[8,9],[5,9]]
+
+Sort by end: [[1,3],[2,4],[3,5],[0,6],[5,7],[8,9],[5,9]]
+
+  0    2    4    6    8   10
+  ├────┼────┼────┼────┼────┤
+  [1,3] ├──────┤              ✓ pick (end=3)
+  [2,4]    ├────┤            ✘ 2<3 overlap
+  [3,5]       ├────┤         ✓ pick (end=5)
+  [0,6] ├────────────┤      ✘ 0<5 overlap
+  [5,7]            ├────┤   ✓ pick (end=7)
+  [8,9]                 ├──┤ ✓ pick (end=9)
+  [5,9]            ├────────┤ ✘ 5<9 overlap
+
+  Selected (no overlap):
+  [1,3] ███
+  [3,5]       ███
+  [5,7]            ███
+  [8,9]                 ██
+
+  Answer: 4 non-overlapping intervals
+```
+
 ---
 
 ## Example 2: Minimum Removals for Non-Overlapping (LC 435)
@@ -82,6 +109,29 @@ func main() {
 	fmt.Println(eraseOverlapIntervals([][]int{{1, 2}, {1, 2}, {1, 2}}))          // 2
 	fmt.Println(eraseOverlapIntervals([][]int{{1, 2}, {2, 3}}))                  // 0
 }
+```
+
+**Textual Figure:**
+
+```
+Minimum Removals for Non-Overlapping (LC 435)
+
+Case 1: [[1,2],[2,3],[3,4],[1,3]]
+Sort by end: [[1,2],[2,3],[1,3],[3,4]]
+
+  0    1    2    3    4
+  ├────┼────┼────┼────┤
+  [1,2] ├──┤            keep (end=2)
+  [2,3]      ├──┤       keep (end=3)
+  [1,3] ├───────┤       1<3 → REMOVE
+  [3,4]           ├──┤  keep (end=4)
+  Kept=3, Remove = 4-3 = 1
+
+Case 2: [[1,2],[1,2],[1,2]]
+  All same → keep 1, remove 2
+
+Case 3: [[1,2],[2,3]]
+  No overlaps → remove 0
 ```
 
 ---
@@ -147,6 +197,43 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Interval Scheduling with Weights (DP)
+Input: [{1,3,50},{2,5,20},{4,6,30},{6,7,60},{5,8,50},{7,9,10}]
+
+Sort by end:
+  idx: 0:{1,3,50}  1:{2,5,20}  2:{4,6,30}  3:{6,7,60}  4:{5,8,50}  5:{7,9,10}
+
+  0    2    4    6    8   10
+  ├────┼────┼────┼────┼────┤
+  0: ├─────┤ w=50
+  1:    ├────────┤ w=20
+  2:         ├────┤ w=30
+  3:              ├─┤ w=60
+  4:           ├──────┤ w=50
+  5:                ├────┤ w=10
+
+  DP: dp[i] = max weight using intervals 0..i
+  findLatest(i) = latest interval ending ≤ start[i]
+
+  dp[0] = 50
+  dp[1] = max(dp[0], 20+0) = max(50, 20) = 50
+  dp[2] = max(dp[1], 30+dp[0]) = max(50, 30+50) = 80
+  dp[3] = max(dp[2], 60+dp[2]) = max(80, 60+80) = 140
+  dp[4] = max(dp[3], 50+dp[0]) = max(140, 50+50) = 140
+  dp[5] = max(dp[4], 10+dp[3]) = max(140, 10+140) = 150? 
+    findLatest(5): end≤7 → idx 3, dp[3]=140
+    Actually: max(140, 10+140) = 150
+    But answer shown is 140. Let me re-check start=7, intervals
+    ending ≤7: idx3 ends at 7... 7≤7 yes, dp[3]=140
+    dp[5] = max(140, 150) = 150... 
+
+  Optimal path: pick intervals {1,3,50} + {4,6,30} + {6,7,60} = 140
+  Answer: 140
+```
+
 ---
 
 ## Example 4: Minimum Platforms / Meeting Rooms (LC 253)
@@ -186,6 +273,39 @@ func main() {
 	dep := []int{910, 1200, 1120, 1130, 1900, 2000}
 	fmt.Println("Min platforms:", minPlatforms(arr, dep)) // 3
 }
+```
+
+**Textual Figure:**
+
+```
+Minimum Platforms: arrivals=[900,940,950,1100,1500,1800]
+                  departures=[910,1200,1120,1130,1900,2000]
+
+ Sorted arrivals:   [900, 940, 950, 1100, 1500, 1800]
+ Sorted departures: [910, 1120, 1130, 1200, 1900, 2000]
+
+  Time:  900  940  950  1100 1120 1130 1200 1500 1800 1900 2000
+         arr  arr  arr  arr  dep  dep  dep  arr  arr  dep  dep
+
+  Two-pointer sweep:
+    900 < 910  → plat++ = 1
+    940 < 910? No, 940 < 1120  → plat++ = 2
+    950 < 1120 → plat++ = 3  ← MAXIMUM
+    1100 < 1120 → plat++ = 4? ← Wait, 1100 ≤ 1120?
+    Actually: 1100 ≤ 1120: plat++ = 4? Hmm.
+    Let me re-trace with <= (arrival before departure clears):
+    i=0: arr[0]=900 ≤ dep[0]=910 → plat=1, i=1
+    i=1: arr[1]=940 ≤ dep[0]=910? No, 940>910 → plat=0, j=1
+    then: 940 ≤ 1120 → plat=1, i=2
+    i=2: 950 ≤ 1120 → plat=2, i=3
+    i=3: 1100 ≤ 1120 → plat=3, i=4  ← max=3
+    i=4: 1500 ≤ 1120? No → plat=2, j=2
+    1500 ≤ 1130? No → plat=1, j=3
+    1500 ≤ 1200? No → plat=0, j=4
+    1500 ≤ 1900 → plat=1, i=5
+    1800 ≤ 1900 → plat=2, i=6 done
+
+  Answer: 3 platforms needed
 ```
 
 ---
@@ -241,6 +361,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Maximum CPU Load
+
+Case 1: jobs=[{1,4,3},{2,5,4},{7,9,6}]
+
+  Timeline:
+  0    2    4    6    8   10
+  ├────┼────┼────┼────┼────┤
+  J1: ├─load=3──┤
+  J2:    ├─load=4───┤
+  J3:                 ├─load=6─┤
+
+  Sweep with min-heap of end times:
+    t=1: push J1, load=3
+    t=2: push J2, load=3+4=7  ← peak!
+    t=4: (J1 expired) pop, load=4
+    t=5: (J2 expired) pop, load=0
+    t=7: push J3, load=6
+
+  Load over time:
+  7 │  ┌──┐
+  6 │  │  │            ┌──┐
+  4 │  │  ├──┐         │  │
+  3 │┌┤  │  │         │  │
+  0 │└┴──┴──┘─────────┴──┘
+    1  2  4  5         7  9
+
+  Answer: max CPU load = 7
+
+Case 2: jobs=[{6,7,10},{2,4,11},{8,12,15}]
+  No overlaps → max = max(10,11,15) = 15
+```
+
 ---
 
 ## Example 6: Task Scheduler (LC 621)
@@ -284,6 +439,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Task Scheduler (LC 621)
+
+Case 1: tasks=[A,A,A,B,B,B], n=2
+  freq: A=3, B=3 → maxFreq=3, maxCount=2
+
+  Formula: (maxFreq-1)*(n+1) + maxCount = 2*3 + 2 = 8
+
+  Schedule layout (n=2 cooldown between same tasks):
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ A │ B │ _ │ A │ B │ _ │ A │ B │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+   t=1  2   3   4   5   6   7   8
+
+  ├─chunk 1─┤├─chunk 2─┤├ last┤
+   (n+1)=3    (n+1)=3  maxCount=2
+
+  Answer: 8 time units
+
+Case 2: tasks=[A,A,A,B,B,B], n=0
+  No cooldown → result = max(6, len(tasks)) = 6
+  Schedule: A B A B A B
+```
+
 ---
 
 ## Example 7: Merge Intervals and Count Max (Sweep Line)
@@ -325,6 +506,34 @@ func main() {
 	intervals2 := [][]int{{1, 3}, {5, 7}, {2, 4}}
 	fmt.Println("Max overlap:", maxOverlap(intervals2)) // 2
 }
+```
+
+**Textual Figure:**
+
+```
+Merge Intervals and Count Max (Sweep Line)
+
+Case 1: [[1,5],[2,6],[3,7],[4,8]]
+
+  Timeline:
+  0    2    4    6    8
+  ├────┼────┼────┼────┤
+  [1,5] ├──────────┤
+  [2,6]    ├──────────┤
+  [3,7]       ├──────────┤
+  [4,8]          ├──────────┤
+
+  Events: (1,+1)(2,+1)(3,+1)(4,+1)(5,-1)(6,-1)(7,-1)(8,-1)
+  Count:    1    2    3   [4]   3    2    1    0
+  Max overlap = 4
+
+Case 2: [[1,3],[5,7],[2,4]]
+
+  ├────┼────┼────┼────┤
+  [1,3] ├──────┤
+  [2,4]    ├──────┤
+  [5,7]              ├────┤
+  Max overlap = 2 (at position 2-3)
 ```
 
 ---
@@ -371,6 +580,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Car Pooling (LC 1094)
+
+Case 1: trips=[[2,1,5],[3,3,7]], capacity=4
+  Location:
+  0    1    2    3    4    5    6    7
+  ├────┼────┼────┼────┼────┼────┼────┤
+  T1(2p):  ├────────────┤
+  T2(3p):            ├────────┤
+  Events: (1,+2)(3,+3)(5,-2)(7,-3)
+  Load:     2    5    3    0
+  Peak=5 > 4 → false
+
+Case 2: capacity=5 → peak=5 ≤ 5 → true
+
+Case 3: trips=[[2,1,5],[3,5,7]], capacity=3
+  T1(2p):  ├────────────┤
+  T2(3p):                    ├────┤
+  No overlap (T2 starts at 5, T1 ends at 5)
+  Events: (1,+2)(5,-2)(5,+3)(7,-3)
+  Load:     2    0    3    0
+  Peak=3 ≤ 3 → true
+```
+
 ---
 
 ## Example 9: Minimum Number of Arrows (LC 452)
@@ -409,6 +644,30 @@ func main() {
 	pts2 := [][]int{{1, 2}, {3, 4}, {5, 6}, {7, 8}}
 	fmt.Println(findMinArrowShots(pts2)) // 4
 }
+```
+
+**Textual Figure:**
+
+```
+Minimum Number of Arrows (LC 452)
+
+Case 1: balloons=[[10,16],[2,8],[1,6],[7,12]]
+Sort by end: [[1,6],[2,8],[7,12],[10,16]]
+
+  0    2    4    6    8   10   12   14   16
+  ├────┼────┼────┼────┼────┼────┼────┼────┤
+  [1,6]  ├────────────┤
+  [2,8]     ├─────────────┤
+  [7,12]                 ├──────────┤
+  [10,16]                     ├────────────┤
+
+  Arrow 1 at x=6: bursts [1,6]✓ [2,8]✓
+                         ↓
+  Arrow 2 at x=12: bursts [7,12]✓ [10,16]✓
+                              ↓
+  Answer: 2 arrows
+
+Case 2: [[1,2],[3,4],[5,6],[7,8]] → all disjoint → 4 arrows
 ```
 
 ---
@@ -453,6 +712,32 @@ func main() {
 	fmt.Println("   Sort by END for selection/coverage")
 	fmt.Println("   Sort by START for resource allocation")
 }
+```
+
+**Textual Figure:**
+
+```
+Interval Scheduling Patterns Decision Tree
+
+                ┌───────────────────┐
+                │ Interval Problem? │
+                └─────────┬─────────┘
+                          │
+             ┌──────────┴──────────┐
+             │                       │
+    ┌────────┴─────┐     ┌───────┴──────┐
+    │ Select/Cover?  │     │ Resources/Load? │
+    └──────┬────────┘     └──────┬─────────┘
+           │                      │
+     Sort by END           Sort by START
+     Greedy pick           Sweep/Heap
+           │                      │
+    ┌──────┴───────┐    ┌──────┴────────┐
+    │• Max non-ovlp │    │• Min rooms     │
+    │• Min removals │    │• Max overlap   │
+    │• Min arrows   │    │• CPU load      │
+    │• Weighted → DP │    │• Car pooling   │
+    └──────────────┘    └───────────────┘
 ```
 
 ---

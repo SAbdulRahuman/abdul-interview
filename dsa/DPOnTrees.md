@@ -55,6 +55,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Bottom-up DFS — dp[node] = max root-to-leaf sum through node:
+
+           ┌────┐
+           │ 10 │  dp = 10 + max(8, 8) = 18
+           └──┬─┘
+          ┌───┴────┐
+       ┌──┴─┐   ┌──┴──┐
+       │  5 │   │ -3  │
+       └──┬─┘   └──┬──┘
+       dp=8      dp=8
+     ┌──┴──┐      └──┐
+  ┌──┴┐  ┌─┴─┐  ┌───┴─┐
+  │ 3 │  │ 2 │  │  11 │  ← leaves return own value
+  └───┘  └───┘  └─────┘
+  dp=3   dp=2   dp=11
+
+  Step-by-step:
+    Node 3  (leaf) → dp = 3
+    Node 2  (leaf) → dp = 2
+    Node 11 (leaf) → dp = 11
+    Node 5  → best child = max(3,2) = 3 → dp = 5+3 = 8
+    Node -3 → only child = 11          → dp = -3+11 = 8
+    Node 10 → best child = max(8,8) = 8 → dp = 10+8 = 18
+
+  Result: 18  (path: 10 → 5 → 3)
+```
+
 ---
 
 ## Example 2: House Robber III (LeetCode 337)
@@ -102,6 +132,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Include/Exclude DP — (rob, skip) per node, post-order:
+
+          ┌───┐  rob = 3 + skip(2) + skip(3R) = 3+3+1 = 7
+          │ 3 │  skip = max(2,3) + max(3,1) = 3+3 = 6
+          └─┬─┘
+         ┌──┴──┐
+      ┌──┴─┐ ┌─┴──┐
+      │  2 │ │  3R │
+      └──┬─┘ └──┬─┘
+      rob=2   rob=3
+      skip=3  skip=1
+         └┐      └┐
+       ┌──┴─┐  ┌──┴─┐
+       │  3 │  │  1  │  ← leaves: (rob=val, skip=0)
+       └────┘  └────┘
+       (3, 0)  (1, 0)
+
+  Post-order computation:
+    Leaf 3:  rob=3, skip=0
+    Node 2:  rob = 2+skip(3) = 2+0 = 2
+             skip = max(3,0) = 3
+    Leaf 1:  rob=1, skip=0
+    Node 3R: rob = 3+skip(1) = 3+0 = 3
+             skip = max(1,0) = 1
+    Root 3:  rob = 3+3+1 = 7   ← root + grandchildren
+             skip = 3+3 = 6
+
+  Result: max(7, 6) = 7
+```
+
 ---
 
 ## Example 3: Tree Diameter via DP
@@ -147,6 +210,35 @@ func main() {
 	}
 	fmt.Println("Diameter:", treeDiameter(root)) // 3
 }
+```
+
+**Textual Figure:**
+
+```
+Tree Diameter — track height(h) and update diameter at each node:
+
+          ┌───┐  h=3, l+r = 2+1 = 3 ← diameter!
+          │ 1 │
+          └─┬─┘
+        ┌───┴───┐
+     ┌──┴─┐  ┌──┴─┐
+     │  2 │  │  3 │  h=1, l+r=0
+     └──┬─┘  └────┘
+     h=2, l+r = 1+1 = 2
+    ┌───┴───┐
+ ┌──┴─┐ ┌──┴─┐
+ │  4 │ │  5 │  h=1 (leaves)
+ └────┘ └────┘
+
+  Post-order height computation:
+    Node 4: l=0, r=0 → diam 0,  h=1
+    Node 5: l=0, r=0 → diam 0,  h=1
+    Node 2: l=1, r=1 → diam=max(0,2)=2, h=2
+    Node 3: l=0, r=0 → diam=max(2,0)=2, h=1
+    Node 1: l=2, r=1 → diam=max(2,3)=3, h=3
+
+  Diameter path: 4 → 2 → 1 → 3  (3 edges)
+  Result: 3
 ```
 
 ---
@@ -208,6 +300,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Max Path Sum — maxGain returns best single-branch gain to parent:
+
+         ┌─────┐  pathSum = -10+9+35 = 34
+         │ -10 │  gain = -10 + max(9,35) = 25
+         └──┬──┘
+        ┌───┴────┐
+     ┌──┴─┐   ┌──┴──┐  pathSum = 20+15+7 = 42 ★
+     │  9 │   │  20 │  gain = 20+15 = 35
+     └────┘   └──┬──┘
+     gain=9   ┌──┴───┐
+           ┌──┴──┐ ┌─┴──┐
+           │  15 │ │  7 │  (leaves, gain=own value)
+           └─────┘ └────┘
+           gain=15  gain=7
+
+  Post-order trace:
+    Node 9:   lG=0, rG=0 → path=9,   maxSum=9,   return 9
+    Node 15:  lG=0, rG=0 → path=15,  maxSum=15,  return 15
+    Node 7:   lG=0, rG=0 → path=7,   maxSum=15,  return 7
+    Node 20:  lG=15,rG=7 → path=42,  maxSum=42,  return 35
+    Node -10: lG=9, rG=35→ path=34,  maxSum=42,  return 25
+
+  Result: 42  (path: 15 → 20 → 7)
+```
+
 ---
 
 ## Example 5: Subtree Sizes (N-ary Tree DP)
@@ -257,6 +377,35 @@ func main() {
 		fmt.Printf("Node %d: subtree size = %d\n", i, s)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Subtree Size — DFS post-order accumulation (N-ary tree):
+
+          ┌───┐  size = 1+3+1+1 = 6
+          │ 0 │
+          └─┬─┘
+       ┌────┼────┐
+    ┌──┴─┐┌─┴──┐┌┴──┐
+    │  1 ││  2 ││ 3 │  size=1
+    └──┬─┘└────┘└───┘
+    size=3 size=1
+   ┌──┴──┐
+┌──┴─┐┌──┴─┐
+│  4 ││  5 │  size=1 (leaves)
+└────┘└────┘
+
+  DFS order and computation:
+    Node 4 → size[4] = 1
+    Node 5 → size[5] = 1
+    Node 1 → size[1] = 1 + 1 + 1 = 3
+    Node 2 → size[2] = 1
+    Node 3 → size[3] = 1
+    Node 0 → size[0] = 1 + 3 + 1 + 1 = 6
+
+  Result: [6, 3, 1, 1, 1, 1]
 ```
 
 ---
@@ -317,6 +466,43 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Re-rooting — two DFS passes, O(n) total:
+
+  Tree: 0─1, 0─2, 2─3, 2─4, 2─5
+        ┌───┐
+        │ 0 │
+        └─┬─┘
+      ┌──┴──┐
+   ┌──┴┐ ┌─┴─┐
+   │ 1 │ │ 2 │
+   └──┘ └─┬─┘
+         ┌─┼──┐
+       ┌─┴┐┌┴┐┌┴─┐
+       │ 3││ 4││ 5 │
+       └─┘└─┘└──┘
+
+  DFS 1 (root=0): compute count[] and dist[]
+    count: [6, 1, 4, 1, 1, 1]
+    dist[0] = 8  (sum of distances from node 0 to all others)
+
+  DFS 2 (re-root): dist[child] = dist[parent] - count[child] + (n - count[child])
+    ┌──────┬───────┬───────────────────────────────┐
+    │ node │ count │ dist[] computation                │
+    ├──────┼───────┼───────────────────────────────┤
+    │  0   │   6   │ dist[0] = 8  (from DFS 1)        │
+    │  1   │   1   │ 8 - 1 + (6-1)  = 12             │
+    │  2   │   4   │ 8 - 4 + (6-4)  = 6              │
+    │  3   │   1   │ 6 - 1 + (6-1)  = 10             │
+    │  4   │   1   │ 6 - 1 + (6-1)  = 10             │
+    │  5   │   1   │ 6 - 1 + (6-1)  = 10             │
+    └──────┴───────┴───────────────────────────────┘
+
+  Result: [8, 12, 6, 10, 10, 10]
+```
+
 ---
 
 ## Example 7: Minimum Height Trees (LeetCode 310)
@@ -365,6 +551,30 @@ func main() {
 	fmt.Println(findMinHeightTrees(4, [][]int{{1, 0}, {1, 2}, {1, 3}})) // [1]
 	fmt.Println(findMinHeightTrees(6, [][]int{{3, 0}, {3, 1}, {3, 2}, {3, 4}, {5, 4}})) // [3 4]
 }
+```
+
+**Textual Figure:**
+
+```
+Leaf-pruning — peel leaves layer by layer until ≤2 nodes remain:
+
+Test 1: n=4, edges: 1─0, 1─2, 1─3
+
+   0    2    3       Round 1: leaves = {0, 2, 3}
+    \   |   /        remaining = 4 - 3 = 1 (≤ 2) → stop
+     ┌─┴─┐
+     │ 1 │ ← center    Result: [1]
+     └───┘
+
+Test 2: n=6, edges: 3─0, 3─1, 3─2, 3─4, 5─4
+
+  0  1  2             Round 1: leaves = {0,1,2,5} (degree 1)
+   \ | /              remaining = 6 - 4 = 2 (≤ 2) → stop
+  ┌─┴─┐ ┌──┐ ┌──┐
+  │ 3 │─│ 4 │─│ 5 │   Result: [3, 4]
+  └───┘ └──┘ └──┘
+         ↑
+       centers
 ```
 
 ---
@@ -425,6 +635,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Longest weighted path — track two longest branches per node:
+
+  0 ──5── 1 ──3── 2
+           │
+           4  (weight 4)
+           │
+           3
+
+  DFS post-order from node 0:
+    Node 2: max1=0           → path=0,   return 0
+    Node 3: max1=0           → path=0,   return 0
+    Node 1: child dists: 2→0+3=3, 3→0+4=4
+             max1=4, max2=3  → path=4+3=7, best=7
+             return 4
+    Node 0: child dists: 1→4+5=9
+             max1=9, max2=0  → path=9+0=9, best=max(7,9)=9
+             return 9
+
+  Longest path: 0 ──5── 1 ──4── 3  (total weight = 9)
+  Result: 9
+```
+
 ---
 
 ## Example 9: Count Good Nodes (DP on Tree)
@@ -467,6 +702,36 @@ func main() {
 	}
 	fmt.Println("Good nodes:", goodNodes(root)) // 4 (3, 3, 4, 5)
 }
+```
+
+**Textual Figure:**
+
+```
+Good nodes — node.Val ≥ maxSoFar on path from root:
+
+          ┌───┐  maxSoFar=3, 3≥3 ✓ GOOD
+          │ 3 │
+          └─┬─┘
+        ┌──┴────┐
+     ┌──┴─┐   ┌──┴─┐
+     │  1 │   │  4 │  maxSoFar=3, 4≥3 ✓ GOOD
+     └──┬─┘   └──┬─┘
+     1<3 ✗  ┌───┴───┐
+     ┌─┘  ┌─┴──┐ ┌──┴─┐
+  ┌──┴─┐ │  1 │ │  5 │  maxSoFar=4, 5≥4 ✓ GOOD
+  │  3 │ └────┘ └────┘
+  └────┘ 1<4 ✗
+  3≥3 ✓ GOOD
+
+  DFS trace (node, maxSoFar → good?):
+    (3, 3) → ✓  maxSoFar=3
+    (1, 3) → ✗  1 < 3
+    (3, 3) → ✓  3 ≥ 3
+    (4, 3) → ✓  maxSoFar=4
+    (1, 4) → ✗  1 < 4
+    (5, 4) → ✓  5 ≥ 4
+
+  Good nodes: {3, 3, 4, 5} → count = 4
 ```
 
 ---
@@ -521,6 +786,35 @@ func main() {
 	weights := []int{1, 5, 3, 8}
 	fmt.Println("Max independent set:", maxIndependentSet(adj, weights, 0)) // 11 (3 + 8)
 }
+```
+
+**Textual Figure:**
+
+```
+Max Independent Set — dp[node][0]=exclude, dp[node][1]=include:
+
+      ┌────────┐  dp[0][0] = max(8,5) + max(0,3) = 8+3 = 11
+      │ 0 (w=1)│  dp[0][1] = 1 + dp[1][0] + dp[2][0] = 1+8+0 = 9
+      └───┬────┘
+     ┌────┴────┐
+  ┌──┴────┐ ┌──┴────┐
+  │ 1(w=5) │ │ 2(w=3) │  dp[2]=[0, 3]
+  └───┬───┘ └───────┘
+  dp[1]=[8, 5]
+      │
+  ┌───┴───┐
+  │ 3(w=8) │  dp[3]=[0, 8]  (leaf)
+  └───────┘
+
+  Post-order computation:
+    Node 3: dp[3] = [0, 8]
+    Node 1: dp[1][0] = max(0,8) = 8  (skip 1, can take 3)
+            dp[1][1] = 5 + 0 = 5    (take 1, must skip 3)
+    Node 2: dp[2] = [0, 3]          (leaf)
+    Node 0: dp[0][0] = max(8,5) + max(0,3) = 11
+            dp[0][1] = 1 + 8 + 0 = 9
+
+  Result: max(11, 9) = 11  (select nodes 3, 2 → 8+3)
 ```
 
 ---

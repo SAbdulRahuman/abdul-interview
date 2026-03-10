@@ -51,6 +51,34 @@ func main() {
 }
 ```
 
+**Textual Figure — Shrinkable: Longest Substring Without Repeats:**
+
+```
+  s = "abcabcbb"    (shrink with `for`/while)
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ a │ b │ c │ a │ b │ c │ b │ b │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+    L→                          R→
+
+  r=0: [a]       valid  max=1
+  r=1: [ab]      valid  max=2
+  r=2: [abc]     valid  max=3
+  r=3: [abca]    'a' dup → WHILE shrink:
+       L=1 [bca]  valid  max=3
+  r=4: [bcab]    'b' dup → WHILE shrink:
+       L=2 [cab]  valid  max=3
+  r=5: [cabc]    'c' dup → WHILE shrink:
+       L=3 [abc]  valid  max=3
+  r=6: [abcb]    'b' dup → WHILE shrink:
+       L=4 [cb] → L=5 [b]  max=3
+  r=7: [bb]     'b' dup → WHILE shrink:
+       L=7 [b]            max=3
+
+  Result: 3
+  Window always valid after shrink loop ✓
+```
+
 ---
 
 ## Example 2: Non-Shrinkable — Same Problem
@@ -89,6 +117,36 @@ func main() {
 		fmt.Printf("Non-shrinkable: %q → %d\n", s, longestUniqueNonShrinkable(s))
 	}
 }
+```
+
+**Textual Figure — Non-Shrinkable: Same Problem:**
+
+```
+  s = "abcabcbb"    (shrink with `if`, at most once)
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ a │ b │ c │ a │ b │ c │ b │ b │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+    L→                          R→
+
+  r=0: [a]       valid       window=1
+  r=1: [ab]      valid       window=2
+  r=2: [abc]     valid       window=3
+  r=3: [abca]    invalid → IF shrink once:
+       L=1 [bca]             window=3 (kept!)
+  r=4: [bcab]    invalid → IF shrink once:
+       L=2 [cab]             window=3 (kept!)
+  r=5: [cabc]    invalid → IF shrink once:
+       L=3 [abc]             window=3 (kept!)
+  r=6: [abcb]    invalid → IF shrink once:
+       L=4 [bcb]             window=3 (kept!)
+  r=7: [bcbb]    invalid → IF shrink once:
+       L=5 [cbb]             window=3 (kept!)
+
+  Final: len(s) - left = 8 - 5 = 3
+
+  Window may be INVALID, but size never shrinks
+  below the maximum valid size found ✓
 ```
 
 ---
@@ -148,6 +206,34 @@ func main() {
 }
 ```
 
+**Textual Figure — Side-by-Side: Shrinkable vs Non-Shrinkable:**
+
+```
+  nums = [1, 2, 1, 2, 3, 3, 4, 1, 2]    k = 2
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 2 │ 1 │ 2 │ 3 │ 3 │ 4 │ 1 │ 2 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+
+  SHRINKABLE (for):            NON-SHRINKABLE (if):
+  r=3: [1,2,1,2] valid len=4   [1,2,1,2] valid win=4
+  r=4: [1,2,1,2,3] 3 dist!     [1,2,1,2,3] 3 dist!
+       for: L=2 [1,2,3] still! for: L=1 (once)
+       for: L=3 [2,3]   ok     [2,1,2,3] win=4(kept)
+       len=2  max=4             win=4
+  r=5: [2,3,3] ok len=3        [...] win=4
+  r=6: 3 dist! shrink...       IF shrink once
+       max stays 4              win stays 4
+
+  Both return: 4  (subarray [1,2,1,2])
+
+  ┌────────────────────────────────────┐
+  │ for (while): window always valid  │
+  │ if:          window may be invalid │
+  │ Same answer for MAX LENGTH         │
+  └────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: When Shrinkable is Required
@@ -191,6 +277,33 @@ func main() {
 	fmt.Println("\n⚠️ Non-shrinkable CANNOT find minimum length!")
 	fmt.Println("   It only works for maximum length problems")
 }
+```
+
+**Textual Figure — Shrinkable Required for Minimum Length:**
+
+```
+  nums = [2, 3, 1, 2, 4, 3]    target = 7
+
+  ┌───┬───┬───┬───┬───┬───┐
+  │ 2 │ 3 │ 1 │ 2 │ 4 │ 3 │
+  └───┴───┴───┴───┴───┴───┘
+    L→                  R→
+
+  MUST use `for` (while) to shrink as much as possible:
+
+  r=3: sum=8 ≥ 7  min=4   shrink!
+       L=1 sum=6         stop
+  r=4: sum=10 ≥ 7 min=3  shrink!
+       L=2 sum=7 ≥ 7 min=3  shrink!
+       L=3 sum=6         stop
+  r=5: sum=9 ≥ 7  min=3  shrink!
+       L=4 sum=7 ≥ 7 min=2 ←  shrink!
+       L=5 sum=3         stop
+
+  Result: 2  (subarray [4,3])
+
+  ⚠️ Non-shrinkable (`if`) would only shrink once
+     and miss the optimal shorter window!
 ```
 
 ---
@@ -243,6 +356,31 @@ func main() {
 }
 ```
 
+**Textual Figure — Max Consecutive Ones III (Both Approaches):**
+
+```
+  nums = [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0]    k = 2
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 1 │ 1 │ 0 │ 0 │ 0 │ 1 │ 1 │ 1 │ 1 │ 0 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8   9  10
+
+  SHRINKABLE (for):
+  r=4: zeros=2 ≤ k  window=5  max=5
+  r=5: zeros=3 > k  → for: shrink until zeros ≤ 2
+       L goes to 4  window=2  max=5
+  r=9: [0,0,1,1,1,1] zeros=2  window=6  max=6 ←
+
+  NON-SHRINKABLE (if):
+  r=5: zeros=3 > k  → if: shrink once, L=1
+       window=5 (kept)
+  r=9: window grows to 6  max=6
+  Final: 11 - 5 = 6
+
+  Both return: 6  ✓
+```
+
 ---
 
 ## Example 6: Non-Shrinkable — Character Replacement (LC 424)
@@ -291,6 +429,35 @@ func main() {
 }
 ```
 
+**Textual Figure — Non-Shrinkable Character Replacement:**
+
+```
+  s = "AABABBA"    k = 1
+
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │ A │ A │ B │ A │ B │ B │ A │
+  └───┴───┴───┴───┴───┴───┴───┘
+    L→                      R→
+
+  windowLen - maxFreq ≤ k?  (non-shrinkable: `if`)
+
+  r=0: [A]       mxF=1  1-1=0 ≤ 1  win=1
+  r=1: [AA]      mxF=2  2-2=0 ≤ 1  win=2
+  r=2: [AAB]     mxF=2  3-2=1 ≤ 1  win=3
+  r=3: [AABA]    mxF=3  4-3=1 ≤ 1  win=4
+  r=4: [AABAB]   mxF=3  5-3=2 > 1  IF: L++
+       L=1 [ABAB]                   win=4
+  r=5: [ABABB]   mxF=3  5-3=2 > 1  IF: L++
+       L=2 [BABB]                   win=4
+  r=6: [BABBA]   mxF=3  5-3=2 > 1  IF: L++
+       L=3 [ABBA]                   win=4
+
+  Final: len(s) - left = 7 - 3 = 4
+
+  maxFreq never decreases in non-shrinkable →
+  window only grows or stays same ✓
+```
+
 ---
 
 ## Example 7: Understanding Why Non-Shrinkable Works
@@ -328,6 +495,34 @@ func main() {
 	fmt.Println("  • Window might be INVALID, but that's OK!")
 	fmt.Println("  • We only need the final window size as the answer")
 }
+```
+
+**Textual Figure — Why Non-Shrinkable Works:**
+
+```
+  s = "abcba"    (longest substring without repeats)
+
+  SHRINKABLE:                  NON-SHRINKABLE:
+  ┌───┬───┬───┬───┬───┐      ┌───┬───┬───┬───┬───┐
+  │ a │ b │ c │ b │ a │      │ a │ b │ c │ b │ a │
+  └───┴───┴───┴───┴───┘      └───┴───┴───┴───┴───┘
+
+  r=2: [abc] valid  max=3    r=2: [abc] valid   win=3
+  r=3: [abcb] dup!           r=3: [abcb] dup!
+       shrink→ [cb] max=3         IF: L=1 [bcb]  win=3
+  r=4: [cba] valid  max=3   r=4: [bcba] dup!
+                                  IF: L=2 [cba]  win=3
+
+  Shrinkable: max = 3        Non-shrinkable: 5-2 = 3
+
+  ┌──────────────────────────────────────┐
+  │ Non-shrinkable key insight:          │
+  │ Window size = "high water mark"       │
+  │ Once valid window of size k found,    │
+  │ we only look for k+1 or bigger.       │
+  │ Invalid windows are OK — they just    │
+  │ slide along without growing.          │
+  └──────────────────────────────────────┘
 ```
 
 ---
@@ -384,6 +579,35 @@ func main() {
 }
 ```
 
+**Textual Figure — Shrinkable for Counting (Max−Min ≤ k):**
+
+```
+  nums = [1, 3, 2, 4, 1]    k = 2
+
+  ┌───┬───┬───┬───┬───┐
+  │ 1 │ 3 │ 2 │ 4 │ 1 │
+  └───┴───┴───┴───┴───┘
+    L→              R→
+
+  Must shrink fully to count ALL valid subarrays:
+
+  r=0: max=1 min=1 diff=0 ≤ 2
+       valid subarrays ending at 0: [1]           count+=1 =1
+  r=1: max=3 min=1 diff=2 ≤ 2
+       valid: [3],[1,3]                           count+=2 =3
+  r=2: max=3 min=1 diff=2 ≤ 2
+       valid: [2],[3,2],[1,3,2]                   count+=3 =6
+  r=3: max=4 min=1 diff=3 > 2 → WHILE shrink!
+       L=1: max=4 min=2 diff=2 ≤ 2
+       valid: [4],[2,4],[3,2,4]                   count+=3 =9
+  r=4: max=4 min=1 diff=3 > 2 → WHILE shrink!
+       L=2: max=4 min=1... L=3: max=4 min=1...
+       L=4: max=1 min=1 diff=0 ≤ 2
+       valid: [1]                                 count+=1 =10
+
+  Result: 10 valid subarrays
+```
+
 ---
 
 ## Example 9: Shrinkable — Minimum Window Substring (LC 76)
@@ -434,6 +658,38 @@ func main() {
 	fmt.Println("\nMinimum → must use shrinkable (while)")
 	fmt.Println("Cannot use non-shrinkable for minimum problems")
 }
+```
+
+**Textual Figure — Shrinkable Minimum Window Substring:**
+
+```
+  s = "ADOBECODEBANC"    t = "ABC"
+  need: {A:1, B:1, C:1}
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ A │ D │ O │ B │ E │ C │ O │ D │ E │ B │ A │ N │ C │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8   9  10  11  12
+    L→                                             R→
+
+  Shrinkable (WHILE valid → shrink to minimize):
+
+  r=5: ADOBEC  → formed=3 (all ABC found)
+       WHILE valid: min=6  shrink L→1
+       DOBEC → lost A, formed=2  stop
+
+  r=10: expanded to find A again
+        WHILE valid: keep shrinking...
+        CODEBA  min=6
+
+  r=12: ...BANC  formed=3
+        WHILE valid: shrink!
+        BANC  min=4 ← best!
+        ANC  lost B, formed=2  stop
+
+  Result: "BANC" (length 4)
+
+  Must shrink FULLY (while) to find minimum!
 ```
 
 ---

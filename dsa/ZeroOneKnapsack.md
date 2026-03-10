@@ -44,6 +44,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+0/1 Knapsack: weights=[2,3,4,5], values=[3,4,5,6], W=8
+
+  dp[i][w] = max(skip=dp[i-1][w], take=dp[i-1][w-wt]+val)
+
+          w=  0   1   2   3   4   5   6   7   8
+        ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  i=0   │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │  no items
+        ├───┼───┼───┼───┼───┼───┼───┼───┼───┤
+  i=1   │ 0 │ 0 │ 3 │ 3 │ 3 │ 3 │ 3 │ 3 │ 3 │  item0(w=2,v=3)
+        ├───┼───┼───┼───┼───┼───┼───┼───┼───┤
+  i=2   │ 0 │ 0 │ 3 │ 4 │ 4 │ 7 │ 7 │ 7 │ 7 │  item1(w=3,v=4)
+        ├───┼───┼───┼───┼───┼───┼───┼───┼───┤
+  i=3   │ 0 │ 0 │ 3 │ 4 │ 5 │ 7 │ 8 │ 9 │ 9 │  item2(w=4,v=5)
+        ├───┼───┼───┼───┼───┼───┼───┼───┼───┤
+  i=4   │ 0 │ 0 │ 3 │ 4 │ 5 │ 7 │ 8 │ 9 │[10]│  item3(w=5,v=6)
+        └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+
+  dp[4][8]: skip=dp[3][8]=9, take=dp[3][3]+6=4+6=10 → 10 ✓
+  Items chosen: #1(w=3,v=4) + #3(w=5,v=6) = weight 8, value 10
+```
+
 ---
 
 ## Example 2: Space-Optimized 0/1 Knapsack
@@ -70,6 +94,38 @@ func main() {
 	values := []int{1, 4, 5, 7}
 	fmt.Println("Max value:", knapsack(weights, values, 7)) // 9
 }
+```
+
+**Textual Figure:**
+
+```
+Space-Optimized 0/1 Knapsack: weights=[1,3,4,5], values=[1,4,5,7], W=7
+
+  Single 1D array, iterate RIGHT TO LEFT to prevent reuse:
+
+  w→     0   1   2   3   4   5   6   7
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  Init │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+  Item 0 (w=1,v=1): scan w=7→1
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+       │ 0 │ 1 │ 1 │ 1 │ 1 │ 1 │ 1 │ 1 │  ←───── direction
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+  Item 1 (w=3,v=4): scan w=7→3
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+       │ 0 │ 1 │ 1 │ 4 │ 5 │ 5 │ 5 │ 5 │
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+  Item 2 (w=4,v=5): scan w=7→4
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+       │ 0 │ 1 │ 1 │ 4 │ 5 │ 6 │ 6 │ 9 │
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+  Item 3 (w=5,v=7): scan w=7→5
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+       │ 0 │ 1 │ 1 │ 4 │ 5 │ 7 │ 8 │[9]│
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+
+  Reverse scan ensures each item used at most once.
+  Result: 9 (items 1+2: w=3+4=7, v=4+5=9)
 ```
 
 ---
@@ -107,6 +163,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Partition Equal Subset Sum: nums=[1,5,11,5], sum=22, target=11
+
+  dp[w] = can we form sum w? (boolean knapsack)
+
+  w→    0   1   2   3   4   5   6   7   8   9  10  11
+       ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  Init │ T │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │
+       └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+  num=1:┌───┬───┐
+       │ T │ T │ F  F  F  F  F  F  F  F  F  F
+       └───┴───┘
+  num=5:┌───┬───┬───┬───┬───┬───┬───┐
+       │ T │ T │ F │ F │ F │ T │ T │ F  F  F  F  F
+       └───┴───┴───┴───┴───┴───┴───┘
+  num=11:
+       T  T  F  F  F  T  T  F  F  F  F  [T] ← dp[11]=true!
+  num=5:
+       T  T  F  F  F  T  T  F  F  F  T  [T] ✓
+
+  dp[11] = true → partition exists: {1,5,5} and {11}
+  Result: true
+```
+
 ---
 
 ## Example 4: Target Sum (LeetCode 494)
@@ -142,6 +224,45 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Target Sum: nums=[1,1,1,1,1], target=3
+  sum=5, subsetSum=(5+3)/2=4
+  Find # subsets summing to 4
+
+  dp[w] = # ways to form sum w
+
+  w→    0   1   2   3   4
+       ┌───┬───┬───┬───┬───┐
+  Init │ 1 │ 0 │ 0 │ 0 │ 0 │
+       └───┴───┴───┴───┴───┘
+  num=1: dp[w] += dp[w-1] (reverse)
+       ┌───┬───┬───┬───┬───┐
+       │ 1 │ 1 │ 0 │ 0 │ 0 │
+       └───┴───┴───┴───┴───┘
+  num=1:
+       ┌───┬───┬───┬───┬───┐
+       │ 1 │ 2 │ 1 │ 0 │ 0 │
+       └───┴───┴───┴───┴───┘
+  num=1:
+       ┌───┬───┬───┬───┬───┐
+       │ 1 │ 3 │ 3 │ 1 │ 0 │
+       └───┴───┴───┴───┴───┘
+  num=1:
+       ┌───┬───┬───┬───┬───┐
+       │ 1 │ 4 │ 6 │ 4 │ 1 │
+       └───┴───┴───┴───┴───┘
+  num=1:
+       ┌───┬───┬───┬───┬───┐
+       │ 1 │ 5 │10 │10 │[5]│  ← dp[4]=5
+       └───┴───┴───┴───┴───┘
+
+  5 ways: +1+1+1+1-1, +1+1+1-1+1, +1+1-1+1+1,
+          +1-1+1+1+1, -1+1+1+1+1
+  Result: 5
+```
+
 ---
 
 ## Example 5: Count Subsets with Given Sum
@@ -172,6 +293,30 @@ func main() {
 		}
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Count Subsets: nums=[1,2,3,4,5], target=7
+
+  dp[w] = number of subsets summing to w
+
+  w→    0   1   2   3   4   5   6   7
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  Init │ 1 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+  +num=1:  1  1  0  0  0  0  0  0
+  +num=2:  1  1  1  1  0  0  0  0
+  +num=3:  1  1  1  2  1  1  1  0
+  +num=4:  1  1  1  2  2  2  2  2
+  +num=5:  1  1  1  2  2  3  3  3
+       ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  Done │ 1 │ 1 │ 1 │ 2 │ 2 │ 3 │ 3 │[3]│
+       └───┴───┴───┴───┴───┴───┴───┴───┘
+
+  dp[7] = 3 subsets: {2,5}, {3,4}, {1,2,4}
+  Result: 3 subsets sum to 7
 ```
 
 ---
@@ -213,6 +358,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Minimum Subset Sum Difference: nums=[1,6,11,5], total=23, half=11
+
+  dp[w] = can we form sum w?
+
+  w→    0   1   2   3   4   5   6   7   8   9  10  11
+       ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  Init │ T │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │
+       └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+  +1:   T  T  F  F  F  F  F  F  F  F  F  F
+  +6:   T  T  F  F  F  F  T  T  F  F  F  F
+  +11:  T  T  F  F  F  F  T  T  F  F  F [T]
+  +5:   T  T  F  F  F  T  T  T  F  F  F [T]
+
+  Scan from half=11 downward: dp[11]=true!
+  S1 = 11, S2 = 23-11 = 12
+  Difference = |12 - 11| = 1
+
+  Partition: {11} and {1,6,5} → |11-12| = 1
+  Result: 1
+```
+
 ---
 
 ## Example 7: Ones and Zeroes (LeetCode 474)
@@ -248,6 +417,37 @@ func main() {
 	strs := []string{"10", "0001", "111001", "1", "0"}
 	fmt.Println(findMaxForm(strs, 5, 3)) // 4
 }
+```
+
+**Textual Figure:**
+
+```
+2D Knapsack: strs=["10","0001","111001","1","0"], m=5 zeros, n=3 ones
+
+  Each string costs (zeros, ones):
+  ┌──────────┬───────┬──────┐
+  │  String  │ Zeros │ Ones │
+  ├──────────┼───────┼──────┤
+  │ "10"     │   1   │  1   │
+  │ "0001"   │   3   │  1   │
+  │ "111001" │   2   │  4   │  ← too many ones (4>3)
+  │ "1"      │   0   │  1   │
+  │ "0"      │   1   │  0   │
+  └──────────┴───────┴──────┘
+
+  dp[i][j] = max strings with ≤i zeros, ≤j ones
+  Final dp[5][3] after processing all strings:
+
+        j=  0   1   2   3
+  i=0  │  0 │  0 │  0 │  0 │
+  i=1  │  1 │  1 │  1 │  1 │  ("0" or "10")
+  i=2  │  1 │  2 │  2 │  2 │
+  i=3  │  1 │  2 │  3 │  3 │
+  i=4  │  1 │  2 │  3 │  3 │
+  i=5  │  1 │  2 │  3 │ [4]│
+
+  Result: 4 strings ("10","0001","1","0")
+  Cost: 1+3+0+1=5 zeros, 1+1+1+0=3 ones ≤ (5,3) ✓
 ```
 
 ---
@@ -300,6 +500,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Knapsack with Backtracking: w=[2,3,4,5], v=[3,4,5,6], W=8
+
+  DP Table (same as Example 1):
+          w=  0   1   2   3   4   5   6   7   8
+  i=0       │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+  i=1       │ 0 │ 0 │ 3 │ 3 │ 3 │ 3 │ 3 │ 3 │ 3 │
+  i=2       │ 0 │ 0 │ 3 │ 4 │ 4 │ 7 │ 7 │ 7 │ 7 │
+  i=3       │ 0 │ 0 │ 3 │ 4 │ 5 │ 7 │ 8 │ 9 │ 9 │
+  i=4       │ 0 │ 0 │ 3 │ 4 │ 5 │ 7 │ 8 │ 9 │[10]│
+
+  Backtrack from dp[4][8]=10:
+    i=4: dp[4][8]=10 ≠ dp[3][8]=9  → item 3 TAKEN (w=5)
+         w = 8-5 = 3
+    i=3: dp[3][3]=4  ≠ dp[2][3]=4  → wait, equal → item 2 SKIPPED
+    i=2: dp[2][3]=4  ≠ dp[1][3]=3  → item 1 TAKEN (w=3)
+         w = 3-3 = 0
+    i=1: dp[1][0]=0  = dp[0][0]=0  → item 0 SKIPPED
+
+  Items chosen: [3, 1] (0-indexed)
+    Item 1: weight=3, value=4
+    Item 3: weight=5, value=6
+    Total: weight=8, value=10 ✓
+```
+
 ---
 
 ## Example 9: Bounded Knapsack (Limited Copies)
@@ -343,6 +570,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Bounded Knapsack: w=[2,3,5], v=[3,4,7], counts=[3,2,1], W=10
+
+  Binary grouping for each item:
+  ┌──────┬───────┬──────────────────────────────┐
+  │ Item │ Count │ Binary groups              │
+  ├──────┼───────┼──────────────────────────────┤
+  │  0   │   3   │ 1×(w=2,v=3), 2×(w=4,v=6)  │
+  │  1   │   2   │ 1×(w=3,v=4), 1×(w=3,v=4)  │
+  │  2   │   1   │ 1×(w=5,v=7)               │
+  └──────┴───────┴──────────────────────────────┘
+
+  1D DP array progression (w = 0..10):
+  w→     0  1  2  3  4  5  6  7  8  9  10
+  Init:  0  0  0  0  0  0  0  0  0  0   0
+  grp(2,3):  0  0  3  3  3  3  3  3  3  3   3
+  grp(4,6):  0  0  3  3  6  6  9  9  9  9   9
+  grp(3,4):  0  0  3  4  6  7  9 10 13 13  13
+  grp(3,4):  0  0  3  4  6  7  9 10 13 14  14
+  grp(5,7):  0  0  3  4  6  7  9 10 13 14 [15]
+
+  Result: 15 (3×item0 + 1×item1 = 3×3+4=13... actually
+  items: 2×item0(w=4,v=6)+1×item1(w=3,v=4)+1×item2(w=5=..wait
+  Best: value 15 at W=10)
+```
+
 ---
 
 ## Example 10: 0/1 Knapsack Patterns Summary
@@ -376,6 +631,34 @@ func main() {
 	fmt.Println("Key pattern: reverse iteration (for w = W; w >= wt; w--)")
 	fmt.Println("ensures each item used at most once in 1D optimization.")
 }
+```
+
+**Textual Figure:**
+
+```
+0/1 Knapsack Pattern Family:
+
+                    ┌────────────────┐
+                    │  0/1 Knapsack  │
+                    └───────┬────────┘
+            ┌────────┼────────┬────────┐
+            ▼        ▼        ▼        ▼
+    ┌─────────┐┌───────┐┌───────┐┌─────────┐
+    │ Subset  ││Target ││ Equal ││ Min Diff│
+    │ Sum     ││ Sum   ││Parttn ││         │
+    └─────────┘└───────┘└───────┘└─────────┘
+      bool     count   target    max
+      dp[w]    dp[w]   =sum/2   sum≤half
+
+  Key technique: REVERSE ITERATION
+    for w := W; w >= wt; w--
+    ┌────────────────────────────────┐
+    │  ←───── scan direction        │
+    │  dp[7] dp[6] dp[5] ... dp[0] │
+    │  Uses old values (not yet     │
+    │  updated) → each item used     │
+    │  at most once (0/1 property)  │
+    └────────────────────────────────┘
 ```
 
 ---

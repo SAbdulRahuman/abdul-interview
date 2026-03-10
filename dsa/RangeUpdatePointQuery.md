@@ -64,6 +64,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Difference Array (Offline RUPQ)
+n = 8, all zeros initially
+
+RangeAdd(1, 4, +5):  diff[1]+=5, diff[5]-=5
+  diff: [0, 5, 0, 0, 0,-5, 0, 0, 0]
+
+RangeAdd(2, 6, +3):  diff[2]+=3, diff[7]-=3
+  diff: [0, 5, 3, 0, 0,-5, 0,-3, 0]
+
+RangeAdd(0, 7, +1):  diff[0]+=1
+  diff: [1, 5, 3, 0, 0,-5, 0,-3, 0]
+
+Build (prefix sum of diff):
+  idx:   0  1  2  3  4  5  6  7
+  arr:  [1, 6, 9, 9, 9, 4, 4, 1]
+         │  │  │  │  │  │  │  │
+         1 +5 +3 +0 +0 -5 +0 -3
+
+  Verify idx 3: adds that cover 3 = +5(1..4) +3(2..6) +1(all) = 9 ✓
+```
+
 ---
 
 ## Example 2: BIT-Based RUPQ (Online)
@@ -116,6 +140,35 @@ func main() {
 		fmt.Println()
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+BIT-Based RUPQ (Online Difference BIT)
+n=8, BIT stores difference array
+
+After RangeAdd(1, 4, +5):
+  BIT.add(1, +5), BIT.add(5, -5)
+  PointQuery(i) = BIT.prefixSum(i)
+  arr: [0, 5, 5, 5, 5, 0, 0, 0]
+
+After RangeAdd(2, 6, +3):
+  BIT.add(2, +3), BIT.add(7, -3)
+  arr: [0, 5, 8, 8, 8, 3, 3, 0]
+
+After RangeAdd(0, 7, +1):
+  BIT.add(0, +1)
+  arr: [1, 6, 9, 9, 9, 4, 4, 1]
+
+BIT prefix sum at index i gives arr[i]:
+  PointQuery(3):
+    i=4 → bit[4]  (covers 1..4)
+    sum = 9  ✓
+
+  Key: RUPQ = PURQ on the implicit difference array
+  RangeAdd(l,r,v) → add(l,+v), add(r+1,-v)
+  PointQuery(i)   → prefixSum(0..i)
 ```
 
 ---
@@ -171,6 +224,33 @@ func main() {
 		fmt.Printf("  arr[%d] = %d\n", i, lr.PointQuery(i))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Segment Tree RUPQ (Lazy only, no merge needed)
+n=6, all zeros initially
+
+RangeAdd(0, 3, +10):
+  lazy accumulated on covering nodes
+
+       ┌─────────────┐
+       │ [0,5] lazy=0  │
+       └────┬────┬────┘
+  ┌────┴─────┐  ┌──┴──────┐
+  │[0,2] l=10│  │[3,5] l=0  │
+  └──────────┘  └──┬───────┘
+               ┌──┴─────┐ ┌──────┐
+               │[3,4] l=0│ │[5] l=0│
+               └┬────────┘ └──────┘
+         [3]=10, [4,5]=0
+
+RangeAdd(2, 5, +5):
+  After both ops:
+  PointQuery(i) = sum of lazy along root-to-leaf path
+
+  arr: [10, 10, 15, 15, 5, 5]
 ```
 
 ---
@@ -246,6 +326,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range Set (Paint) + Point Query
+n=8, initialize all to 0
+
+Paint [1,4] = 3:
+  ┌─────────────────────────────┐
+  │ 0 │ 3 │ 3 │ 3 │ 3 │ 0 │ 0 │ 0 │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+
+Paint [3,6] = 5 (overwrites [3,4]):
+  ┌─────────────────────────────┐
+  │ 0 │ 3 │ 3 │ 5 │ 5 │ 5 │ 5 │ 0 │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+
+Lazy tree: "last write wins" push-down
+  When querying i=4: traverse root → leaf
+  At each node, push lazy to children before descending
+  → leaf gets the most recent paint = 5  ✓
+
+  Key: hasOp[] flag determines if lazy should be pushed
+  paint ops compose as: new paint replaces old
+```
+
 ---
 
 ## Example 5: Corporate Flight Bookings (LeetCode 1109)
@@ -280,6 +385,36 @@ func main() {
 	fmt.Printf("Result: %v\n", result)
 	// Expected: [10, 55, 45, 25, 25]
 }
+```
+
+**Textual Figure:**
+
+```
+Corporate Flight Bookings (Difference Array)
+bookings = [[1,2,10], [2,3,20], [2,5,25]], n=5
+
+Convert to 0-indexed and apply to diff[]:
+
+  [1,2,10]: diff[0]+=10, diff[2]-=10
+    diff: [10, 0,-10, 0, 0, 0]
+
+  [2,3,20]: diff[1]+=20, diff[3]-=20
+    diff: [10, 20,-10,-20, 0, 0]
+
+  [2,5,25]: diff[1]+=25
+    diff: [10, 45,-10,-20, 0, 0]
+
+Prefix sum to get result:
+  idx:    0    1    2    3    4
+  result: 10   55   45   25   25
+           │    │    │    │    │
+          10  +45  -10  -20   +0
+
+  Flight 1: 10 seats
+  Flight 2: 10+20+25 = 55 seats
+  Flight 3: 55-10 = 45 seats
+  Flight 4: 45-20 = 25 seats
+  Flight 5: 25 seats
 ```
 
 ---
@@ -330,6 +465,31 @@ func main() {
 			t.trips, t.capacity, result, t.expected)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Car Pooling (Difference Array on Timeline)
+trips = [[2,1,5], [3,3,7]], capacity = 4
+
+Timeline diff array (passengers on/off at locations):
+  Trip [2,1,5]: diff[1]+=2, diff[5]-=2
+  Trip [3,3,7]: diff[3]+=3, diff[7]-=3
+
+  loc:  0  1  2  3  4  5  6  7
+  diff: 0  2  0  3  0 -2  0 -3
+
+  Prefix sum (current passengers):
+  loc:  0  1  2  3  4  5  6  7
+  pass: 0  2  2  5  5  3  3  0
+                  ^
+                  5 > 4 = capacity exceeded!
+
+  Result: false ✓
+
+  With capacity = 5: max passengers = 5 ≤ 5 → true
+  With trips not overlapping: passengers never exceed cap
 ```
 
 ---
@@ -402,6 +562,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range Add + Max Point Query (BIT on diff + linear scan)
+arr = [1, 5, 3, 8, 2, 7]
+
+After RangeAdd(1, 4, +10):
+  BIT diff: add(1,+10), add(5,-10)
+
+  PointQuery(i) = arr[i] + BIT.prefixSum(i)
+  idx:  0    1    2    3    4    5
+  arr: [1,  15,  13,  18,  12,   7]
+        │    │    │    │    │    │
+       +0  +10  +10  +10  +10   +0
+
+FindMax: scan all to find maximum
+  arr[3] = 18  ← maximum
+
+  Note: no O(log n) way to find max with just BIT
+  For O(log n) max queries, need segment tree with lazy
+```
+
 ---
 
 ## Example 8: 2D Range Update Point Query
@@ -464,6 +646,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+2D Range Update Point Query (2D Difference BIT)
+5×5 grid, initially all zeros
+
+RangeAdd([1,1]-[3,3], +5):
+  2D inclusion-exclusion on BIT:
+  add(1,1,+5), add(1,4,-5), add(4,1,-5), add(4,4,+5)
+
+  Grid after:
+    0  0  0  0  0
+    0  5  5  5  0
+    0  5  5  5  0
+    0  5  5  5  0
+    0  0  0  0  0
+
+RangeAdd([2,2]-[4,4], +3):
+  add(2,2,+3), add(2,5,-3), add(5,2,-3), add(5,5,+3)
+
+  Grid after:
+    0  0  0  0  0
+    0  5  5  5  0
+    0  5  8  8  3
+    0  5  8  8  3
+    0  0  3  3  3
+
+  PointQuery(2,2) = BIT.prefixSum2D(2,2) = 8  ✓
+```
+
 ---
 
 ## Example 9: Range XOR + Point Query
@@ -513,6 +725,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range XOR + Point Query (XOR is self-inverse)
+n=8, all zeros initially
+
+RangeXOR(1, 5, 7):  BIT.xor(1, 7), BIT.xor(6, 7)
+  idx:  0  1  2  3  4  5  6  7
+  arr: [0, 7, 7, 7, 7, 7, 0, 0]
+              7 = 0b00000111
+
+RangeXOR(3, 7, 3):  BIT.xor(3, 3), BIT.xor(8, 3)
+  idx:  0  1  2  3  4  5  6  7
+  arr: [0, 7, 7, 4, 4, 4, 3, 3]
+
+  idx 3: 7 XOR 3 = 0b111 XOR 0b011 = 0b100 = 4
+  idx 6: 0 XOR 3 = 3
+
+  Key: XOR is its own inverse (a XOR a = 0)
+  So BIT trick works naturally:
+    RangeXOR(l,r,v) → xor(l,v), xor(r+1,v)
+    PointQuery(i) → prefix XOR from 0 to i
+```
+
 ---
 
 ## Example 10: RUPQ Patterns Summary
@@ -550,6 +786,31 @@ func main() {
 	fmt.Println("  1094. Car Pooling (diff array)")
 	fmt.Println("  370. Range Addition (diff array, premium)")
 }
+```
+
+**Textual Figure:**
+
+```
+RUPQ Patterns — Core Duality:
+
+  PURQ (Point Update, Range Query)
+    update(i, v)     → change one element
+    query(l, r)      → aggregate over range
+
+  RUPQ (Range Update, Point Query) = PURQ on DIFF array
+    rangeAdd(l, r, v) → diff[l]+=v, diff[r+1]-=v
+    pointQuery(i)     → prefixSum(0..i)
+
+  ┌────────────────┬─────────┬─────────┬───────────────┐
+  │ Method         │ Update  │ Query   │ When to use?   │
+  ├────────────────┼─────────┼─────────┼───────────────┤
+  │ Diff array     │ O(1)    │ O(n)    │ Offline batch  │
+  │ BIT + diff     │ O(lg n) │ O(lg n) │ Online         │
+  │ Lazy seg tree  │ O(lg n) │ O(lg n) │ Flexible       │
+  │ Range set      │ O(lg n) │ O(lg n) │ Paint/assign   │
+  │ 2D BIT diff    │ O(lg²)  │ O(lg²)  │ 2D rectangle   │
+  │ XOR BIT        │ O(lg n) │ O(lg n) │ Toggle bits    │
+  └────────────────┴─────────┴─────────┴───────────────┘
 ```
 
 ---

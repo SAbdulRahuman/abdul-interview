@@ -62,6 +62,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Bucket Sort (Floats): arr = [0.78, 0.17, 0.39, 0.26, 0.72, 0.94, 0.21, 0.12, 0.23, 0.68]
+n = 10 buckets, idx = int(v × 10)
+
+  Distribute into buckets:
+  ┌──────────┬───────────────────────┐
+  │ Bucket 0 │                       │
+  │ Bucket 1 │ 0.17, 0.12            │
+  │ Bucket 2 │ 0.26, 0.21, 0.23      │
+  │ Bucket 3 │ 0.39                  │
+  │ Bucket 4 │                       │
+  │ Bucket 5 │                       │
+  │ Bucket 6 │ 0.68                  │
+  │ Bucket 7 │ 0.78, 0.72            │
+  │ Bucket 8 │                       │
+  │ Bucket 9 │ 0.94                  │
+  └──────────┴───────────────────────┘
+
+  Sort each bucket → Concatenate:
+  [0.12, 0.17, 0.21, 0.23, 0.26, 0.39, 0.68, 0.72, 0.78, 0.94]
+```
+
 ---
 
 ## Example 2: Bucket Sort for Integers
@@ -113,6 +137,29 @@ func main() {
 	bucketSortInt(arr)
 	fmt.Println(arr) // [32 33 37 42 47 51 52]
 }
+```
+
+**Textual Figure:**
+
+```
+Bucket Sort (Integers): arr = [42, 32, 33, 52, 37, 47, 51]
+min=32, max=52, range=21, 7 buckets
+idx = (v - 32) × 6 / 21
+
+  ┌──────────┬────────────────┐
+  │ Bucket 0 │ 32, 33         │  (32-34)
+  │ Bucket 1 │ 37             │  (35-37)
+  │ Bucket 2 │                │
+  │ Bucket 3 │ 42             │  (41-43)
+  │ Bucket 4 │ 47             │  (44-46)
+  │ Bucket 5 │ 51, 52         │  (50-52)
+  │ Bucket 6 │                │
+  └──────────┴────────────────┘
+
+  Sort buckets → Concatenate:
+  ┌────┬────┬────┬────┬────┬────┬────┐
+  │ 32 │ 33 │ 37 │ 42 │ 47 │ 51 │ 52 │
+  └────┴────┴────┴────┴────┴────┴────┘
 ```
 
 ---
@@ -173,6 +220,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Custom Bucket Count: arr = [29,25,3,49,9,37,21,43], numBuckets=4
+min=3, max=49, range=47/4 ≈ 11.75 per bucket
+
+  ┌──────────┬────────────────┬─────────────┐
+  │ Bucket 0 │ 3, 9           │ [3..14]     │
+  │ Bucket 1 │ 25, 21         │ [15..26]    │
+  │ Bucket 2 │ 29, 37         │ [27..38]    │
+  │ Bucket 3 │ 49, 43         │ [39..49]    │
+  └──────────┴────────────────┴─────────────┘
+
+  Sort each → Concatenate:
+  ┌───┬───┬────┬────┬────┬────┬────┬────┐
+  │ 3 │ 9 │ 21 │ 25 │ 29 │ 37 │ 43 │ 49 │
+  └───┴───┴────┴────┴────┴────┴────┴────┘
+
+  Fewer buckets → bigger buckets → more per-bucket work
+  More buckets  → smaller buckets → more overhead
+```
+
 ---
 
 ## Example 4: Top Frequent Elements Using Bucket Sort
@@ -208,6 +277,35 @@ func main() {
 	fmt.Println(topKFrequent([]int{1, 1, 1, 2, 2, 3}, 2)) // [1 2]
 	fmt.Println(topKFrequent([]int{1}, 1))                  // [1]
 }
+```
+
+**Textual Figure:**
+
+```
+Top K Frequent: nums = [1,1,1,2,2,3], k=2
+
+  Step 1 — Count frequencies:
+  ┌─────┬───────┐
+  │ Num │ Freq  │
+  ├─────┼───────┤
+  │  1  │  3    │
+  │  2  │  2    │
+  │  3  │  1    │
+  └─────┴───────┘
+
+  Step 2 — Bucket by frequency (idx = freq):
+  ┌──────────┬──────────┐
+  │ Bucket 1 │ [3]      │  ← freq=1
+  │ Bucket 2 │ [2]      │  ← freq=2
+  │ Bucket 3 │ [1]      │  ← freq=3
+  │ Bucket 4 │ []       │
+  │ Bucket 5 │ []       │
+  │ Bucket 6 │ []       │
+  └──────────┴──────────┘
+
+  Step 3 — Collect from highest bucket, k=2:
+  Bucket 3: [1] → result = [1]
+  Bucket 2: [2] → result = [1, 2]  ← done (len=k)
 ```
 
 ---
@@ -274,6 +372,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Sort Points by Distance: [(3,4),(1,1),(5,0),(0,2),(2,3)]
+
+  Compute distances from origin:
+  ┌───────┬──────────────────────┐
+  │ Point │ dist = √(x²+y²)     │
+  ├───────┼──────────────────────┤
+  │ (3,4) │ 5.00                 │
+  │ (1,1) │ 1.41                 │
+  │ (5,0) │ 5.00                 │
+  │ (0,2) │ 2.00                 │
+  │ (2,3) │ 3.61                 │
+  └───────┴──────────────────────┘
+  maxDist = 5.00, 5 buckets
+
+  ┌──────────┬─────────────────┐
+  │ Bucket 0 │                 │ [0..1)
+  │ Bucket 1 │ (1,1)           │ [1..2)
+  │ Bucket 2 │ (0,2)           │ [2..3)
+  │ Bucket 3 │ (2,3)           │ [3..4)
+  │ Bucket 4 │ (3,4),(5,0)     │ [4..5]
+  └──────────┴─────────────────┘
+
+  Sorted: (1,1) → (0,2) → (2,3) → (3,4) → (5,0)
+```
+
 ---
 
 ## Example 6: Sort Strings by Length (Bucket Sort)
@@ -309,6 +435,26 @@ func main() {
 	sorted := sortByLength(words)
 	fmt.Println(sorted) // [c go js java rust python]
 }
+```
+
+**Textual Figure:**
+
+```
+Sort Strings by Length: ["go","python","c","java","rust","js"]
+
+  Buckets indexed by string length:
+  ┌──────────┬────────────────┐
+  │ Len 1    │ "c"            │
+  │ Len 2    │ "go", "js"     │
+  │ Len 3    │                │
+  │ Len 4    │ "java", "rust" │
+  │ Len 5    │                │
+  │ Len 6    │ "python"       │
+  └──────────┴────────────────┘
+
+  Concatenate: ["c", "go", "js", "java", "rust", "python"]
+
+  Note: Within same length, original order is preserved (stable).
 ```
 
 ---
@@ -353,6 +499,27 @@ func main() {
 	// Dave(20) Bob(25) Eve(25) Alice(30) Charlie(30) — stable!
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+
+```
+Sort Ages: [(Alice,30),(Bob,25),(Charlie,30),(Dave,20),(Eve,25)]
+
+  Buckets indexed by age (0..120):
+  ┌───────────┬────────────────────────┐
+  │ Age   0  │                        │
+  │  ...     │                        │
+  │ Age  20  │ Dave                   │
+  │  ...     │                        │
+  │ Age  25  │ Bob, Eve               │  ← stable: Bob before Eve
+  │  ...     │                        │
+  │ Age  30  │ Alice, Charlie         │  ← stable: Alice before Charlie
+  │  ...     │                        │
+  └───────────┴────────────────────────┘
+
+  Result: Dave(20) Bob(25) Eve(25) Alice(30) Charlie(30)
+  Counting/bucket hybrid — O(n + k) where k=121
 ```
 
 ---
@@ -416,6 +583,30 @@ func main() {
 	fmt.Println(maximumGap([]int{10}))              // 0
 	fmt.Println(maximumGap([]int{1, 10000000}))     // 9999999
 }
+```
+
+**Textual Figure:**
+
+```
+Maximum Gap: nums = [3, 6, 9, 1]
+min=1, max=9, n=4, bucketSize = ceil(8/3) = 3
+bucketCount = (9-1)/3 + 1 = 3
+
+  Distribute (idx = (v-1)/3):
+  ┌──────────┬───────┬───────┬─────────┐
+  │ Bucket   │ Range │ Min   │ Max     │
+  ├──────────┼───────┼───────┼─────────┤
+  │ B0       │ 1-3   │ 1     │ 3       │
+  │ B1       │ 4-6   │ 6     │ 6       │
+  │ B2       │ 7-9   │ 9     │ 9       │
+  └──────────┴───────┴───────┴─────────┘
+
+  Scan gaps between consecutive buckets:
+  B0.max=3 → B1.min=6: gap = 3 ← max
+  B1.max=6 → B2.min=9: gap = 3 ← max
+
+  Pigeonhole: max gap ≥ ceil((max-min)/(n-1)) = 3
+  Answer: 3
 ```
 
 ---
@@ -483,6 +674,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Bucket Sort + Insertion Sort:
+arr = [29,25,3,49,9,37,21,43,15,8], 10 buckets
+min=3, max=49, range=47
+
+  Distribute into buckets:
+  ┌──────────┬─────────────┐
+  │ Bucket 0 │ 3             │
+  │ Bucket 1 │ 9, 8          │
+  │ Bucket 2 │ 15            │
+  │ Bucket 3 │ 21            │
+  │ Bucket 4 │ 25            │
+  │ Bucket 5 │ 29            │
+  │ Bucket 7 │ 37            │
+  │ Bucket 8 │ 43            │
+  │ Bucket 9 │ 49            │
+  └──────────┴─────────────┘
+
+  Insertion sort on B1: [9,8] → [8,9]
+  (Other buckets have ≤1 element, no sorting needed)
+
+  Concatenate: [3, 8, 9, 15, 21, 25, 29, 37, 43, 49]
+
+  Insertion sort = O(k²) for tiny k ≈ O(1) per bucket
+```
+
 ---
 
 ## Example 10: When to Use Bucket Sort
@@ -518,6 +737,33 @@ func main() {
 	fmt.Println("  │ Bucket Sort    │ Uniform dist│ O(n) average  │")
 	fmt.Println("  └────────────────┴─────────────┴───────────────┘")
 }
+```
+
+**Textual Figure:**
+
+```
+Bucket Sort Decision Guide:
+
+  ┌─────────────────────────┐
+  │ Is data uniformly      │
+  │ distributed?           │
+  └────────────┬────────────┘
+          Yes│No
+     ┌─────┴──────┬─────────────┐
+     │ Bucket Sort │ Try other   │
+     │ O(n) avg    │ algorithms  │
+     └────────────┴─────────────┘
+
+  Complexity Comparison:
+  ┌────────────────┬─────────────┬───────────────┐
+  │ Algorithm      │ Best For    │ Time          │
+  ├────────────────┼─────────────┼───────────────┤
+  │ Counting Sort  │ Small range │ O(n + k)      │
+  │ Radix Sort     │ Integers    │ O(d × (n+k))  │
+  │ Bucket Sort    │ Uniform     │ O(n) avg      │
+  │ Merge Sort     │ General     │ O(n log n)    │
+  │ Quick Sort     │ General     │ O(n log n)avg │
+  └────────────────┴─────────────┴───────────────┘
 ```
 
 ---

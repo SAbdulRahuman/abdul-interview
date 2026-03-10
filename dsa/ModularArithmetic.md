@@ -44,6 +44,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Modular Arithmetic Operations                    │
+├──────────────────────────────────────────────────┤
+│  a = 1,000,000,000    b = 999,999,999             │
+│  M = 1,000,000,007 (10⁹+7)                       │
+│                                                  │
+│  ADD: (a%M + b%M) % M                            │
+│    = (999999993 + 999999999) % M                  │
+│    = 999999985                                    │
+│                                                  │
+│  SUB: ((a%M - b%M) + M) % M   ← avoid negative   │
+│    = ((999999993 - 999999999) + M) % M            │
+│    = 1                                            │
+│                                                  │
+│  MUL: (a%M) * (b%M) % M                          │
+│    = 999999993 * 999999999 % M                    │
+│    (uses 64-bit to avoid overflow)                │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Modular Exponentiation (Fast Power)
@@ -78,6 +100,25 @@ func main() {
 	fmt.Println()
 	fmt.Println("Time complexity: O(log exp)")
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Modular Exponentiation: 2^10 mod 1000            │
+├──────────────────────────────────────────────────┤
+│  exp=10 = 1010₂                                    │
+│                                                  │
+│  Step  exp  bit  base       result                │
+│  ────  ───  ───  ─────────  ──────                │
+│   1    10    0   2²=4       1 (skip)              │
+│   2     5    1   4²=16      1×4=4                 │
+│   3     2    0   16²=256    4 (skip)              │
+│   4     1    1   256²       4×256=1024            │
+│                                                  │
+│  1024 mod 1000 = 24  ✓                            │
+│  Only log₂(10) = 4 multiplies instead of 10      │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -128,6 +169,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Modular Inverse: a⁻¹ mod p                        │
+├──────────────────────────────────────────────────┤
+│  Fermat's little theorem (p prime):               │
+│    a^(p-1) ≡ 1 (mod p)                            │
+│    a^(p-2) ≡ a⁻¹ (mod p)                          │
+│                                                  │
+│  Example: 5⁻¹ mod 10⁹+7                           │
+│    = 5^(10⁹+5) mod 10⁹+7                         │
+│    = 400000003                                    │
+│    Verify: 5 × 400000003 mod M = 1  ✓             │
+│                                                  │
+│  Extended GCD (works for any coprime mod):        │
+│    Find x,y: a·x + m·y = gcd(a,m) = 1            │
+│    Then x mod m = a⁻¹ mod m                       │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Modular Division
@@ -171,6 +232,23 @@ func main() {
 		fmt.Printf("  C(%d, %d) = %d\n", n, r, result)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Modular Division: (a/b) mod p                    │
+├──────────────────────────────────────────────────┤
+│  Can't divide mod M directly → multiply by b⁻¹   │
+│  (a/b) mod p = a × b^(p-2) mod p                  │
+│                                                  │
+│  C(10,3) mod M:                                  │
+│    num = 10×9×8 = 720                             │
+│    den = 1×2×3 = 6                                │
+│    result = 720 × 6^(M-2) mod M                   │
+│           = 720 × modInverse(6) mod M             │
+│           = 120  ✓                                │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -224,6 +302,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌───────────────────────────────────────────────────┐
+│  Precomputed Factorial / Inv Factorial             │
+├───────────────────────────────────────────────────┤
+│  Step 1: fact[i] = fact[i-1] × i mod M             │
+│    fact[0]=1  fact[1]=1  fact[2]=2  fact[3]=6     │
+│    fact[4]=24 fact[5]=120 ...                     │
+│                                                   │
+│  Step 2: invFact[N] = fact[N]^(M-2) mod M         │
+│    (single modPow call — Fermat's theorem)        │
+│                                                   │
+│  Step 3: invFact[i] = invFact[i+1]×(i+1) mod M   │
+│    Fill backwards in O(n)                         │
+│                                                   │
+│  Query: nCr(n,r) = fact[n]×invFact[r]×invFact[n-r]│
+│  O(n) setup, O(1) per query ✔                     │
+└───────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Chinese Remainder Theorem
@@ -268,6 +366,29 @@ func main() {
 	fmt.Printf("Verify: %d%%3=%d, %d%%5=%d, %d%%7=%d\n",
 		x, x%3, x, x%5, x, x%7)
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Chinese Remainder Theorem                       │
+├─────────────────────────────────────────────────┤
+│  Solve:  x ≡ 2 (mod 3)                           │
+│         x ≡ 3 (mod 5)                            │
+│         x ≡ 2 (mod 7)                            │
+│                                                 │
+│  Step 1: Combine first two:                     │
+│    x ≡ 2 (mod 3) ∧ x ≡ 3 (mod 5)                │
+│    lcm(3,5)=15, find x: 8 ≡ 2(mod3), 8≡3(mod5) │
+│    → x ≡ 8 (mod 15)                              │
+│                                                 │
+│  Step 2: Combine with third:                    │
+│    x ≡ 8 (mod 15) ∧ x ≡ 2 (mod 7)               │
+│    lcm(15,7)=105                                │
+│    → x ≡ 23 (mod 105)                            │
+│                                                 │
+│  Verify: 23%3=2✓  23%5=3✓  23%7=2✓            │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -319,6 +440,23 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Matrix Exponentiation for Fibonacci              │
+├─────────────────────────────────────────────────┤
+│  [F(n+1)]   [1  1]^n   [F(1)]                    │
+│  [F(n)  ] = [1  0]   × [F(0)]                    │
+│                                                 │
+│  M^10 via binary exp (10=1010₂):                │
+│    M¹ → M² → (skip M⁴) → M⁸                   │
+│    result = M⁸ × M² = M¹⁰                       │
+│                                                 │
+│  fib(10⁶): only ~20 matrix multiplies!          │
+│  O(8 × log n) = O(log n) per query              │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Modular Arithmetic for Large Numbers
@@ -364,6 +502,22 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Grid Paths with Modular Arithmetic             │
+├─────────────────────────────────────────────────┤
+│  Grid n×m → C(n+m-2, n-1) paths                  │
+│                                                 │
+│  3×3:  C(4,2) = 6                               │
+│  5×5:  C(8,4) = 70                              │
+│  100×100: C(198,99) mod 10⁹+7                   │
+│     num = 198×197×...×100 (mod M at each step)  │
+│     den = 99!     (mod M)                       │
+│     result = num × den^(M-2) mod M              │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Sum of Geometric Series Mod
@@ -401,6 +555,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Geometric Series Sum mod M                       │
+├──────────────────────────────────────────────────┤
+│  S = 1 + r + r² + ... + r^(n-1)                   │
+│    = (r^n - 1) / (r - 1)                         │
+│                                                  │
+│  Sum(r=2, n=10) mod M:                           │
+│    = (2¹⁰ - 1) / (2 - 1)                         │
+│    = (1024 - 1) / 1 = 1023                       │
+│                                                  │
+│  Sum(r=3, n=10) mod M:                           │
+│    num = (3¹⁰ - 1) mod M = 59048                 │
+│    den = (3 - 1)⁻¹ mod M = 2⁻¹ mod M             │
+│    S = 59048 × modInverse(2) mod M = 29524       │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Modular Arithmetic Patterns
@@ -431,6 +604,24 @@ func main() {
 		fmt.Printf("  %-18s %-35s → %s\n", p.operation, p.formula, p.note)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Modular Arithmetic Decision Tree                │
+├─────────────────────────────────────────────────┤
+│  Need  a+b mod M?  → (a%M + b%M) % M            │
+│  Need  a-b mod M?  → ((a%M - b%M) + M) % M     │
+│  Need  a*b mod M?  → (a%M) * (b%M) % M         │
+│  Need  a/b mod M?  ─┬─ M prime?                 │
+│                     ├─ Yes: a × b^(M-2) % M    │
+│                     └─ No:  Extended GCD        │
+│  Need  a^b mod M?  → Binary exponentiation      │
+│  Need  nCr mod M?  → Precompute fact[]/invFact[]│
+│  Need  fib mod M?  → Matrix exponentiation      │
+│  Multiple mods?    → Chinese Remainder Theorem  │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

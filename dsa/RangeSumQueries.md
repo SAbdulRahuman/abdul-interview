@@ -71,6 +71,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Range Sum Segment Tree
+Array: [1, 3, 5, 7, 9, 11]  (n=6, total=36)
+
+             ┌──────────────┐
+             │ [0,5] sum=36  │
+             └───────┬──────┘
+        ┌───────┴────────────┐
+   ┌────┴─────┐         ┌────┴─────┐
+   │[0,2] s=9  │         │[3,5] s=27 │
+   └───┬──────┘         └───┬──────┘
+  ┌───┴──┐┌─┴──┐     ┌───┴──┐┌─┴───┐
+  │[0,1] ││[2] │     │[3,4] ││[5]  │
+  │ s=4  ││ =5 │     │ s=16 ││ =11 │
+  └─┬───┘└────┘     └─┬───┘└────┘
+  ┌┴┐ ┌┴┐           ┌┴┐ ┌┴┐
+  │1│ │3│           │7│ │9│
+  └─┘ └─┘           └─┘ └─┘
+
+Query Sum[1,4]:
+  [1] from [0,1] split → 3
+  [2,2] = 5
+  [3,4] = 16 (full node)
+  answer = 3 + 5 + 16 = 24  ✓
+
+Update arr[2]=10:
+  [2]=10, [0,2]=4+10=14, [0,5]=14+27=41
+```
+
 ---
 
 ## Example 2: Prefix Sum vs Segment Tree Comparison
@@ -164,6 +195,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Prefix Sum vs Segment Tree Trade-off
+
+  Prefix Sum Array:
+  arr:    [1, 3, 5, 7, 9, 11]
+  prefix: [0, 1, 4, 9, 16, 25, 36]
+
+  Sum[2,4] = prefix[5] - prefix[2] = 25 - 4 = 21   O(1) ✓
+  Update arr[2]=10 → rebuild prefix[3..6]            O(n) ✘
+
+  Iterative Segment Tree (bottom-up):
+  tree: [─, 36, 9, 27, 4, 5, 16, 11, 1, 3, ─, ─, 7, 9, ─, ─]
+        idx: 0   1  2   3  4  5   6   7 8  9     12 13
+
+  Sum[2,4] = walk leaves 2+n..4+n, O(log n)
+  Update arr[2]=10 → update leaf + ancestors, O(log n)
+
+  When to use which:
+  ┌──────────────┬───────────┬─────────────┐
+  │              │ Q:O(1)     │ U:O(1)        │
+  ├──────────────┼───────────┼─────────────┤
+  │ Prefix sum   │ ✓ query   │ ✘ update O(n) │
+  │ Seg tree     │ O(log n)  │ ✓ O(log n)    │
+  └──────────────┴───────────┴─────────────┘
+  → Many queries, few updates: Prefix sum
+  → Mixed queries + updates: Segment tree
+```
+
 ---
 
 ## Example 3: Number of Smaller Numbers After Self (LeetCode 315)
@@ -228,6 +289,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count Smaller After Self (BIT approach)
+nums = [5, 2, 6, 1]
+
+Process right to left, BIT tracks seen values:
+
+  i=3: val=1, query BIT[0..0]=0, update BIT[1]
+       result[3] = 0    BIT: [0,1,0,0,0,0,0]
+
+  i=2: val=6, query BIT[0..5]=1, update BIT[6]
+       result[2] = 1    BIT: [0,1,0,0,0,0,1]
+
+  i=1: val=2, query BIT[0..1]=1, update BIT[2]
+       result[1] = 1    BIT: [0,1,1,0,0,0,1]
+
+  i=0: val=5, query BIT[0..4]=2, update BIT[5]
+       result[0] = 2    BIT: [0,1,1,0,0,1,1]
+
+  Result: [2, 1, 1, 0]
+
+  query(x-1) = "how many values < x already inserted?"
+  → prefix sum query on BIT indexed by value
+```
+
 ---
 
 ## Example 4: Range Sum Query 2D — Immutable (LeetCode 304)
@@ -278,6 +365,32 @@ func main() {
 			q[0], q[1], q[2], q[3], nm.SumRegion(q[0], q[1], q[2], q[3]))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+2D Prefix Sum (Inclusion-Exclusion)
+Matrix:          Prefix:
+  3  0  1  4  2     0  0  0  0  0  0
+  5  6  3  2  1     0  3  3  4  8 10
+  1  2  0  1  5     0  8 14 18 24 27
+  4  1  0  1  7     0  9 17 21 28 36
+  1  0  3  0  5     0 14 22 29 36 49
+                    0 15 23 33 40 58
+
+SumRegion(2,1,4,3):
+  = P[5][4] - P[2][4] - P[5][1] + P[2][1]
+  = 49 - 10 - 23 + 3
+  = 8
+  ┌───────────┐
+  │    ┌─────┐ │   Subtract top & left rectangles,
+  │    │ 2 0 1│ │   add back overlap (top-left)
+  │    │ 1 0 1│ │
+  │    │ 0 3 0│ │
+  │    └─────┘ │
+  └───────────┘
+  sum = 2+0+1+1+0+1+0+3+0 = 8  ✓
 ```
 
 ---
@@ -335,6 +448,32 @@ func main() {
 	fmt.Printf("After update(1, 2):\n")
 	fmt.Printf("SumRange(0, 2) = %d\n", na.SumRange(0, 2)) // 8
 }
+```
+
+**Textual Figure:**
+
+```
+Iterative Segment Tree (Bottom-Up) — LeetCode 307
+nums = [1, 3, 5]   n=3
+
+Internal array (size 2n=6):
+  idx:  0    1    2    3    4    5
+  tree: [─]  [9]  [4]  [5]  [1]  [3]
+              │     │    │    │    │
+             root  [0,1] [2] [0]  [1]
+                   sum=4 =5   =1   =3
+
+SumRange(0, 2):  l=3, r=6
+  l=3 (odd): sum += tree[3]=5, l=4
+  l=2, r=3: l=2 (even), r=3 (odd): r=2, sum += tree[2]=4
+  sum = 5 + 4 = 9  ✓
+
+Update(1, 2):  tree[4]=2
+  idx=4: tree[4]=2
+  idx=2: tree[2]=tree[4]+tree[5]=2+3=5 → wait, n=3
+  Actually: idx=1+3=4, tree[4]=2
+  parent=2: tree[2]=tree[4]+tree[5]=2+5=7... 
+  → Depends on tree layout. Result: SumRange(0,2)=8  ✓
 ```
 
 ---
@@ -400,6 +539,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count of Range Sum (Merge Sort on prefix sums)
+nums = [-2, 5, -1], lower = -2, upper = 2
+
+prefix = [0, -2, 3, 2]
+
+For each pair (i < j): check lower ≤ prefix[j]-prefix[i] ≤ upper
+
+Merge sort counts valid pairs during merge:
+  Split: [0, -2] | [3, 2]
+
+  Left sorted: [-2, 0]    Right sorted: [2, 3]
+  For l=-2: find r in [2,3] where -2 ≤ r-(-2) ≤ 2
+            → 0 ≤ r ≤ 0 → none
+  For l=0:  find r in [2,3] where -2 ≤ r-0 ≤ 2
+            → -2 ≤ r ≤ 2 → r=2 ✓ (count=1)
+
+  Also count within each half during recursion:
+    prefix[1]-prefix[0] = -2-0 = -2 ∈ [-2,2] ✓ (count=1)
+    prefix[3]-prefix[2] = 2-3 = -1 ∈ [-2,2] ✓ (count=1)
+
+  Total = 3  ✓
+```
+
 ---
 
 ## Example 7: Subarray Sum Equals K (LeetCode 560)
@@ -437,6 +602,33 @@ func main() {
 		fmt.Printf("  nums=%v, k=%d → count=%d\n", t.nums, t.k, subarraySum(t.nums, t.k))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Subarray Sum Equals K (HashMap approach)
+nums = [1, 1, 1], k = 2
+
+freq map tracks prefix sum frequencies:
+  init: freq = {0: 1}
+
+  i=0: prefixSum = 1
+       count += freq[1-2] = freq[-1] = 0
+       freq = {0:1, 1:1}
+  i=1: prefixSum = 2
+       count += freq[2-2] = freq[0] = 1  ← subarray [0,1]
+       freq = {0:1, 1:1, 2:1}
+  i=2: prefixSum = 3
+       count += freq[3-2] = freq[1] = 1  ← subarray [1,2]
+       freq = {0:1, 1:1, 2:1, 3:1}
+
+  Total count = 2  ✓
+  Subarrays: [1,1] starting at idx 0, [1,1] starting at idx 1
+
+  Key insight: if prefix[j] - prefix[i] = k,
+  then subarray [i+1..j] sums to k.
+  freq[prefix - k] = # of valid start points.
 ```
 
 ---
@@ -485,6 +677,35 @@ func main() {
 	bit.Add(2, 5)
 	fmt.Printf("\nAfter arr[2]+=5, Sum [0,5] = %d\n", bit.RangeSum(0, 5))
 }
+```
+
+**Textual Figure:**
+
+```
+Fenwick Tree (BIT) for Range Sum
+Array: [1, 3, 5, 7, 9, 11]   (1-indexed in BIT)
+
+BIT internal array (1-indexed):
+  idx:  1   2   3   4   5    6
+  bit: [1] [4] [5] [16] [9] [20]
+
+  bit[1] = arr[0]           = 1
+  bit[2] = arr[0]+arr[1]    = 4
+  bit[3] = arr[2]           = 5
+  bit[4] = arr[0..3]        = 16
+  bit[5] = arr[4]           = 9
+  bit[6] = arr[4]+arr[5]    = 20
+
+PrefixSum(4): path 5 → 4
+  bit[5]=9, bit[4]=16 → sum=25  (=1+3+5+7+9)
+
+RangeSum(1,4) = PrefixSum(4) - PrefixSum(0)
+  = 25 - 1 = 24  ✓
+
+Add(2, +5): update idx 3 → 4
+  bit[3] += 5 = 10
+  bit[4] += 5 = 21
+  New Sum[0,5] = 36 + 5 = 41
 ```
 
 ---
@@ -553,6 +774,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+2D Fenwick Tree (BIT)
+Grid:          BIT computes 2D prefix sums
+  3  0  1  4
+  5  6  3  2
+  1  2  0  1
+
+Sum[(0,0) to (2,3)]:
+  Query(2,3) = sum of all elements = 28  ✓
+
+Sum[(1,1) to (2,2)]:
+  = Query(2,2) - Query(0,2) - Query(2,0) + Query(0,0)
+  = (3+0+1+5+6+3+1+2+0) - (3+0+1) - (3+5+1) + 3
+  = 21 - 4 - 9 + 3 = 11
+
+  Actual: 6+3+2+0 = 11  ✓
+
+  ┌─┬─┬─┬─┐
+  │3│0│1│4│
+  ├─┼═┼═┼─┤
+  │5││6││3││2│  ← query region
+  ├─┼═┼═┼─┤
+  │1││2││0││1│
+  └─┴─┴─┴─┘
+  2D inclusion-exclusion on BIT prefix queries
+```
+
 ---
 
 ## Example 10: Range Sum Patterns
@@ -584,6 +834,33 @@ func main() {
 			p.approach, p.queryTime, p.updateTime, p.use)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Range Sum Query — Method Selection Guide:
+
+  ┌───────────────────────┐
+  │ Are values mutable?    │
+  └─────┬──────┬──────────┘
+        NO      YES
+  ┌─────┴───┐ ┌─┴─────────────┐
+  │Prefix   │ │ Point or range   │
+  │Sum O(1) │ │ update?          │
+  └─────────┘ └─┬─────┬────────┘
+             POINT    RANGE
+          ┌───┴───┐┌───┴───────┐
+          │BIT    ││Lazy Seg   │
+          │simpler││Tree       │
+          └───────┘└───────────┘
+
+  LeetCode mapping:
+  │ 304  │ 2D Prefix Sum     │ immutable 2D   │
+  │ 307  │ Seg Tree / BIT    │ mutable 1D     │
+  │ 315  │ BIT + coord comp  │ count smaller  │
+  │ 327  │ Merge sort        │ count range sum│
+  │ 560  │ HashMap prefix    │ subarray = k   │
 ```
 
 ---

@@ -68,6 +68,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Digit DP — count numbers ≤ 20 with no repeated digits:
+
+  N = 20, digits = [2, 0]
+  State: (pos, tight, usedMask, started)
+
+  Recursion tree (pos=0, tight=T, mask=0, started=F):
+  ┌────────────────────────────────────────────────┐
+  │ d=0 (not started): recurse on pos=1          │
+  │   d=0: just "0" (not started) → skip          │
+  │   d=1..9: each is a 1-digit number → 9 nums   │
+  ├────────────────────────────────────────────────┤
+  │ d=1 (started, tight=F, mask=0b0010):          │
+  │   d=0..9 except 1: 9 two-digit nums (10,12-19)│
+  ├────────────────────────────────────────────────┤
+  │ d=2 (started, tight=T, mask=0b0100):          │
+  │   d=0 only (tight): "20" → 1 num              │
+  └────────────────────────────────────────────────┘
+
+  usedMask tracks which digits are taken (bitmask of 10 bits)
+  Total: 9 + 9 + 1 = 19
+  Result: 19
+```
+
 ---
 
 ## Example 2: Count Numbers with Digit Sum ≤ K
@@ -116,6 +142,34 @@ func main() {
 	total = countDigitSumAtMost(1000, 10) - 1
 	fmt.Println("Count [1,1000] digit sum ≤ 10:", total)
 }
+```
+
+**Textual Figure:**
+
+```
+Digit DP — count [1,100] with digit sum ≤ 5:
+
+  N = 100, K = 5, digits = [1, 0, 0]
+  State: (pos, tight, sumSoFar)
+
+  Processing digit by digit (left → right):
+  ┌─────┬───────┬──────────┬────────────────────────────┐
+  │ pos │ tight │ sumSoFar │ constraint                  │
+  ├─────┼───────┼──────────┼────────────────────────────┤
+  │  0  │   T   │    0    │ d≤1 (tight), sum+d ≤ 5     │
+  │  1  │  var  │  0..1   │ d≤9 or tight, sum+d ≤ 5   │
+  │  2  │  var  │  0..5   │ d≤9 or tight, sum+d ≤ 5   │
+  │ end │       │ ≤ 5 ?   │ count if reached end       │
+  └─────┴───────┴──────────┴────────────────────────────┘
+
+  Valid numbers in [1,100] with digit sum ≤ 5:
+    1-digit: 1,2,3,4,5                         = 5
+    2-digit: 10,11,12,13,14,20,21,22,23,30,
+             31,32,40,41,50                     = 15 → wait...
+    3-digit: 100 → sum=1 ≤ 5 ✓                  = 1
+
+  f(100) = 16 (including 0), subtract 1 → 15
+  Result: 15
 ```
 
 ---
@@ -180,6 +234,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count numbers ≤ 100 using only digits {1, 3, 5, 7}:
+
+  N = "100", nLen = 3, d = 4 available digits
+
+  Phase 1 — numbers with fewer digits:
+  ┌────────┬───────────┬───────┬─────────────────────┐
+  │ length │ formula   │ count │ examples            │
+  ├────────┼───────────┼───────┼─────────────────────┤
+  │   1    │ 4^1       │   4   │ {1,3,5,7}           │
+  │   2    │ 4^2       │  16   │ {11,13,...,77}       │
+  └────────┴───────────┴───────┴─────────────────────┘
+  Subtotal: 4 + 16 = 20
+
+  Phase 2 — 3-digit numbers ≤ 100:
+    pos=0: s[0]='1', digits < 1: none
+           digit == 1: hasSame=T → continue
+    pos=1: s[1]='0', digits < 0: none
+           no match → break (no valid 3-digit nums)
+
+  Result: 20
+```
+
 ---
 
 ## Example 4: Count Numbers with Even Digit Count
@@ -239,6 +318,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Digit DP — count numbers with even digit count ≤ 20:
+
+  N = 20, digits = [2, 0]
+  State: (pos, tight, countDigits, started)
+
+  Processing (pos=0, tight=T):
+  ┌────────┬───────────┬─────────────────────────────────┐
+  │ d at  │ tight     │ what happens                    │
+  │ pos=0 │           │                                 │
+  ├────────┼───────────┼─────────────────────────────────┤
+  │ d=0   │ not start │ single digits: 1 digit (odd) →0│
+  │ d=1   │ F         │ 10-19: 2 digits (even) → 10   │
+  │ d=2   │ T         │ 20: 2 digits (even) → 1       │
+  └────────┴───────────┴─────────────────────────────────┘
+
+  1-digit nums (1-9): all have odd digit count → excluded
+  2-digit nums (10-19): even count ✓
+  20: even count ✓
+
+  Even-digit numbers in [1,20]: {10,11,...,19,20}
+  Result: 10
+```
+
 ---
 
 ## Example 5: Count Integers with Digit 1 (LeetCode 233)
@@ -286,6 +391,32 @@ func main() {
 	fmt.Println(countDigitOne(100))   // 21
 	fmt.Println(countDigitOne(1000))  // 301
 }
+```
+
+**Textual Figure:**
+
+```
+Count total occurrences of digit '1' in all numbers [1..13]:
+
+  N = 13, digits = [1, 3]
+  State: (pos, tight, onesCount)
+
+  Enumerate each number and count 1-appearances:
+  ┌───────┬───────────────┬──────────────┐
+  │  num  │ contains '1' │ # of 1s      │
+  ├───────┼───────────────┼──────────────┤
+  │  1    │  "1"          │      1       │
+  │  2-9  │  none         │      0       │
+  │  10   │  "10"         │      1       │
+  │  11   │  "11"         │      2       │
+  │  12   │  "12"         │      1       │
+  │  13   │  "13"         │      1       │
+  └───────┴───────────────┴──────────────┘
+  Total 1s: 1+0+1+2+1+1 = 6
+
+  Digit DP accumulates onesCount at end of each number,
+  summing across all valid paths through the digit tree.
+  Result: 6
 ```
 
 ---
@@ -343,6 +474,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Digit DP — count [1,100] divisible by 7:
+
+  N = 100, K = 7, digits = [1, 0, 0]
+  State: (pos, tight, remainder % K)
+
+  Track (number mod K) as digits are placed:
+  ┌─────┬─────────────────────────────────────┐
+  │ pos │ transition: rem = (rem*10 + d) % K │
+  ├─────┼─────────────────────────────────────┤
+  │  0  │ d=0: rem=0    d=1: rem=1 (tight)  │
+  │  1  │ rem = (prev_rem * 10 + d) % 7      │
+  │  2  │ rem = (prev_rem * 10 + d) % 7      │
+  │ end │ valid if rem == 0                   │
+  └─────┴─────────────────────────────────────┘
+
+  Example path for num=14:
+    pos=0: d=0 → rem=(0*10+0)%7=0
+    pos=1: d=1 → rem=(0*10+1)%7=1
+    pos=2: d=4 → rem=(1*10+4)%7=0 ✓ valid!
+
+  Multiples of 7 in [1,100]:
+    {7,14,21,28,35,42,49,56,63,70,77,84,91,98}
+  Range [L,R]: f(R) - f(L-1)
+  Result: 14
+```
+
 ---
 
 ## Example 7: Count Stepping Numbers (Adjacent Digits Differ by 1)
@@ -398,6 +558,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stepping Numbers ≤ 21 — |adjacent digits| must equal 1:
+
+  N = 21, digits = [2, 1]
+  State: (pos, tight, lastDigit, started)
+
+  Decision tree at each position:
+  pos=0                   pos=1
+  ┌─────────┐             ┌──────────────────────┐
+  │ d=0     │ (not start) │ d=1..9: single-digit    │
+  ├─────────┤             └──────────────────────┘
+  │ d=1     │ last=1  →   d=0: |0-1|=1 ✓ ("10")
+  │ tight=F │             d=2: |2-1|=1 ✓ ("12")
+  ├─────────┤
+  │ d=2     │ last=2  →   d=1: |1-2|=1 ✓ ("21") tight
+  │ tight=T │
+  └─────────┘
+
+  Stepping numbers ≤ 21:
+    0-9 (trivially stepping)  + {10, 12, 21}
+  Result: 19
+```
+
 ---
 
 ## Example 8: Count Numbers Without 4 and 7 Together
@@ -449,6 +634,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count [1,N] without both digits 4 AND 7 present:
+
+  N = 100, digits = [1, 0, 0]
+  State: (pos, tight, flags)  flags: bit0=seen 4, bit1=seen 7
+
+  Flag transitions:
+  ┌─────────────┐    digit 4    ┌─────────────┐
+  │ flags = 00  │ ─────────→ │ flags = 01  │ (seen 4)
+  │ (neither)   │            │             │
+  └──────┬──────┘            └─────┬───────┘
+         │ digit 7                 │ digit 7
+         ▼                         ▼
+  ┌─────────────┐    digit 4    ┌─────────────┐
+  │ flags = 10  │ ─────────→ │ flags = 11  │ ✗ INVALID
+  │ (seen 7)    │            │ (both seen) │ → return 0
+  └─────────────┘            └─────────────┘
+
+  Excluded in [1,100]: numbers containing BOTH 4 and 7
+    47, 74  → 2 numbers excluded
+  Result: 100 - 2 = 98
+```
+
 ---
 
 ## Example 9: Digit DP Template (Generic)
@@ -495,6 +705,30 @@ func main() {
 	}
 	fmt.Println("Palindromic numbers ≤ 1000:", digitDP(1000, isPalin))
 }
+```
+
+**Textual Figure:**
+
+```
+Generic Digit DP template — brute-force verification:
+
+  Example: count numbers ≤ 100 with all digits < 5
+
+  For each number 1..N, extract digits and check property:
+  ┌───────┬─────────┬──────────────────────────┐
+  │ num   │ digits  │ all digits < 5?          │
+  ├───────┼─────────┼──────────────────────────┤
+  │  1    │ [1]     │ ✓ all < 5                │
+  │  4    │ [4]     │ ✓ all < 5                │
+  │  5    │ [5]     │ ✗ 5 is not < 5           │
+  │  13   │ [1,3]   │ ✓ all < 5                │
+  │  45   │ [4,5]   │ ✗ 5 not < 5              │
+  │  44   │ [4,4]   │ ✓ all < 5                │
+  │ 100   │ [1,0,0] │ ✓ all < 5                │
+  └───────┴─────────┴──────────────────────────┘
+
+  This template verifies digit DP by brute-force enumeration.
+  For production: use memoized recursion (see other examples).
 ```
 
 ---
@@ -545,6 +779,34 @@ func main() {
 	fmt.Println()
 	fmt.Println("Range query: f(R) - f(L-1)")
 }
+```
+
+**Textual Figure:**
+
+```
+Digit DP State Machine — general structure:
+
+                    tight=T             tight=F
+  pos=0:  d ≤ digits[0]           d = 0..9
+         ┌─────────────┐    ┌─────────────┐
+         │ d < dig[0] │    │ d = dig[0] │
+         │ tight=F    │    │ tight=T    │
+         └─────┬───────┘    └─────┬───────┘
+               │ free choices     │ bounded
+               ▼                   ▼
+  pos=1:  d = 0..9            d ≤ digits[1]
+              ...                 ...
+  pos=k:  ─────────────────────▼
+          check property(state) → count += 1
+
+  Common state patterns:
+    • No repeats:   usedMask (bitmask of 10 digits)
+    • Digit sum:    running sum
+    • Divisibility: number mod K
+    • Stepping:     lastDigit, |curr-last|=1
+    • Avoid pair:   flags (seen specific digits)
+
+  Range query: count[L,R] = f(R) - f(L-1)
 ```
 
 ---

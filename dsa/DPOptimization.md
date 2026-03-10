@@ -40,6 +40,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Fibonacci O(1) space — two sliding variables:
+
+  n:    0   1   2   3   4   5   6   7
+  fib:  0   1   1   2   3   5   8  13
+
+  ┌──────┬───────┬───────┬──────────────────┐
+  │ Step │ prev2 │ prev1 │ curr = prev2+prev1│
+  ├──────┼───────┼───────┼──────────────────┤
+  │ init │   0   │   1   │                  │
+  │ i=2  │   0   │   1   │ 0+1 = 1          │
+  │      │   1   │   1   │ (shift →)         │
+  │ i=3  │   1   │   1   │ 1+1 = 2          │
+  │      │   1   │   2   │ (shift →)         │
+  │ i=4  │   1   │   2   │ 1+2 = 3          │
+  │      │   2   │   3   │ (shift →)         │
+  │ i=5  │   2   │   3   │ 2+3 = 5          │
+  │      │   3   │   5   │ (shift →)         │
+  │ i=6  │   3   │   5   │ 3+5 = 8          │
+  │      │   5   │   8   │ (shift →)         │
+  └──────┴───────┴───────┴──────────────────┘
+
+  Only 2 variables at any time → O(1) space
+  Result: fib(6) = 8
+```
+
 ---
 
 ## Example 2: Rolling Array — 2D → 1D
@@ -68,6 +96,33 @@ func main() {
 	values := []int{3, 4, 5, 6}
 	fmt.Println("Max value:", knapsack(weights, values, 8)) // 10
 }
+```
+
+**Textual Figure:**
+
+```
+0/1 Knapsack rolling 1D array — weights=[2,3,4,5], values=[3,4,5,6], W=8
+
+  Reverse iteration prevents reusing same item:
+
+  dp[w] initial: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                  w: 0  1  2  3  4  5  6  7  8
+
+  Item 0 (w=2, v=3): scan w=8→2
+    dp: [0, 0, 3, 3, 3, 3, 3, 3, 3]
+
+  Item 1 (w=3, v=4): scan w=8→3
+    dp: [0, 0, 3, 4, 4, 7, 7, 7, 7]
+
+  Item 2 (w=4, v=5): scan w=8→4
+    dp: [0, 0, 3, 4, 5, 7, 8, 9, 9]
+
+  Item 3 (w=5, v=6): scan w=8→5
+    dp: [0, 0, 3, 4, 5, 7, 8, 9,10]
+                                    ↑
+                              max value = 10
+
+  Reverse scan ensures dp[w-wt] reads old row values
 ```
 
 **Why reverse?** Ensures each item is used at most once — we read from dp[w-wt] before writing dp[w].
@@ -106,6 +161,34 @@ func longestCommonSubsequence(s1, s2 string) int {
 func main() {
 	fmt.Println(longestCommonSubsequence("abcde", "ace")) // 3
 }
+```
+
+**Textual Figure:**
+
+```
+LCS "abcde" vs "ace" — 1D rolling array, O(min(m,n)) space:
+
+  dp[] tracks current row, prev saves dp[j] before overwrite
+
+         ""   a   c   e
+  init: [ 0,  0,  0,  0]
+
+  i=1 (a):  a==a at j=1 → dp[1]=0+1=1
+    dp: [ 0,  1,  1,  1]
+
+  i=2 (b):  no matches
+    dp: [ 0,  1,  1,  1]
+
+  i=3 (c):  c==c at j=2 → dp[2]=prev+1=1+1=2
+    dp: [ 0,  1,  2,  2]
+
+  i=4 (d):  no matches
+    dp: [ 0,  1,  2,  2]
+
+  i=5 (e):  e==e at j=3 → dp[3]=prev+1=2+1=3
+    dp: [ 0,  1,  2,  3]
+                       ↑
+  Result: dp[3] = 3  (LCS = "ace")
 ```
 
 ---
@@ -147,6 +230,31 @@ func main() {
 		fmt.Printf("LIS of %v = %d\n", nums, lengthOfLIS(nums))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+LIS via patience sorting — tails[i] = smallest tail of IS length i+1:
+
+  nums = [10, 9, 2, 5, 3, 7, 101, 18]
+
+  ┌─────────┬────────────┬─────────────┬───────────┐
+  │  num    │  action     │  tails        │  LIS len  │
+  ├─────────┼────────────┼─────────────┼───────────┤
+  │  10     │ append      │ [10]         │    1     │
+  │   9     │ replace @0  │ [9]          │    1     │
+  │   2     │ replace @0  │ [2]          │    1     │
+  │   5     │ append      │ [2,5]        │    2     │
+  │   3     │ replace @1  │ [2,3]        │    2     │
+  │   7     │ append      │ [2,3,7]      │    3     │
+  │ 101     │ append      │ [2,3,7,101]  │    4     │
+  │  18     │ replace @3  │ [2,3,7,18]   │    4     │
+  └─────────┴────────────┴─────────────┴───────────┘
+
+  Binary search finds insertion point → O(log n) per element
+  tails always sorted → SearchInts works correctly
+  Result: len(tails) = 4
 ```
 
 ---
@@ -191,6 +299,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Monotonic deque — sliding window max, k=3:
+
+  nums = [1, 3, -1, -3, 5, 3, 6, 7]
+
+  ┌───┬────────┬──────────────────────────┬───────────────┐
+  │ i │ nums[i]│ deque (indices, front=max)│ result         │
+  ├───┼────────┼──────────────────────────┼───────────────┤
+  │ 0 │   1    │ [0]                      │                │
+  │ 1 │   3    │ [1]     (1>0, pop 0)     │                │
+  │ 2 │  -1    │ [1,2]                    │ [3]            │
+  │ 3 │  -3    │ [1,2,3]                  │ [3,3]          │
+  │ 4 │   5    │ [4]     (clear all)      │ [3,3,5]        │
+  │ 5 │   3    │ [4,5]                    │ [3,3,5,5]      │
+  │ 6 │   6    │ [6]     (clear all)      │ [3,3,5,5,6]    │
+  │ 7 │   7    │ [7]     (clear all)      │ [3,3,5,5,6,7]  │
+  └───┴────────┴──────────────────────────┴───────────────┘
+
+  Deque invariant: front = index of current window max
+  Back-pop: nums[back] ≤ nums[i] (they can never be max)
+  Front-pop: index < i-k+1 (out of window)
+  Result: [3, 3, 5, 5, 6, 7]
+```
+
 ---
 
 ## Example 6: House Robber — O(1) Space
@@ -218,6 +352,31 @@ func main() {
 	fmt.Println(rob([]int{2, 7, 9, 3, 1}))   // 12
 	fmt.Println(rob([]int{1, 2, 3, 1}))       // 4
 }
+```
+
+**Textual Figure:**
+
+```
+House Robber O(1) space — two rolling variables:
+
+  nums = [2, 7, 9, 3, 1]
+
+  ┌──────┬──────┬───────┬───────┬────────────────────────┐
+  │ Step │  num │ prev2 │ prev1 │ curr = max(p1, p2+num) │
+  ├──────┼──────┼───────┼───────┼────────────────────────┤
+  │ init │      │   0   │   0   │                        │
+  │ i=0  │  2   │   0   │   0   │ max(0, 0+2) = 2       │
+  │      │      │   0   │   2   │ (shift →)              │
+  │ i=1  │  7   │   0   │   2   │ max(2, 0+7) = 7       │
+  │      │      │   2   │   7   │ (shift →)              │
+  │ i=2  │  9   │   2   │   7   │ max(7, 2+9) = 11      │
+  │      │      │   7   │  11   │ (shift →)              │
+  │ i=3  │  3   │   7   │  11   │ max(11, 7+3) = 11     │
+  │      │      │  11   │  11   │ (shift →)              │
+  │ i=4  │  1   │  11   │  11   │ max(11, 11+1) = 12    │
+  └──────┴──────┴───────┴───────┴────────────────────────┘
+
+  Result: 12  (rob houses at index 0, 2, 4 → 2+9+1)
 ```
 
 ---
@@ -260,6 +419,28 @@ func main() {
 	fmt.Println(minDistance("horse", "ros"))         // 3
 	fmt.Println(minDistance("intention", "execution")) // 5
 }
+```
+
+**Textual Figure:**
+
+```
+Edit Distance "horse" → "ros" — two-row rolling array:
+
+  prev starts as base row, curr computed from prev:
+
+         ""   r    o    s
+  init: [ 0,  1,   2,   3]  ← prev (insert all)
+
+  h →   [ 1,  1,   2,   3]  h≠r:1+min(0,1,1)=1
+  o →   [ 2,  2,   1,   2]  o=o:diag=1
+  r →   [ 3,  2,   2,   2]  r=r:diag=2
+  s →   [ 4,  3,   3,   2]  s=s:diag=2
+  e →   [ 5,  4,   4,   3]  e≠s:1+min(2,4,3)=3
+                          ↑
+  Only prev[] and curr[] needed → O(n) space
+  After each row: swap(prev, curr)
+
+  Result: 3  (horse → rorse → rose → ros)
 ```
 
 ---
@@ -308,6 +489,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Interval DP + Prefix Sums — merge stones [3, 1, 5, 8]:
+
+  prefix = [0, 3, 4, 9, 17]
+  rangeSum(i,j) = prefix[j+1] - prefix[i]
+
+  DP table dp[i][j] = min cost to merge stones[i..j]:
+  ┌────┬─────┬─────┬─────┬─────┐
+  │i\j │  0  │  1  │  2  │  3  │
+  ├────┼─────┼─────┼─────┼─────┤
+  │  0 │  0  │  4  │ 13  │ 30  │
+  │  1 │     │  0  │  6  │ 20  │
+  │  2 │     │     │  0  │ 13  │
+  │  3 │     │     │     │  0  │
+  └────┴─────┴─────┴─────┴─────┘
+
+  Fill order (by length):
+    len=2: dp[0][1]=4   dp[1][2]=6   dp[2][3]=13
+    len=3: dp[0][2]=min(0+6+9, 4+0+9) = 13
+           dp[1][3]=min(0+13+14, 6+0+14) = 20
+    len=4: dp[0][3]=min(0+20+17, 4+13+17, 13+0+17) = 30
+
+  Prefix sums: O(1) range sum vs O(n) per query
+  Result: dp[0][3] = 30
+```
+
 ---
 
 ## Example 9: Coin Change — Eliminating Redundant States
@@ -337,6 +546,32 @@ func main() {
 	fmt.Println(coinWays([]int{1, 2, 5}, 5))  // 4 ways
 	fmt.Println(coinWays([]int{1, 2, 5}, 11)) // 11 ways
 }
+```
+
+**Textual Figure:**
+
+```
+Coin combinations (not permutations) — coins=[1,2,5], amount=5:
+
+  Outer loop: coins, Inner loop: amounts
+  dp[a] = number of ways to make amount a
+
+  dp init: [1, 0, 0, 0, 0, 0]  (1 way to make 0)
+            a: 0  1  2  3  4  5
+
+  Coin 1 (a=1→5): use only 1-cent coins
+    dp: [1, 1, 1, 1, 1, 1]
+
+  Coin 2 (a=2→5):
+    dp[2]+=dp[0]=2  dp[3]+=dp[1]=2  dp[4]+=dp[2]=3  dp[5]+=dp[3]=3
+    dp: [1, 1, 2, 2, 3, 3]
+
+  Coin 5 (a=5→5):
+    dp[5]+=dp[0]=3+1=4
+    dp: [1, 1, 2, 2, 3, 4]
+
+  Ways: {1+1+1+1+1, 1+1+1+2, 1+2+2, 5}
+  Result: dp[5] = 4
 ```
 
 ---
@@ -369,6 +604,34 @@ func main() {
 		fmt.Printf("%-20s %-10s %-12s %s\n", t.technique, t.from, t.to, t.when)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+DP Optimization decision flowchart:
+
+  ┌─────────────────────────────┐
+  │ Does dp[i] depend only on  │
+  │ dp[i-1] and dp[i-2]?       │
+  └────────────┬────────────────┘
+       yes │   no
+  ┌──────┴──────┐  ┌────────────────────────┐
+  │ Two variables │  │ Does dp[i][j] depend     │
+  │ O(n) → O(1)   │  │ only on row i-1?         │
+  └──────────────┘  └───────────┬────────────┘
+                        yes │   no
+                   ┌──────┴────────┐  ┌──────────────┐
+                   │ Rolling array   │  │ Check for:   │
+                   │ O(n·m) → O(m)   │  │ • Monotonic Q │
+                   └───────────────┘  │ • Binary srch │
+                                       │ • CHT / D&C   │
+                                       └──────────────┘
+
+  Complexity reduction:
+    Space: O(n·m) → O(m) → O(1)
+    Time:  O(n²)  → O(n log n) binary search
+           O(n·k) → O(n)     monotonic deque
 ```
 
 ---

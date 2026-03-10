@@ -65,6 +65,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Huffman Tree Construction: freq = {a:5, b:9, c:12, d:13, e:16, f:45}
+
+Step 1: Merge a(5) + b(9) = 14        Step 2: Merge c(12) + d(13) = 25
+  Min-heap: [12,13,14,16,45]            Min-heap: [14,16,25,45]
+
+Step 3: Merge 14 + 16 = 30            Step 4: Merge 25 + 30 = 55
+  Min-heap: [25,30,45]                  Min-heap: [45,55]
+
+Step 5: Merge 45 + 55 = 100 (root)
+
+             (100)
+            ┏━━━━┓
+          0┏     ┓ 1
+         (55)    f:45
+        ┏━━━┓
+      0┏     ┓ 1
+     (25)   (30)
+    ┏━━┓   ┏━━┓
+  0┏  ┓1 0┏  ┓1
+  c:12 d:13 (14) e:16
+           ┏━━┓
+         0┏  ┓1
+         a:5  b:9
+
+Root frequency: 100
+```
+
 ---
 
 ## Example 2: Generate Huffman Codes
@@ -128,6 +157,38 @@ func main() {
 		fmt.Printf("'%c': %s (freq=%d)\n", ch, code, freq[ch])
 	}
 }
+```
+
+**Textual Figure:**
+```
+Huffman Codes Generated from tree:
+
+             (100)
+            ┏━━━━┓
+          0┏     ┓ 1
+         (55)    f:45
+        ┏━━━┓
+      0┏     ┓ 1
+     (25)   (30)
+    ┏━━┓   ┏━━┓
+  0┏  ┓1 0┏  ┓1
+  c:12 d:13 (14) e:16
+           ┏━━┓
+         0┏  ┓1
+         a:5  b:9
+
+  Codes:
+  ┌──────┬──────┬────────┬───────┐
+  │ Char │ Freq │ Code   │ Bits  │
+  ├──────┼──────┼────────┼───────┤
+  │  f   │  45  │ 1      │  1    │
+  │  c   │  12  │ 000    │  3    │
+  │  d   │  13  │ 001    │  3    │
+  │  a   │   5  │ 0100   │  4    │
+  │  b   │   9  │ 0101   │  4    │
+  │  e   │  16  │ 011    │  3    │
+  └──────┴──────┴────────┴───────┘
+  Higher freq → shorter code (f gets 1 bit!)
 ```
 
 ---
@@ -221,6 +282,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Huffman Encode/Decode: "huffman coding is fun"
+
+Encode process:
+  h → code_h | u → code_u | f → code_f | ...
+  Each char mapped to variable-length bit string
+
+Decode process (traverse tree):
+  bits: 1 0 1 1 0 0 ...
+         │
+         └── start at root
+              0 → go left
+              1 → go right
+              leaf? → output char, restart at root
+
+  ┌───────────────────────────────────────┐
+  │ Original:     21 chars × 8 = 168 bits   │
+  │ Huffman:      ~70-90 bits               │
+  │ Compression:  ~50% savings               │
+  │ Decoded == Original: true ✓              │
+  └───────────────────────────────────────┘
+
+Prefix-free property ensures unique decodability
+```
+
 ---
 
 ## Example 4: Minimum Cost to Merge Files (LC 1167 variant)
@@ -270,6 +357,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Minimum Cost to Merge Files: [4, 3, 2, 6]
+
+Step-by-step (always merge two smallest):
+
+  Heap: [2, 3, 4, 6]
+
+  Step 1: Merge 2+3 = 5 (cost=5)
+    Heap: [4, 5, 6]
+         (5)
+        ┏━┓
+       2   3
+
+  Step 2: Merge 4+5 = 9 (cost=9)
+    Heap: [6, 9]
+           (9)
+          ┏━┓
+         4  (5)
+           ┏━┓
+          2   3
+
+  Step 3: Merge 6+9 = 15 (cost=15)
+    Heap: [15]
+              (15)
+             ┏━━┓
+            6   (9)
+               ┏━┓
+              4  (5)
+                ┏━┓
+               2   3
+
+  Total cost: 5 + 9 + 15 = 29
+```
+
 ---
 
 ## Example 5: Connect Ropes with Minimum Cost
@@ -312,6 +434,31 @@ func main() {
 	fmt.Println(connectRopes([]int{1, 2, 3, 4, 5}))  // 33
 	fmt.Println(connectRopes([]int{2, 4, 3}))          // 14
 }
+```
+
+**Textual Figure:**
+```
+Connect Ropes: [1, 2, 3, 4, 5]
+
+Always connect two shortest ropes:
+
+  Heap: [1, 2, 3, 4, 5]
+
+  Step 1: 1+2 = 3 (cost=3)     Heap: [3, 3, 4, 5]
+  Step 2: 3+3 = 6 (cost=6)     Heap: [4, 5, 6]
+  Step 3: 4+5 = 9 (cost=9)     Heap: [6, 9]
+  Step 4: 6+9 = 15 (cost=15)   Heap: [15]
+
+         (15)
+        ┏━━━┓
+      (6)   (9)
+     ┏━┓   ┏━┓
+   (3)  3  4   5
+   ┏━┓
+  1   2
+
+  Total cost: 3 + 6 + 9 + 15 = 33
+  (Same greedy as Huffman tree construction)
 ```
 
 ---
@@ -384,6 +531,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Huffman Compression Analysis: "aaaaaabbbbbccccdddeef"
+
+Frequencies:
+  a:6  b:5  c:4  d:3  e:2  f:1
+
+Tree construction (merge smallest pairs):
+  e(2)+f(1)=3 → d(3)+3=6 → c(4)+b(5)=9 → a(6)+6=12 → 9+12=21
+
+  ┌──────┬──────┬────────┬──────────┐
+  │ Char │ Freq │ Code   │ Bits Used │
+  ├──────┼──────┼────────┼──────────┤
+  │  a   │   6  │ ~2 bit │   12     │
+  │  b   │   5  │ ~2 bit │   10     │
+  │  c   │   4  │ ~2 bit │    8     │
+  │  d   │   3  │ ~3 bit │    9     │
+  │  e   │   2  │ ~4 bit │    8     │
+  │  f   │   1  │ ~4 bit │    4     │
+  └──────┴──────┴────────┴──────────┘
+
+  Fixed (8-bit):  21 × 8 = 168 bits
+  Huffman:        ~51 bits
+  Savings:        ~70% compression
+```
+
 ---
 
 ## Example 7: Prefix-Free Property Verification
@@ -425,6 +598,34 @@ func main() {
 	fmt.Println("  → Can decode without delimiters")
 	fmt.Println("  → Unique decodability guaranteed")
 }
+```
+
+**Textual Figure:**
+```
+Prefix-Free Property Verification
+
+┌─── Huffman codes (prefix-free) ─────────┐
+│  Codes: {0, 10, 110, 111}             │
+│                                        │
+│  0    is NOT a prefix of 10   ✓       │
+│  0    is NOT a prefix of 110  ✓       │
+│  10   is NOT a prefix of 110  ✓       │
+│  10   is NOT a prefix of 111  ✓       │
+│  110  is NOT a prefix of 111  ✓       │
+│                                        │
+│  Decode: 01011010111                   │
+│  0|10|110|10|111 → unambiguous ✓      │
+└────────────────────────────────────────┘
+
+┌─── Bad codes (NOT prefix-free) ────────┐
+│  Codes: {0, 01, 1, 10}                │
+│                                        │
+│  0 IS a prefix of 01 ✗                │
+│  1 IS a prefix of 10 ✗                │
+│                                        │
+│  "01" = (0)(1) or (01)?               │
+│  Ambiguous! Cannot decode uniquely.    │
+└────────────────────────────────────────┘
 ```
 
 ---
@@ -494,6 +695,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Huffman with Priority Queue: "go is great for golang gophers"
+
+Character frequencies (approximate):
+  ' ':5  g:4  o:4  r:3  a:2  e:2  ...
+
+Priority Queue (min-heap) processing:
+  Round 1: pop 2 least freq, merge
+  Round 2: pop 2 least freq, merge
+  ...repeat until 1 node remains
+
+  PQ: [○○○○○○○○○○○○○]  (leaf nodes)
+       ↓ merge pairs
+  PQ: [○○○○○○○]       (some internal nodes)
+       ↓ merge pairs
+  PQ: [○○○○]            (fewer nodes)
+       ↓ merge
+  PQ: [●]               (root)
+
+  Result: variable-length codes per character
+  Frequent chars (space, g, o) get shorter codes
+```
+
 ---
 
 ## Example 9: Weighted Path Length (Optimal Code Property)
@@ -545,6 +770,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Weighted Path Length: freqs = [5, 9, 12, 13, 16, 45]
+
+Huffman tree minimizes Σ(freq_i × depth_i)
+
+             (100)
+            ┏━━━━┓
+          0┏     ┓ 1
+         (55)    f:45  depth=1, cost=45×1=45
+        ┏━━━┓
+      0┏     ┓ 1
+     (25)   (30)
+    ┏━━┓   ┏━━┓
+  c:12 d:13 (14) e:16   depth=3, depth=2
+           ┏━━┓
+         a:5  b:9        depth=4
+
+  Weighted path length:
+    f: 45×1 = 45
+    c: 12×3 = 36
+    d: 13×3 = 39
+    e: 16×3 = 48
+    a:  5×4 = 20
+    b:  9×4 = 36
+    Total:    224
+
+  This equals total bits to encode the message
+```
+
 ---
 
 ## Example 10: Huffman Summary
@@ -582,6 +837,31 @@ func main() {
 	fmt.Println("  • Network data compression")
 	fmt.Println("  • Connect ropes / merge files problems")
 }
+```
+
+**Textual Figure:**
+```
+Huffman Coding Algorithm Summary
+
+┌─────────────────────────────────────────────┐
+│ Step 1: Count frequencies                    │
+│   {a:5, b:9, c:12, d:13, e:16, f:45}        │
+├─────────────────────────────────────────────┤
+│ Step 2: Build min-heap of leaf nodes          │
+│   Heap: [5, 9, 12, 13, 16, 45]               │
+├─────────────────────────────────────────────┤
+│ Step 3: While heap.size > 1:                  │
+│   Extract min1, min2                          │
+│   Create parent(freq = min1+min2)             │
+│   Insert parent back                          │
+├─────────────────────────────────────────────┤
+│ Step 4: Assign codes                          │
+│   Left edge = 0, Right edge = 1               │
+│   Traverse root to each leaf                  │
+├─────────────────────────────────────────────┤
+│ Applications:                                 │
+│   gzip, JPEG, MP3, connect ropes               │
+└─────────────────────────────────────────────┘
 ```
 
 ---

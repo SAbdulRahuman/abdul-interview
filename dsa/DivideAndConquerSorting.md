@@ -52,6 +52,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Merge Sort: arr = [38, 27, 43, 3, 9, 82, 10]
+
+  DIVIDE (split at midpoint):
+                [38, 27, 43, 3, 9, 82, 10]
+                /                         \
+        [38, 27, 43]                [3, 9, 82, 10]
+         /       \                   /          \
+      [38]    [27, 43]          [3, 9]      [82, 10]
+               /    \           /    \       /     \
+             [27]  [43]       [3]   [9]    [82]   [10]
+
+  COMBINE (merge sorted halves):
+             [27]  [43]       [3]   [9]    [82]   [10]
+               \    /           \    /       \     /
+             [27, 43]          [3, 9]      [10, 82]
+         \       /                \          /
+       [27, 38, 43]           [3, 9, 10, 82]
+                \                 /
+           [3, 9, 10, 27, 38, 43, 82]
+
+  Result: [3, 9, 10, 27, 38, 43, 82]
+```
+
 ---
 
 ## Example 2: Count Inversions (D&C Application)
@@ -98,6 +124,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count Inversions: arr = [2, 4, 1, 3, 5]
+
+  Split & count:
+              [2, 4, 1, 3, 5]
+              /              \
+          [2, 4]          [1, 3, 5]
+          /   \           /       \
+        [2]   [4]       [1]    [3, 5]
+                                /   \
+                              [3]   [5]
+
+  Merge & count inversions:
+  ┌───────────────┬───────────┐
+  │ Merge step    │ Inversions│
+  ├───────────────┼───────────┤
+  │ [2]+[4]       │ 0         │  2<4 ok
+  │ [3]+[5]       │ 0         │  3<5 ok
+  │ [1]+[3,5]     │ 0         │  1<3 ok
+  │ [2,4]+[1,3,5] │ 3         │  1<2: inv += 2 (2,4 > 1)
+  │               │           │  3<4: inv += 1 (4 > 3)
+  └───────────────┴───────────┘
+  Total inversions = 0 + 0 + 0 + 3 = 3
+  Pairs: (2,1), (4,1), (4,3) ✔
+```
+
 ---
 
 ## Example 3: Quick Select — Kth Smallest (D&C without full sort)
@@ -138,6 +192,35 @@ func main() {
 	arr := []int{7, 10, 4, 3, 20, 15}
 	fmt.Println("3rd smallest:", quickSelect(arr, 2)) // 7
 }
+```
+
+**Textual Figure:**
+
+```
+QuickSelect: arr = [7, 10, 4, 3, 20, 15], k=2 (3rd smallest)
+
+  Pick random pivot, say pivot = 10:
+  ┌────┬────┬────┬────┬────┬────┐
+  │  7 │ 10 │  4 │  3 │ 20 │ 15 │  pivot=10
+  └────┴────┴────┴────┴────┴────┘
+
+  Partition around 10:
+  ┌────┬────┬────┬────┬────┬────┐
+  │  7 │  4 │  3 │ 10 │ 20 │ 15 │
+  └────┴────┴────┴────┴────┴────┘
+     ≤ pivot       [P]    > pivot
+  pivot index = 3, k=2 → k < pivot_idx
+  → recurse on LEFT: [7, 4, 3], k=2
+
+  Partition [7, 4, 3], pivot=3:
+  ┌────┬────┬────┐
+  │  3 │  4 │  7 │  pivot=3 at idx=0, k=2
+  └────┴────┴────┘  k > 0 → recurse RIGHT [4, 7]
+
+  Partition [4, 7], pivot=7:
+  idx=1 = k-0-1=1 → found! answer = 7
+
+  Result: 3rd smallest = 7
 ```
 
 ---
@@ -207,6 +290,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Merge Sort Linked List: 4 → 2 → 1 → 3 → nil
+
+  Step 1: Find middle (slow/fast pointers)
+  4 → 2 → 1 → 3 → nil
+  s    f         (slow at 2, fast.Next at 3)
+       s         f=nil
+  Split at slow: left = 4→2, right = 1→3
+
+  Step 2: Recurse
+  Left:  4 → 2   Right: 1 → 3
+          │               │
+       split            split
+       /   \            /   \
+     [4]   [2]        [1]   [3]
+       \   /            \   /
+     merge(4,2)      merge(1,3)
+      2 → 4           1 → 3
+
+  Step 3: Merge final
+  left:  2 → 4     right: 1 → 3
+         │                │
+  compare: 2 vs 1 → take 1
+  compare: 2 vs 3 → take 2
+  compare: 4 vs 3 → take 3
+  remaining: 4
+
+  Result: 1 → 2 → 3 → 4 → nil
+```
+
 ---
 
 ## Example 5: Closest Pair of Points (D&C)
@@ -274,6 +389,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Closest Pair: points = [(2,3),(12,30),(40,50),(5,1),(12,10),(3,4)]
+
+  Step 1: Sort by X:
+  [(2,3), (3,4), (5,1), (12,10), (12,30), (40,50)]
+
+  Step 2: Divide at midpoint:
+  Left:  [(2,3), (3,4), (5,1)]     midX=5
+  Right: [(12,10), (12,30), (40,50)]
+
+  Step 3: Recurse:
+  Left brute force (n≤3):
+    dist(2,3)-(3,4) = √2 ≈ 1.414
+    dist(2,3)-(5,1) = √13 ≈ 3.606
+    dist(3,4)-(5,1) = √13 ≈ 3.606
+    dL = 1.414
+
+  Right brute force:
+    dist(12,10)-(12,30) = 20.0
+    dist(12,10)-(40,50) = √2384 ≈ 48.8
+    dist(12,30)-(40,50) = √1184 ≈ 34.4
+    dR = 20.0
+
+  d = min(1.414, 20.0) = 1.414
+
+  Step 4: Check strip (│X - midX│ < d=1.414):
+  Only (5,1) and (3,4) qualify → already checked
+
+  Result: closest distance ≈ 1.4142
+  Pair: (2,3) and (3,4)
+```
+
 ---
 
 ## Example 6: Merge K Sorted Arrays (D&C)
@@ -319,6 +468,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Merge K Sorted Arrays (D&C):
+  arrays = [[1,4,7], [2,5,8], [3,6,9], [0,10,11]]
+
+  D&C tree (merge pairs recursively):
+
+     [1,4,7]  [2,5,8]  [3,6,9]  [0,10,11]
+        \       /           \       /
+    merge([1,4,7],      merge([3,6,9],
+          [2,5,8])            [0,10,11])
+    [1,2,4,5,7,8]       [0,3,6,9,10,11]
+            \                 /
+         merge([1,2,4,5,7,8],
+               [0,3,6,9,10,11])
+
+  Final merge step:
+    L: [1,2,4,5,7,8]    R: [0,3,6,9,10,11]
+    0 < 1 → take 0
+    1 < 3 → take 1
+    2 < 3 → take 2
+    3 < 4 → take 3
+    ... continue ...
+
+  Result: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  Time: O(n log k) where k = number of arrays
+```
+
 ---
 
 ## Example 7: Power Function (D&C — Not Sorting but Core Pattern)
@@ -345,6 +523,36 @@ func main() {
 	fmt.Println(power(2, -2))   // 0.25
 	fmt.Println(power(3, 5))    // 243
 }
+```
+
+**Textual Figure:**
+
+```
+Fast Exponentiation: power(2, 10) using D&C
+
+  Recursion tree:
+  power(2, 10)
+  │ half = power(2, 5)
+  │ │ half = power(2, 2)
+  │ │ │ half = power(2, 1)
+  │ │ │ │ half = power(2, 0) = 1
+  │ │ │ │ return 1 × 1 × 2 = 2    (odd: half² × base)
+  │ │ │ return 2 × 2 = 4           (even: half²)
+  │ │ return 4 × 4 × 2 = 32       (odd: half² × base)
+  │ return 32 × 32 = 1024         (even: half²)
+
+  Only 4 multiplications instead of 10!
+  O(log n) vs O(n)
+
+  ┌─────┬──────────┬─────────┬───────────┐
+  │ exp │ even/odd │ formula │ result    │
+  ├─────┼──────────┼─────────┼───────────┤
+  │  10 │ even     │ h²      │ 32²=1024  │
+  │   5 │ odd      │ h²×b    │ 4²×2=32   │
+  │   2 │ even     │ h²      │ 2²=4     │
+  │   1 │ odd      │ h²×b    │ 1²×2=2   │
+  │   0 │ base     │ 1       │ 1        │
+  └─────┴──────────┴─────────┴───────────┘
 ```
 
 ---
@@ -405,6 +613,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Max Subarray (D&C): arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+
+  Divide at mid=4 (value -1):
+  Left:  [-2, 1, -3, 4]     Right: [-1, 2, 1, -5, 4]
+
+                    [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+                    /              │              \
+        [-2, 1, -3, 4]         crossing        [-1, 2, 1, -5, 4]
+         leftMax=4             search            rightMax=4
+                                 │
+                      from mid going left:  4+(-3)+1+(-2) → max=4
+                      from mid+1 going right: (-1)+2+1 → max=2
+                      crossMax = 4 + 2 = 6
+
+  ┌────────────┬───────┐
+  │ Region     │ Max   │
+  ├────────────┼───────┤
+  │ Left       │   4   │  subarray [4]
+  │ Right      │   4   │  subarray [4] or [2,1,-5,4]
+  │ Crossing   │   6   │  subarray [4,-1,2,1]
+  └────────────┴───────┘
+
+  Result: max(4, 4, 6) = 6  (subarray [4, -1, 2, 1])
+```
+
 ---
 
 ## Example 9: Recurrence Relations for D&C Sorting
@@ -444,6 +680,40 @@ func main() {
 	fmt.Println("  Case 2: d = log_b(a) → O(n^d log n)")
 	fmt.Println("  Case 3: d > log_b(a) → O(n^d)")
 }
+```
+
+**Textual Figure:**
+
+```
+Recurrence Relations for D&C Sorts:
+
+  Merge Sort: T(n) = 2T(n/2) + O(n)
+  ────────────────────────────
+  Level 0:  n work              │ 1 problem of size n
+  Level 1:  n work (n/2 + n/2)  │ 2 problems of size n/2
+  Level 2:  n work              │ 4 problems of size n/4
+    ...     ...                 │
+  Level k:  n work              │ 2^k problems of size n/2^k
+  ────────────────────────────
+  log₂(n) levels × O(n) per level = O(n log n)
+
+  Quick Sort worst: T(n) = T(n-1) + O(n)
+  ────────────────────────────
+  Level 0:  n
+  Level 1:  n-1
+  Level 2:  n-2
+    ...     ...
+  Level n:  1
+  Sum = n + (n-1) + ... + 1 = n(n+1)/2 = O(n²)
+
+  Master Theorem: T(n) = aT(n/b) + O(n^d)
+  ┌───────┬───────┬───────┬────────────────────┐
+  │ Algo  │ a     │ b     │ Result             │
+  ├───────┼───────┼───────┼────────────────────┤
+  │ Merge │ 2     │ 2     │ O(n log n) Case 2  │
+  │ Quick │ 2     │ 2     │ O(n log n) avg     │
+  │ QSel  │ 1     │ 2     │ O(n) Case 3        │
+  └───────┴───────┴───────┴────────────────────┘
 ```
 
 ---
@@ -486,6 +756,33 @@ func main() {
 	fmt.Println("  • Strassen's matrix multiplication")
 	fmt.Println("  • Karatsuba multiplication")
 }
+```
+
+**Textual Figure:**
+
+```
+D&C Sorting: Merge Sort vs Quick Sort
+
+  Merge Sort:                    Quick Sort:
+  ┌───────────────┐          ┌───────────────┐
+  │  [  array  ]  │          │  [  array  ]  │
+  └───────┴───────┘          └───────┴───────┘
+     easy split                  hard partition
+      /     \                     /          \
+   [L]     [R]            [≤pivot]       [>pivot]
+     \     /                \               /
+    hard merge               easy combine
+   [sorted]                  [sorted]
+
+  ┌───────────────┬──────────────┬─────────────┐
+  │ Property      │ Merge Sort   │ Quick Sort  │
+  ├───────────────┼──────────────┼─────────────┤
+  │ Divide cost   │ O(1)         │ O(n)        │
+  │ Combine cost  │ O(n) merge   │ O(1)        │
+  │ Worst case    │ O(n log n)   │ O(n²)       │
+  │ Space         │ O(n)         │ O(log n)    │
+  │ Stable        │ Yes          │ No          │
+  └───────────────┴──────────────┴─────────────┘
 ```
 
 ---

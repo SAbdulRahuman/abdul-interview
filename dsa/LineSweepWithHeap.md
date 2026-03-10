@@ -61,6 +61,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Meeting Rooms II with Min-Heap
+
+Case 1: meetings=[[0,30],[5,10],[15,20]]
+
+  Timeline:
+  0    5   10   15   20   25   30
+  ├────┼────┼────┼────┼────┼────┤
+  M1: ██████████████████████████████
+  M2:      █████
+  M3:                █████
+
+  Min-heap of end times (process sorted by start):
+    [0,30]: heap empty → push 30         heap=[30]     rooms=1
+    [5,10]: top=30 > 5 → push 10         heap=[10,30]  rooms=2
+    [15,20]: top=10 ≤ 15 → pop, push 20  heap=[20,30]  rooms=2
+
+  Answer: 2 rooms
+
+Case 2: meetings=[[7,10],[2,4]]
+    [2,4]: push 4              heap=[4]   rooms=1
+    [7,10]: top=4 ≤ 7 → pop, push 10  heap=[10]  rooms=1
+  Answer: 1 room
+```
+
 ---
 
 ## Example 2: Skyline Problem with Max-Heap
@@ -190,6 +217,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Skyline Problem with Max-Heap: [[2,9,10],[3,7,15],[5,12,12]]
+
+  Height
+   15 │     ┌─────┐
+      │     │     │
+   12 │     │     │┌───────┐
+      │     │     ││        │
+   10 │  ┌──┤     ││        │
+      │  │  │     ││        │
+    0 │──┴──┴─────┴┴────────┴───
+       2  3  5    7        12
+
+  Events (sorted by x):
+    x=2: START h=10 → push to max-heap
+      heap={10,0}, max=10, prev=0 → output [2,10]
+    x=3: START h=15 → push
+      heap={15,10,0}, max=15 → output [3,15]
+    x=5: START h=12 → push
+      heap={15,12,10,0}, max=15 (no change)
+    x=7: END h=15 → remove
+      heap={12,10,0}, max=12 → output [7,12]
+    x=9: END h=10 → remove
+      heap={12,0}, max=12 (no change)
+    x=12: END h=12 → remove
+      heap={0}, max=0 → output [12,0]
+
+  Skyline: [[2,10],[3,15],[7,12],[12,0]]
+```
+
 ---
 
 ## Example 3: Minimum Interval to Include Each Query
@@ -263,6 +322,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Minimum Interval to Include Each Query
+Intervals: [[1,4],[2,4],[3,6],[4,4]]
+Queries:   [2, 3, 4, 5]
+
+  0    1    2    3    4    5    6
+  ├────┼────┼────┼────┼────┼────┤
+  [1,4] ├────────────┤   size=4
+  [2,4]      ├────────┤   size=3
+  [3,6]           ├────────┤ size=4
+  [4,4]                ┤   size=1
+
+  Sort queries: [2,3,4,5], sort intervals by start
+
+  q=2: add intervals starting ≤2: [1,4](sz4), [2,4](sz3)
+       heap: {(3,[2,4]),(4,[1,4])}
+       smallest size=3 → answer[0]=3
+
+  q=3: add [3,6](sz4)
+       heap: {(3,[2,4]),(4,[1,4]),(4,[3,6])}
+       smallest=3 → answer[1]=3
+
+  q=4: add [4,4](sz1)
+       heap: {(1,[4,4]),(3,[2,4]),...}
+       smallest=1 → answer[2]=1
+
+  q=5: lazy-delete expired ([2,4],[1,4],[4,4] all end<5)
+       heap after deletion: {(4,[3,6])}
+       smallest=4 → answer[3]=4
+
+  Result: [3, 3, 1, 4]
+```
+
 ---
 
 ## Example 4: Maximum CPU Load
@@ -318,6 +412,38 @@ func main() {
 	}
 	fmt.Println("Max CPU load:", maxCPULoad(jobs)) // 7 (3+4)
 }
+```
+
+**Textual Figure:**
+
+```
+Maximum CPU Load with Heap: [{1,4,3},{2,5,4},{7,9,6}]
+
+  Timeline:
+  0    1    2    3    4    5    6    7    8    9
+  ├────┼────┼────┼────┼────┼────┼────┼────┼────┤
+  J1:  ├──load=3──────┤
+  J2:       ├──load=4────────┤
+  J3:                              ├──load=6────┤
+
+  Min-heap of (end, load), sweep sorted by start:
+    Process J1 (start=1): heap empty
+      push (end=4, load=3), currentLoad=3
+    Process J2 (start=2): top.end=4 > 2 (no removal)
+      push (end=5, load=4), currentLoad=3+4=7 ← MAX
+    Process J3 (start=7): top.end=4 ≤ 7 → pop (load-=3)
+                          top.end=5 ≤ 7 → pop (load-=4)
+      currentLoad=0, push (end=9, load=6)
+      currentLoad=6
+
+  Load graph:
+  7 │   ┌─────┐
+  6 │   │     │                     ┌─────┐
+  3 │┌──┤     │                     │     │
+  0 │└──┴─────┴─────────────────┴─────┘
+    1    2     4  5               7       9
+
+  Answer: max CPU load = 7
 ```
 
 ---
@@ -378,6 +504,34 @@ func main() {
 	intervals := [][]int{{1, 3}, {2, 5}, {4, 7}, {6, 8}, {5, 9}}
 	fmt.Println("K=3 tracking:", processIntervalsByEnd(intervals, 3))
 }
+```
+
+**Textual Figure:**
+
+```
+K Closest Points Using Sweep: intervals=[[1,3],[2,5],[4,7],[6,8],[5,9]], k=3
+
+Sort by start: [[1,3],[2,5],[4,7],[5,9],[6,8]]
+
+  0    2    4    6    8   10
+  ├────┼────┼────┼────┼────┤
+  [1,3] ├────┤       end=3
+  [2,5]    ├──────┤    end=5
+  [4,7]         ├──────┤  end=7
+  [5,9]           ├────────┤ end=9
+  [6,8]              ├────┤  end=8
+
+  Max-heap tracking k=3 smallest end times:
+    i=0: push 3         heap={3}
+    i=1: push 5         heap={5,3}
+    i=2: push 7         heap={7,5,3}  → k reached
+         k-th smallest end = top = 7
+    i=3: push 9, heap size>3 → pop 9
+         heap={7,5,3}, top=7
+    i=4: push 8, heap size>3 → pop 8
+         heap={7,5,3}, top=7
+
+  Result tracks k-th smallest end at each window
 ```
 
 ---
@@ -448,6 +602,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Merge K Sorted Interval Lists
+List 1: [[1,3],[6,9]]
+List 2: [[2,5],[8,12]]
+List 3: [[4,7],[11,14]]
+
+  0    2    4    6    8   10   12   14
+  ├────┼────┼────┼────┼────┼────┼────┤
+  L1: ├──┤       ├────┤
+  L2:    ├────┤       ├──────┤
+  L3:         ├────┤        ├────┤
+
+  Min-heap merge (sorted by start):
+    heap: {[1,3,L1],[2,5,L2],[4,7,L3]}
+
+    Pop [1,3]: merged=[[1,3]]     push [6,9] from L1
+    Pop [2,5]: 2≤3 overlap → [1,5]  push [8,12] from L2
+    Pop [4,7]: 4≤5 overlap → [1,7]  push [11,14] from L3
+    Pop [6,9]: 6≤7 overlap → [1,9]
+    Pop [8,12]: 8≤9 overlap → [1,12]
+    Pop [11,14]: 11≤12 overlap → [1,14]
+
+  Result:
+  [1,14] ├──────────────────────────┤
+  All intervals merge transitively into one!
+```
+
 ---
 
 ## Example 7: IPO (Initial Public Offering)
@@ -508,6 +691,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+IPO (Initial Public Offering)
+profits=[1,2,3], capital=[0,1,1], k=2, w=0
+
+Sort by capital: [{p=1,c=0},{p=2,c=1},{p=3,c=1}]
+
+  Round 1 (w=0, pick best affordable project):
+    Affordable: c≤0 → project {p=1,c=0}
+    Max-heap of profits: {1}
+    Pick top: profit=1, w = 0+1 = 1
+
+  Round 2 (w=1, pick best affordable project):
+    Affordable: c≤1 → projects {p=2,c=1},{p=3,c=1}
+    Max-heap: {3, 2}
+    Pick top: profit=3, w = 1+3 = 4
+
+  Capital growth:
+  w=0 ───[+1]───→ w=1 ───[+3]───→ w=4
+       project 1       project 3
+
+  Answer: final capital = 4
+```
+
 ---
 
 ## Example 8: Sliding Window Maximum with Heap
@@ -556,6 +764,38 @@ func main() {
 	fmt.Println(maxSlidingWindow(nums, 3))
 	// [3, 3, 5, 5, 6, 7]
 }
+```
+
+**Textual Figure:**
+
+```
+Sliding Window Maximum with Heap: nums=[1,3,-1,-3,5,3,6,7], k=3
+
+  Index:  0   1   2   3   4   5   6   7
+  Value: [1] [3] [-1][-3] [5] [3] [6] [7]
+
+  Window slides →
+  ┌───────────┐
+  │ 1  3  -1 │ -3  5  3  6  7   max-heap top: 3  (idx 1)
+  └───────────┘
+     ┌───────────┐
+   1 │ 3  -1 -3 │ 5  3  6  7   top: 3  (idx 1)
+     └───────────┘
+        ┌───────────┐
+   1  3 │-1  -3  5 │ 3  6  7   top: 5  (idx 4)
+        └───────────┘
+           ┌───────────┐
+   1  3 -1 │-3   5  3 │ 6  7   top: 5  (idx 4)
+           └───────────┘
+              ┌──────────┐
+              │ 5   3  6 │ 7   top: 6  (idx 6)
+              └──────────┘
+                 ┌─────────┐
+                 │ 3  6  7 │   top: 7  (idx 7)
+                 └─────────┘
+
+  Lazy deletion: when heap top index < window start, pop it.
+  Result: [3, 3, 5, 5, 6, 7]
 ```
 
 ---
@@ -627,6 +867,43 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Lazy Deletion Pattern
+
+  Operation trace:
+
+  Add(10,id=1), Add(20,id=2), Add(15,id=3)
+  ┌─────────────────────┐
+  │ Max-Heap:  20        │
+  │          /    \       │
+  │        10      15     │
+  └─────────────────────┘
+  Top() → 20 ✓
+
+  Remove(id=2):  mark id=2 in removed set (lazy!)
+  ┌─────────────────────┐
+  │ Heap unchanged!      │    removed = {2}
+  │ Still:  20            │
+  │        /    \          │
+  │      10      15        │
+  └─────────────────────┘
+
+  Top(): peek 20 (id=2) → id in removed! Pop it.
+         peek 15 (id=3) → not removed → return 15 ✓
+
+  Add(25,id=4):
+  ┌─────────────────────┐
+  │ Heap:   25            │
+  │        /    \          │
+  │      10      15        │
+  └─────────────────────┘
+  Top() → 25 (id=4, not removed) → return 25 ✓
+
+  Key: actual removal is O(1), deferred to when element reaches top
+```
+
 ---
 
 ## Example 10: When to Use Heap vs Other Structures
@@ -687,11 +964,43 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+When to Use Heap vs Other Structures
+
+┌────────────────────┐
+│  What do you need?  │
+└──────┬──────┬──────┘
+       │      │
+  Max/Min?  Count?  K-th element?
+       │      │         │
+  ┌────┴──┐ ┌┴────┐ ┌─┴───────┐
+  │ Heap  │ │Counter│ │Two Heaps  │
+  │O(logn)│ │ O(1)  │ │  O(logn)  │
+  └───────┘ └──────┘ └──────────┘
+       │             │
+   With deletions?  Range queries?
+       │             │
+  ┌────┴──────┐ ┌─┴──────────┐
+  │ Lazy Heap  │ │Segment Tree │
+  │ or BST     │ │  O(logn)    │
+  └───────────┘ └────────────┘
+
+  Summary:
+  ┌───────────────────┬─────────────────┬───────────────────┐
+  │ Need              │ Structure       │ Example             │
+  ├───────────────────┼─────────────────┼───────────────────┤
+  │ Track max/min     │ Heap            │ Meeting rooms       │
+  │ Max w/ deletions  │ Lazy Heap / BST │ Skyline             │
+  │ Count active      │ Counter         │ Max overlap         │
+  │ Range updates     │ Diff array      │ Flight bookings     │
+  │ K-th element      │ Two heaps       │ Median maintenance  │
+  │ Complex ranges    │ Segment tree    │ Rectangle area      │
+  └───────────────────┴─────────────────┴───────────────────┘
+```
+
 ---
-
-## Key Takeaways
-
-1. Min-heap tracks earliest ending interval → meeting room reuse
 2. Max-heap tracks highest active element → skyline problem
 3. Lazy deletion: mark as removed, pop when it reaches the top
 4. Sort events by time, process with heap for O(n log n)

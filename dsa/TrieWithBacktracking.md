@@ -93,6 +93,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Board:              Trie (from words ["oath","pea","eat","rain"]):
+┌───┬───┬───┬───┐    (root)
+│ o │ a │ a │ n │     ├─ o ─ a ─ t ─ h ★   → "oath"
+├───┼───┼───┼───┤     ├─ p ─ e ─ a ★       → "pea"
+│ e │ t │ a │ e │     ├─ e ─ a ─ t ★       → "eat"
+├───┼───┼───┼───┤     └─ r ─ a ─ i ─ n ★   → "rain"
+│ i │ h │ k │ r │
+├───┼───┼───┼───┤   DFS from each cell, following trie edges:
+│ i │ f │ l │ v │
+└───┴───┴───┴───┘   Finding "oath":
+                      (0,0)'o' → trie has 'o'
+                      (1,0)'e' → no, try (0,1)'a' → trie 'o'─'a' ✓
+                      (1,1)'t' → trie 'o'─'a'─'t' ✓
+                      (1,1)→(2,1)'h' → trie 'o'─'a'─'t'─'h' ★ FOUND!
+
+                      Trie prune: if cell char has no trie child
+                      → immediately stop DFS (no backtracking needed)
+                      Result: [oath, eat]
+```
+
 ---
 
 ## Example 2: Word Search II with Trie Pruning Optimization
@@ -181,6 +204,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Optimized Trie with count-based pruning:
+
+   (root) cnt=5
+    ├─ o cnt=2
+    │   └─ a cnt=2
+    │       └─ t cnt=2  ★ "oat"
+    │           └─ h cnt=1  ★ "oath"
+    ├─ p cnt=1 ─ e ─ a ★ "pea"
+    ├─ e cnt=1 ─ a ─ t ★ "eat"
+    └─ r cnt=1 ─ a ─ i ─ n ★ "rain"
+
+   After finding "oath":
+   • Decrement counts: h(0), t(1), a(1), o(1)
+   • h.count=0 → remove o─a─t─h branch
+   • Node 't' still has count=1 ("oat" remains)
+
+   After finding "oat":
+   • Decrement: t(0), a(0), o(0)
+   • Entire o-branch pruned (count=0)
+   • Future DFS skips 'o' entirely!
+
+   Progressive pruning: each found word shrinks search space.
+```
+
 ---
 
 ## Example 3: Boggle Solver
@@ -251,6 +301,26 @@ func main() {
 	dict := []string{"geeks", "quiz", "seek", "gee", "gig", "key"}
 	fmt.Println("Boggle words:", solveBoggle(grid, dict))
 }
+```
+
+**Textual Figure:**
+
+```
+Boggle grid (8-directional):      Dictionary Trie:
+┌───┬───┬───┐                      (root)
+│ g │ i │ z │                       ├─ g
+├───┼───┼───┤                       │   ├─ e ─ e ★ → "gee"
+│ u │ e │ k │                       │   │       └─ k ─ s ★ → "geeks"
+├───┼───┼───┤                       │   └─ i ─ g ★ → "gig"
+│ q │ s │ e │                       ├─ k ─ e ─ y ★ → "key"
+└───┴───┴───┘                       ├─ q ─ u ─ i ─ z ★ → "quiz"
+                                    └─ s ─ e ─ e ─ k ★ → "seek"
+   DFS from (0,0) 'g':
+   g(0,0) → e(1,1) → e(2,2) ★ "gee" found!
+              └→ k(1,2) → s(2,1) ★ "geeks" found!
+   g(0,0) → i(0,1) → no 'g' neighbor with trie match
+
+   8 directions per cell + trie pruning = efficient search.
 ```
 
 ---
@@ -328,6 +398,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+s = "catsanddog", dict = ["cat", "cats", "and", "sand", "dog"]
+
+   Dictionary Trie:
+   (root)
+    ├─ c ─ a ─ t ★ → "cat"
+    │           └─ s ★ → "cats"
+    ├─ a ─ n ─ d ★ → "and"
+    ├─ s ─ a ─ n ─ d ★ → "sand"
+    └─ d ─ o ─ g ★ → "dog"
+
+   Backtracking word break:
+   pos=0: walk trie with "catsanddog"...
+     ├─ c─a─t ★ match "cat" at pos=3
+     │   pos=3: walk trie with "sanddog"...
+     │     └─ s─a─n─d ★ match "sand" at pos=7
+     │         pos=7: walk trie with "dog"...
+     │           └─ d─o─g ★ match! → "cat sand dog" ✓
+     └─ c─a─t─s ★ match "cats" at pos=4
+         pos=4: walk trie with "anddog"...
+           └─ a─n─d ★ match "and" at pos=7
+               pos=7: walk trie with "dog"...
+                 └─ d─o─g ★ match! → "cats and dog" ✓
+
+   Result: ["cats and dog", "cat sand dog"]
+```
+
 ---
 
 ## Example 5: Generate Valid Words from Letter Tiles (LeetCode 1079-style)
@@ -388,6 +487,36 @@ func main() {
 	dict := []string{"cat", "bat", "cab", "act", "tac", "abc", "ab", "at"}
 	fmt.Println("Valid words from tiles:", countValidWords(tiles, dict))
 }
+```
+
+**Textual Figure:**
+
+```
+Tiles: "aabcct"  → freq: {a:2, b:1, c:2, t:1}
+Dict: ["cat","bat","cab","act","tac","abc","ab","at"]
+
+   Dictionary Trie:
+   (root)
+    ├─ a
+    │   ├─ b ★ → "ab"       ├─ c ─ t ★ → "act"
+    │   │   └─ c ★ → "abc"  └─ t ★ → "at"
+    ├─ b ─ a ─ t ★ → "bat"
+    ├─ c ─ a
+    │       ├─ b ★ → "cab"
+    │       └─ t ★ → "cat"
+    └─ t ─ a ─ c ★ → "tac"
+
+   Backtracking with freq array:
+   Try 'a' (freq[a]=2→1):
+     Try 'b' (freq[b]=1→0): "ab" ★ found!
+       Try 'c' (freq[c]=2→1): "abc" ★ found!
+     Try 'c' (freq[c]=2→1):
+       Try 't' (freq[t]=1→0): "act" ★ found!
+     Try 't' (freq[t]=1→0): "at" ★ found!
+   Try 'c' (freq[c]=2→1):
+     Try 'a' (freq[a]=2→1):
+       Try 'b': "cab" ★   Try 't': "cat" ★
+   ... (continues for all valid permutations)
 ```
 
 ---
@@ -468,6 +597,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Words: ["abcd", "dcba", "lls", "s", "sssll"]
+
+   Reversed-word Trie (insert each word reversed):
+   (root)
+    ├─ d ─ c ─ b ─ a ★ idx=0   rev("abcd")
+    ├─ a ─ b ─ c ─ d ★ idx=1   rev("dcba")
+    ├─ s
+    │   ├─ l ─ l ★       idx=2   rev("lls")
+    │   └─ (★)           idx=3   rev("s")
+    └─ l ─ l ─ s ─ s ─ s ★ idx=4  rev("sssll")
+
+   Palindrome detection:
+   Walk word[i] through reversed trie:
+   ┌───────┬───────────────┬─────────────────────────────┐
+   │ Pair  │ Concatenation │ Why palindrome?             │
+   ├───────┼───────────────┼─────────────────────────────┤
+   │ [0,1] │ abcd|dcba     │ word = exact reverse        │
+   │ [1,0] │ dcba|abcd     │ word = exact reverse        │
+   │ [3,2] │ s|lls         │ "s" + "lls" = "slls"         │
+   │ [2,4] │ lls|sssll     │ "lls" + "sssll" = "llssssll" │
+   └───────┴───────────────┴─────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Trie-Guided DFS for Maximum XOR
@@ -524,6 +679,39 @@ func main() {
 	fmt.Printf("Maximum XOR: %d\n", findMaxXOR(nums))
 	// 5 XOR 25 = 28
 }
+```
+
+**Textual Figure:**
+
+```
+Nums: [3, 10, 5, 25, 2, 8] → find max XOR pair
+
+   Binary Bit-Trie (32-bit, showing last 5 bits):
+   (root)
+    ├─ 0
+    │   ├─ 0
+    │   │   ├─ 0
+    │   │   │   ├─ 1 ─ 0  → 2  (00010)
+    │   │   │   └─ 1 ─ 1  → 3  (00011)
+    │   │   └─ 1
+    │   │       └─ 0 ─ 1  → 5  (00101)
+    │   └─ 1
+    │       ├─ 0
+    │       │   └─ 0 ─ 0  → 8  (01000)
+    │       └─ 0
+    │           └─ 1 ─ 0  → 10 (01010)
+    └─ 1
+        └─ 1
+            └─ 0
+                └─ 0 ─ 1  → 25 (11001)
+
+   Greedy XOR for num=5 (00101):
+   Bit 4: want 1, have 1 → take it! XOR bit set
+   Bit 3: want 1, have 1 → take it!
+   Bit 2: want 1, have 0 → take 0
+   Bit 1: want 0, have 0 → take 0
+   Bit 0: want 0, have 1 → take 1
+   Result: 5 XOR 25 = 11100 = 28  ← Maximum!
 ```
 
 ---
@@ -627,6 +815,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Word Ladder: "hit" → "cog", words=["hot","dot","dog","lot","log","cog"]
+
+   Word Trie (for neighbor lookup):
+   (root)
+    ├─ h ─ o ─ t ★   ├─ d
+    │                │   ├─ o
+    │                │   │   ├─ t ★  → "dot"
+    │                │   │   └─ g ★  → "dog"
+    ├─ l ─ o         │
+    │       ├─ t ★   │   → "lot"
+    │       └─ g ★   │   → "log"
+    └─ c ─ o ─ g ★   │   → "cog"
+
+   BFS with trie-based neighbor finding:
+   ┌───────┬─────────────────────────────────┐
+   │ Step  │ Word → Neighbors (1 edit)  │
+   ├───────┼─────────────────────────────────┤
+   │ 1     │ "hit" → ["hot"]            │
+   │ 2     │ "hot" → ["dot", "lot"]     │
+   │ 3     │ "dot" → ["dog"]            │
+   │ 3     │ "lot" → ["log"]            │
+   │ 4     │ "dog" → ["cog"] ★ FOUND!  │
+   └───────┴─────────────────────────────────┘
+   Answer: 5 steps (hit→hot→dot→dog→cog)
+```
+
 ---
 
 ## Example 9: Phone Number Letter Combinations with Trie Filter
@@ -691,6 +908,35 @@ func main() {
 	dict := []string{"cat", "bat", "act", "cab", "abt", "bau", "cav"}
 	fmt.Printf("Digits '%s' → valid words: %v\n", digits, phoneCombinations(digits, dict))
 }
+```
+
+**Textual Figure:**
+
+```
+Digits: "228"  Phone map: 2→abc, 8→tuv
+Valid words: ["cat","bat","act","cab","abt","bau","cav"]
+
+   Dictionary Trie:                  Phone digit mapping:
+   (root)                            ┌───┬───────┐
+    ├─ a                             │ 2 │ a,b,c │
+    │   ├─ b ─ t ★ → "abt"           │ 8 │ t,u,v │
+    │   └─ c ─ t ★ → "act"           └───┴───────┘
+    ├─ b
+    │   └─ a
+    │       ├─ t ★ → "bat"
+    │       └─ u ★ → "bau"
+    └─ c
+        └─ a
+            ├─ b ★ → "cab"
+            ├─ t ★ → "cat"
+            └─ v ★ → "cav"
+
+   Digit "2": try a,b,c → check trie children
+   Digit "2": try a,b,c → check next level
+   Digit "8": try t,u,v → check isEnd
+
+   Trie prune: digit '2' at pos 1 for path 'a'→
+     only 'b','c' have trie children (skip rest).
 ```
 
 ---
@@ -780,6 +1026,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Crossword grid with blanks:     Dictionary Trie:
+┌───┬───┬───┐                     (root)
+│ c │ _ │ t │                      ├─ c
+├───┼───┼───┤                      │   ├─ a ─ t ★  → "cat"
+│ _ │ _ │ _ │                      │   ├─ a ─ r ★  → "car"
+├───┼───┼───┤                      │   └─ o ─ t ★  → "cot"
+│ d │ _ │ g │                      └─ d
+└───┴───┴───┘                          ├─ o
+                                        │   ├─ t ★ → "dot"
+  Row 0: c _ t                          │   └─ g ★ → "dog"
+  DFS: c → trie has 'c'                 ├─ i ─ g ★ → "dig"
+    _ → try all: a,o match              └─ u ─ g ★ → "dug"
+    t → check isEnd:
+      c-a-t ★ "cat" ✓
+      c-o-t ★ "cot" ✓
+
+  Row 2: d _ g
+  DFS: d → trie 'd'
+    _ → try: i,o,u match
+    g → check: d-i-g ★, d-o-g ★, d-u-g ★
+  Fits: [dig, dog, dug]
+```
+
 ---
 
 ## Example 11: Auto-Complete with Ranked DFS
@@ -865,6 +1137,36 @@ func main() {
 	fmt.Println("Top 3 for 'ap':", trie.Autocomplete("ap", 3))
 	fmt.Println("Top 3 for 'app':", trie.Autocomplete("app", 3))
 }
+```
+
+**Textual Figure:**
+
+```
+Insert with frequencies:
+   (root)
+    └─ a
+        └─ p
+            ├─ p
+            │   ├─ l
+            │   │   ├─ e ★  freq=100  → "apple"
+            │   │   └─ y ★  freq=60   → "apply"
+            │   └─ l ─ i ─ c ─ a ─ t ─ i ─ o ─ n ★
+            │                               freq=80 → "application"
+            ├─ t ★        freq=40   → "apt"
+            └─ e
+                └─ x ★    freq=20   → "apex"
+
+   Autocomplete("ap", 3):
+   1. Navigate: root─a─p
+   2. DFS collect all: apple(100), application(80),
+                       apply(60), apt(40), ape(30), apex(20)
+   3. Sort by freq: apple, application, apply
+   4. Return top-3: [apple(100), application(80), apply(60)]
+
+   Autocomplete("app", 3):
+   1. Navigate: root─a─p─p
+   2. DFS: apple(100), application(80), apply(60)
+   3. Return: [apple(100), application(80), apply(60)]
 ```
 
 ---

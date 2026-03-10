@@ -70,6 +70,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Array: [1, 3, 5, 7, 9, 11]   (0-indexed: indices 0..5)
+BIT uses 1-indexed tree[1..6]
+
+lowbit(x) = x & (-x)  — determines range each index covers:
+
+  Index i  │ Binary │ lowbit │ Range covered     │ tree[i]
+  ─────────┼────────┼────────┼──────────────────┼────────
+  1        │ 001    │ 1      │ arr[0]            │ 1
+  2        │ 010    │ 2      │ arr[0..1]         │ 4
+  3        │ 011    │ 1      │ arr[2]            │ 5
+  4        │ 100    │ 4      │ arr[0..3]         │ 16
+  5        │ 101    │ 1      │ arr[4]            │ 9
+  6        │ 110    │ 2      │ arr[4..5]         │ 20
+
+BIT structure (responsible ranges):
+  tree[4]=16 covers [0..3]  ──┬── tree[6]=20 covers [4..5]
+              │                    │
+  tree[2]=4 [0..1]  tree[3]=5 [2]   tree[5]=9 [4]
+      │
+  tree[1]=1 [0]
+
+PrefixSum(2): i=3 → tree[3]=5, i=3-1=2 → tree[2]=4, i=2-2=0 stop
+              sum = 5 + 4 = 9  (1+3+5=9) ✓
+
+RangeSum(1,4): PrefixSum(4) - PrefixSum(0)
+               = (tree[5]+tree[4]) - (tree[1])
+               = (9+16) - 1 = 24  (3+5+7+9=24) ✓
+
+Update(2, +5): i=3 → tree[3]+=5, i=3+1=4 → tree[4]+=5, i=4+4=8 > 6 stop
+  tree[3]: 5→10, tree[4]: 16→21
+```
+
 ---
 
 ## Example 2: Build BIT in O(n) Time
@@ -124,6 +159,34 @@ func main() {
 
 	fmt.Println("\nO(n) construction vs O(n log n) with individual updates")
 }
+```
+
+**Textual Figure:**
+
+```
+Array: [3, 1, 4, 1, 5, 9, 2, 6]   (n=8)
+
+O(n) Build: copy arr to tree[1..8], then propagate upward:
+
+Step 1: tree[1..8] = [3, 1, 4, 1, 5, 9, 2, 6]
+
+Step 2: for i=1..8, parent = i + lowbit(i)
+  i=1: parent=2 → tree[2] += tree[1]  → tree[2] = 1+3 = 4
+  i=2: parent=4 → tree[4] += tree[2]  → tree[4] = 1+4 = 5
+  i=3: parent=4 → tree[4] += tree[3]  → tree[4] = 5+4 = 9
+  i=4: parent=8 → tree[8] += tree[4]  → tree[8] = 6+9 = 15
+  i=5: parent=6 → tree[6] += tree[5]  → tree[6] = 9+5 = 14
+  i=6: parent=8 → tree[8] += tree[6]  → tree[8] = 15+14= 29
+  i=7: parent=8 → tree[8] += tree[7]  → tree[8] = 29+2 = 31
+  i=8: parent=16> 8, skip
+
+Final tree[1..8] = [3, 4, 4, 9, 5, 14, 2, 31]
+
+Verification - prefix sums:
+  PrefixSum(0) = tree[1]                    = 3  ✓
+  PrefixSum(1) = tree[2]                    = 4  ✓ (3+1)
+  PrefixSum(3) = tree[4]                    = 9  ✓ (3+1+4+1)
+  PrefixSum(7) = tree[8]                    = 31 ✓ (3+1+4+1+5+9+2+6)
 ```
 
 ---
@@ -197,6 +260,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Count inversions: arr = [2, 4, 1, 3, 5]
+Coordinate compressed ranks: 2→0, 4→2, 1→0_wait..
+Sorted unique: [1,2,3,4,5] → rank: 1→0, 2→1, 3→2, 4→3, 5→4
+
+Process RIGHT to LEFT, count elements smaller already inserted:
+
+  i=4: arr[4]=5, rank=4.  PrefixSum(3)=0.  inversions+=0.  Insert rank 4.
+       BIT: [0,0,0,0,1]
+
+  i=3: arr[3]=3, rank=2.  PrefixSum(1)=0.  inversions+=0.  Insert rank 2.
+       BIT: [0,0,1,0,1]
+
+  i=2: arr[2]=1, rank=0.  PrefixSum(-1)=0. inversions+=0.  Insert rank 0.
+       BIT: [1,0,1,0,1]
+
+  i=1: arr[1]=4, rank=3.  PrefixSum(2)=2.  inversions+=2.  Insert rank 3.
+       BIT: [1,0,1,1,1]    (elements 1,3 are to right of 4 and smaller)
+
+  i=0: arr[0]=2, rank=1.  PrefixSum(0)=1.  inversions+=1.  Insert rank 1.
+       BIT: [1,1,1,1,1]    (element 1 is to right of 2 and smaller)
+
+  Total inversions = 0+0+0+2+1 = 3
+  Inversion pairs: (2,1), (4,1), (4,3)
+```
+
 ---
 
 ## Example 4: Range Sum Mutable (LeetCode 307)
@@ -253,6 +344,32 @@ func main() {
 	fmt.Printf("After Update(1,2): SumRange(0,2) = %d\n", na.SumRange(0, 2))
 	fmt.Printf("SumRange(1,2) = %d\n", na.SumRange(1, 2))
 }
+```
+
+**Textual Figure:**
+
+```
+LeetCode 307: Range Sum Query - Mutable
+nums = [1, 3, 5]   (n=3)
+
+BIT after build (O(n)):
+  tree[1]=1, tree[2]=4(=1+3), tree[3]=5
+
+  SumRange(0,2) = PrefixSum(2)
+    i=3: tree[3]=5, i=3-1=2
+    i=2: tree[2]=4, i=2-2=0 stop
+    sum = 5+4 = 9  ✓  (1+3+5)
+
+  Update(1, 2):  delta = 2 - nums[1] = 2-3 = -1
+    nums[1] = 2
+    i=2: tree[2] += -1 → tree[2]=3
+    i=4: > n=3, stop
+
+  After update: nums = [1, 2, 5]
+  tree[1]=1, tree[2]=3(=1+2), tree[3]=5
+
+  SumRange(0,2) = PrefixSum(2) = 5+3 = 8  (1+2+5) ✓
+  SumRange(1,2) = PrefixSum(2) - PrefixSum(0) = 8-1 = 7  (2+5) ✓
 ```
 
 ---
@@ -314,6 +431,34 @@ func main() {
 		fmt.Printf("  %v → %v\n", nums, countSmaller(nums))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+LeetCode 315: Count Smaller After Self
+nums = [5, 2, 6, 1]
+Ranks: 1→0, 2→1, 5→2, 6→3
+
+Process RIGHT to LEFT, query how many already inserted < current:
+
+  i=3: nums[3]=1, rank=0. Query(rank-1)=Query(-1)=0. Insert rank 0.
+       result[3] = 0
+       BIT: [1, 0, 0, 0]
+
+  i=2: nums[2]=6, rank=3. Query(2)=1. Insert rank 3.
+       result[2] = 1    (element 1 is smaller and to the right)
+       BIT: [1, 0, 0, 1]
+
+  i=1: nums[1]=2, rank=1. Query(0)=1. Insert rank 1.
+       result[1] = 1    (element 1 is smaller and to the right)
+       BIT: [1, 1, 0, 1]
+
+  i=0: nums[0]=5, rank=2. Query(1)=2. Insert rank 2.
+       result[0] = 2    (elements 2,1 are smaller and to the right)
+       BIT: [1, 1, 1, 1]
+
+  Final result: [2, 1, 1, 0]
 ```
 
 ---
@@ -384,6 +529,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+2D Fenwick Tree — 5×5 matrix:
+
+  Matrix:   3  0  1  4  2
+            5  6  3  2  1
+            1  2  0  1  5
+            4  1  0  1  7
+            1  0  3  0  5
+
+2D BIT: tree[i][j] stores partial sums based on
+        lowbit(i) × lowbit(j) rectangle.
+
+RangeSum(r1,c1,r2,c2) uses inclusion-exclusion:
+  Sum = P(r2,c2) - P(r1-1,c2) - P(r2,c1-1) + P(r1-1,c1-1)
+
+  ┌─────────────────────┐
+  │ P(r1-1,c1-1) │ +     │
+  │      +       │       │  ← P(r1-1,c2)
+  ├──────────────┼──────┤
+  │              │ Query │
+  │  P(r2,c1-1)  │ Area  │  ← P(r2,c2)
+  └──────────────┴──────┘
+
+Query Sum [2,1] to [4,3]:
+  Submatrix:  2  0  1
+              1  0  1
+              0  3  0   → sum = 8
+
+Query Sum [0,0] to [2,2]:
+  Submatrix:  3  0  1
+              5  6  3
+              1  2  0   → sum = 21
+```
+
 ---
 
 ## Example 7: BIT for Range Update + Point Query
@@ -433,6 +614,31 @@ func main() {
 		fmt.Printf("  arr[%d] = %d\n", i, rupq.PointQuery(i))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+BIT for Range Update + Point Query (difference array in BIT)
+n=8, initially all zeros
+
+Key insight: treat BIT as a difference array
+  range_add(l, r, val)  →  bit.update(l, +val), bit.update(r+1, -val)
+  point_query(i)        →  bit.prefix_sum(i)
+
+Operation 1: RangeAdd(2, 5, 10)  → add 10 to [2..5]
+  BIT diff:  [0, 0, +10, 0, 0, 0, -10, 0]
+  Values:     0  0  10  10  10  10   0   0
+
+Operation 2: RangeAdd(3, 7, 5)   → add 5 to [3..7]
+  BIT diff:  [0, 0, +10, +5, 0, 0, -10, 0]  (index 8 gets -5 but >n)
+  Values:     0  0  10  15  15  15   5   5
+
+  Verification via prefix sums:
+    point(0) = 0       point(4) = 10+5 = 15
+    point(1) = 0       point(5) = 10+5 = 15
+    point(2) = 10      point(6) = 10+5-10 = 5
+    point(3) = 10+5=15 point(7) = 10+5-10 = 5
 ```
 
 ---
@@ -499,6 +705,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+BIT for Range Update + Range Query (two BITs: B1 and B2)
+n=8, initially all zeros
+
+Formula: prefix_sum(x) = B1[x] * (x+1) - B2[x]
+
+Range_add(l, r, val):
+  B1: add(l, val), add(r+1, -val)
+  B2: add(l, val*l), add(r+1, -val*(r+1))
+
+Op1: RangeAdd(1, 5, 3)   → add 3 to [1..5]
+  B1: update(1,+3), update(6,-3)
+  B2: update(1,+3), update(6,-18)
+  Values: [0, 3, 3, 3, 3, 3, 0, 0]
+
+Op2: RangeAdd(3, 7, 2)   → add 2 to [3..7]
+  B1: update(3,+2), update(8,-2)
+  B2: update(3,+6), update(8,-16)
+  Values: [0, 3, 3, 5, 5, 5, 2, 2]
+
+  arr[0]=0  arr[1]=3  arr[2]=3  arr[3]=5
+  arr[4]=5  arr[5]=5  arr[6]=2  arr[7]=2
+
+  RangeSum(2,6) = prefix(6) - prefix(1)
+    prefix(6) = 0+3+3+5+5+5+2 = 23
+    prefix(1) = 0+3 = 3
+    Result = 23 - 3 = 20  (3+5+5+5+2 = 20) ✓
+```
+
 ---
 
 ## Example 9: K-th Smallest Element with BIT
@@ -559,6 +796,37 @@ func main() {
 		fmt.Printf("  %d-th smallest = %d\n", k, bit.KthSmallest(k))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+K-th Smallest via BIT with binary lifting
+Elements: [5, 2, 8, 1, 3, 7]  → maxVal=10
+
+BIT stores frequency counts:
+  Value:  0  1  2  3  4  5  6  7  8  9  10
+  Freq:   0  1  1  1  0  1  0  1  1  0   0
+  tree[]: BIT of the above frequencies
+
+Binary lifting to find k-th smallest:
+  Start pos=0, walk MSB to LSB of tree size
+
+  1st smallest (k=1):
+    bitMask=8: pos+8=8, tree[8]=6 ≥ 1 → don't jump
+    bitMask=4: pos+4=4, tree[4]=3 ≥ 1 → don't jump
+    bitMask=2: pos+2=2, tree[2]=2 ≥ 1 → don't jump
+    bitMask=1: pos+1=1, tree[1]=1 ≥ 1 → don't jump
+    Result: pos=0 → but 0 has count 0, so actual = 1 ✓
+
+  3rd smallest (k=3):
+    Walk until prefix count ≥ 3 → value 3 ✓
+
+  Sorted order: 1, 2, 3, 5, 7, 8
+
+  After removing 3 (Update(3, -1)):
+    Sorted: 1, 2, 5, 7, 8
+    3rd smallest = 5 ✓
 ```
 
 ---
@@ -638,6 +906,32 @@ func main() {
 
 	_ = math.MaxInt64
 }
+```
+
+**Textual Figure:**
+
+```
+BIT vs Segment Tree — Performance Comparison:
+
+  ┌────────────────┬─────────────────┬─────────────────┐
+  │                │ Fenwick (BIT)     │ Segment Tree      │
+  ├────────────────┼─────────────────┼─────────────────┤
+  │ Memory         │ 1× array (n+1)   │ 4× array (4n)    │
+  │ Code lines     │ ~15 lines        │ ~40 lines        │
+  │ Point update   │ O(log n)         │ O(log n)         │
+  │ Range query    │ O(log n)         │ O(log n)         │
+  │ Range update   │ ✓ (with tricks)  │ ✓ (native lazy)  │
+  │ Min/Max query  │ ✘                │ ✓                │
+  │ Constant factor│ Faster           │ Slower           │
+  └────────────────┴─────────────────┴─────────────────┘
+
+  BIT update path:   i, i+lowbit(i), i+lowbit(i)+lowbit(...), ...
+  BIT query path:    i, i-lowbit(i), i-lowbit(i)-lowbit(...), ...
+
+  BIT update(5):  5 ─→ 6 ─→ 8   (3 hops for n=8)
+  Seg update(5):  leaf ─→ parent ─→ ... root  (log n hops + recursion overhead)
+
+  Decision: Use BIT for sum/xor; use SegTree for min/max/gcd
 ```
 
 ---

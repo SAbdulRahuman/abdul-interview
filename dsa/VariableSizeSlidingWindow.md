@@ -51,6 +51,34 @@ func main() {
 }
 ```
 
+**Textual Figure — Longest Substring Without Repeating Characters:**
+
+```
+  s = "abcabcbb"
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ a │ b │ c │ a │ b │ c │ b │ b │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7
+    L               R
+
+  r=0: [a]          L=0  len=1  max=1
+  r=1: [ab]         L=0  len=2  max=2
+  r=2: [abc]        L=0  len=3  max=3
+  r=3: [a]bcA       'a' seen at 0 → L=1
+       [bca]        L=1  len=3  max=3
+  r=4: [b]ca[b]     'b' seen at 1 → L=2
+       [cab]        L=2  len=3  max=3
+  r=5: [c]ab[c]     'c' seen at 2 → L=3
+       [abc]        L=3  len=3  max=3
+  r=6: a[b]c[b]     'b' seen at 4 → L=5
+       [cb]         L=5  len=2  max=3
+  r=7: c[b][b]      'b' seen at 6 → L=7
+       [b]          L=7  len=1  max=3
+
+  Result: 3  ("abc")
+```
+
 ---
 
 ## Example 2: Minimum Size Subarray Sum (LC 209)
@@ -93,6 +121,33 @@ func main() {
 		fmt.Printf("target=%d nums=%v → %d\n", t.target, t.nums, minSubArrayLen(t.target, t.nums))
 	}
 }
+```
+
+**Textual Figure — Minimum Size Subarray Sum:**
+
+```
+  nums = [2, 3, 1, 2, 4, 3]    target = 7
+
+  ┌───┬───┬───┬───┬───┬───┐
+  │ 2 │ 3 │ 1 │ 2 │ 4 │ 3 │
+  └───┴───┴───┴───┴───┴───┘
+    L→                     R→
+
+  Expand right, shrink left while sum ≥ target:
+
+  r=0: sum=2                      < 7
+  r=1: sum=5                      < 7
+  r=2: sum=6                      < 7
+  r=3: sum=8  ≥ 7  → min=4        shrink
+       L++ sum=6                  < 7
+  r=4: sum=10 ≥ 7  → min=3       shrink
+       L++ sum=7 ≥ 7 → min=3     shrink
+       L++ sum=6                  < 7
+  r=5: sum=9  ≥ 7  → min=3       shrink
+       L++ sum=7 ≥ 7 → min=2 ←   shrink!
+       L++ sum=3                  < 7
+
+  Result: min length = 2  (subarray [4,3])
 ```
 
 ---
@@ -138,6 +193,31 @@ func main() {
 		fmt.Printf("s=%q k=%d → %d\n", t.s, t.k, longestKDistinct(t.s, t.k))
 	}
 }
+```
+
+**Textual Figure — Longest Substring with At Most K Distinct:**
+
+```
+  s = "eceba"    k = 2
+
+  ┌───┬───┬───┬───┬───┐
+  │ e │ c │ e │ b │ a │
+  └───┴───┴───┴───┴───┘
+    0   1   2   3   4
+    L→              R→
+
+  Expand right, shrink when distinct > k:
+
+  r=0: [e]       freq={e:1}       dist=1 ≤ 2  len=1  max=1
+  r=1: [ec]      freq={e:1,c:1}   dist=2 ≤ 2  len=2  max=2
+  r=2: [ece]     freq={e:2,c:1}   dist=2 ≤ 2  len=3  max=3
+  r=3: [eceb]    freq={e:2,c:1,b:1} dist=3 > 2  → shrink!
+       L=1 [ceb] freq={e:1,c:1,b:1} dist=3 > 2  → shrink!
+       L=2 [eb]  freq={e:1,b:1}     dist=2 ≤ 2  len=2  max=3
+  r=4: [eba]     freq={e:1,b:1,a:1} dist=3 > 2  → shrink!
+       L=3 [ba]  freq={b:1,a:1}     dist=2 ≤ 2  len=2  max=3
+
+  Result: 3  ("ece")
 ```
 
 ---
@@ -204,6 +284,38 @@ func main() {
 }
 ```
 
+**Textual Figure — Minimum Window Substring:**
+
+```
+  s = "ADOBECODEBANC"    t = "ABC"
+  need: {A:1, B:1, C:1}   required = 3 chars
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ A │ D │ O │ B │ E │ C │ O │ D │ E │ B │ A │ N │ C │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8   9  10  11  12
+    L→                                             R→
+
+  Expand R until all chars found, then shrink L:
+
+  r=5:  [ADOBEC] formed=3  → valid! min=6
+        shrink: L=1 [DOBEC] formed=2 → invalid
+  r=9:  [DOBECODEB] ... expand more
+  r=10: [DOBECOD EBA] formed=3  → valid! min=6
+        shrink: L=5 [CODEBA] min=6
+        shrink: L=6 [ODEBA] ... still shrinking
+  r=12: [...BANC]  found valid window
+        shrink to: [BANC] min=4  ← best!
+
+  Result: "BANC"  (length 4)
+
+  ┌─────────────────────────────────────┐
+  │ Expand R → until all chars covered  │
+  │ Shrink L → while still valid       │
+  │ Track minimum valid window          │
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Longest Repeating Character Replacement (LC 424)
@@ -249,6 +361,33 @@ func main() {
 		fmt.Printf("s=%q k=%d → %d\n", t.s, t.k, characterReplacement(t.s, t.k))
 	}
 }
+```
+
+**Textual Figure — Longest Repeating Character Replacement:**
+
+```
+  s = "AABABBA"    k = 1
+
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │ A │ A │ B │ A │ B │ B │ A │
+  └───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6
+    L→                      R→
+
+  windowLen - maxFreq = chars to replace (≤ k?)
+
+  r=0: [A]       maxF=1 replace=0 ≤ 1  len=1
+  r=1: [AA]      maxF=2 replace=0 ≤ 1  len=2
+  r=2: [AAB]     maxF=2 replace=1 ≤ 1  len=3
+  r=3: [AABA]    maxF=3 replace=1 ≤ 1  len=4  ← max
+  r=4: [AABAB]   maxF=3 replace=2 > 1  → shrink!
+       L++ [ABAB]  len=4
+  r=5: [ABABB]   maxF=3 replace=2 > 1  → shrink!
+       L++ [BABB]  len=4
+  r=6: [BABBA]   maxF=3 replace=2 > 1  → shrink!
+       L++ [ABBA]  len=4
+
+  Result: 4  ("AABA" → replace B→A = "AAAA")
 ```
 
 ---
@@ -299,6 +438,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Subarrays with K Different Integers:**
+
+```
+  nums = [1, 2, 1, 2, 3]    k = 2
+
+  ┌───┬───┬───┬───┬───┐
+  │ 1 │ 2 │ 1 │ 2 │ 3 │
+  └───┴───┴───┴───┴───┘
+    0   1   2   3   4
+
+  exactlyK(2) = atMost(2) - atMost(1)
+
+  atMost(2):                   atMost(1):
+  r=0: [1]       cnt=1         [1]       cnt=1
+  r=1: [1,2]     cnt=2+1=3     L++ [2]   cnt=1
+  r=2: [1,2,1]   cnt=3+3=6     [2,1]→L++ [1] cnt=1+1=2
+  r=3: [1,2,1,2] cnt=4+6=10    [1,2]→L++ [2] cnt=1+2=3
+  r=4: L++..     cnt=2+10=12   [2,3]→L++ [3] cnt=1+3=4
+       Total: 12               Total: 5
+
+  exactlyK(2) = 12 - 5 = 7
+
+  The 7 subarrays: [1,2] [2,1] [1,2,1] [2,1,2]
+                   [1,2,1,2] [2,3] [1,2,3]
+```
+
 ---
 
 ## Example 7: Max Consecutive Ones III (LC 1004)
@@ -340,6 +505,34 @@ func main() {
 		fmt.Printf("nums=%v k=%d → %d\n", t.nums, t.k, longestOnes(t.nums, t.k))
 	}
 }
+```
+
+**Textual Figure — Max Consecutive Ones III:**
+
+```
+  nums = [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0]    k = 2
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 1 │ 1 │ 0 │ 0 │ 0 │ 1 │ 1 │ 1 │ 1 │ 0 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8   9  10
+    L→                                     R→
+
+  Expand R, count zeros, shrink when zeros > k:
+
+  r=0..2: [1,1,1]       zeros=0           len=3
+  r=3:    [1,1,1,0]     zeros=1 ≤ 2       len=4
+  r=4:    [1,1,1,0,0]   zeros=2 ≤ 2       len=5
+  r=5:    [1,1,1,0,0,0] zeros=3 > 2 → shrink!
+          L=1 [1,1,0,0,0] zeros=3 > 2 → shrink!
+          L=2 [1,0,0,0]   zeros=3 > 2 → shrink!
+          L=3 [0,0,0]     zeros=3 > 2 → shrink!
+          L=4 [0,0]       zeros=2 ≤ 2     len=2
+  r=6..9: [0,0,1,1,1,1] zeros=2 ≤ 2       len=6 ← max
+  r=10:   [...,1,1,1,1,0] zeros=3 > 2 → shrink!
+          L=5  [...] zeros=2              len=6
+
+  Result: 6  (flip two 0s at indices 3,4 → [1,1,1,1,1,1])
 ```
 
 ---
@@ -385,6 +578,29 @@ func main() {
 }
 ```
 
+**Textual Figure — Fruit Into Baskets (At Most 2 Distinct):**
+
+```
+  fruits = [1, 2, 3, 2, 2]
+
+  ┌───┬───┬───┬───┬───┐
+  │ 1 │ 2 │ 3 │ 2 │ 2 │
+  └───┴───┴───┴───┴───┘
+    0   1   2   3   4
+    L→              R→
+
+  2 baskets = at most 2 distinct fruit types.
+
+  r=0: [1]       freq={1:1}       dist=1 ≤ 2  len=1
+  r=1: [1,2]     freq={1:1,2:1}   dist=2 ≤ 2  len=2
+  r=2: [1,2,3]   freq={1:1,2:1,3:1} dist=3 > 2  → shrink!
+       L=1 [2,3] freq={2:1,3:1}    dist=2 ≤ 2  len=2
+  r=3: [2,3,2]   freq={2:2,3:1}   dist=2 ≤ 2  len=3
+  r=4: [2,3,2,2] freq={2:3,3:1}   dist=2 ≤ 2  len=4 ← max
+
+  Result: 4  ([2,3,2,2] → types {2,3})
+```
+
 ---
 
 ## Example 9: Longest Substring with At Most Two Distinct Characters (LC 159)
@@ -418,6 +634,30 @@ func main() {
 		fmt.Printf("s=%q → %d\n", s, lengthOfLongestSubstringTwoDistinct(s))
 	}
 }
+```
+
+**Textual Figure — Longest Substring with At Most 2 Distinct:**
+
+```
+  s = "ccaabbb"
+
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │ c │ c │ a │ a │ b │ b │ b │
+  └───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6
+    L→                      R→
+
+  r=0: [c]        freq={c:1}       dist=1  len=1
+  r=1: [cc]       freq={c:2}       dist=1  len=2
+  r=2: [cca]      freq={c:2,a:1}   dist=2  len=3
+  r=3: [ccaa]     freq={c:2,a:2}   dist=2  len=4
+  r=4: [ccaab]    freq={c:2,a:2,b:1} dist=3 > 2 → shrink!
+       L=1 [caab] freq={c:1,a:2,b:1} dist=3 > 2 → shrink!
+       L=2 [aab]  freq={a:2,b:1}     dist=2 ≤ 2  len=3
+  r=5: [aabb]     freq={a:2,b:2}   dist=2  len=4
+  r=6: [aabbb]    freq={a:2,b:3}   dist=2  len=5 ← max
+
+  Result: 5  ("aabbb")
 ```
 
 ---

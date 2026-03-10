@@ -59,6 +59,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Fractional Knapsack: capacity = 50
+
+Items sorted by value/weight ratio:
+  ┌─────────┬────────┬───────┬───────┐
+  │ Item    │ Weight │ Value │ Ratio │
+  ├─────────┼────────┼───────┼───────┤
+  │ Item 1  │   10   │  60   │  6.0  │ ← best
+  │ Item 2  │   20   │ 100   │  5.0  │
+  │ Item 3  │   30   │ 120   │  4.0  │
+  └─────────┴────────┴───────┴───────┘
+
+Greedy selection:
+  Step 1: Take ALL of Item1 (w=10, v=60)  rem=40
+  Step 2: Take ALL of Item2 (w=20, v=100) rem=20
+  Step 3: Take 20/30 of Item3 (v=80)      rem=0
+
+  Knapsack: [Item1: █████][Item2: ██████████][Item3: ▓▓▓▓▓▓▓▓]
+            10          30              50
+  Total value: 60 + 100 + 80 = 240
+```
+
 ---
 
 ## Example 2: With Detailed Breakdown
@@ -114,6 +137,26 @@ func main() {
 	}
 	knapsackDetailed(items, 50)
 }
+```
+
+**Textual Figure:**
+```
+Detailed Knapsack Breakdown: capacity = 50
+
+Items (sorted by ratio descending):
+  Gold   (w=10, v=60,  ratio=6.00)
+  Silver (w=20, v=100, ratio=5.00)
+  Bronze (w=30, v=120, ratio=4.00)
+
+  0%          50%         100%
+  ├───────────┼───────────┤
+
+  Gold:   ████████████████████  100% taken  v= 60
+  Silver: ████████████████████  100% taken  v=100
+  Bronze: █████████████───────  66.7% taken v= 80
+
+  Capacity used: 10 + 20 + 20 = 50 / 50
+  Total value:   60 + 100 + 80 = 240
 ```
 
 ---
@@ -180,6 +223,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Fractional vs 0/1 Knapsack Comparison (cap=50)
+
+Items: (w=10,v=60) (w=20,v=100) (w=30,v=120)
+
+┌── Fractional Knapsack (Greedy) ────────────┐
+│  Take: 10(all) + 20(all) + 20(2/3 of 30) │
+│  [█████][██████████][▓▓▓▓▓▓▓▓──]    │
+│  Value: 60 + 100 + 80 = 240.00          │
+└──────────────────────────────────────────┘
+
+┌── 0/1 Knapsack (DP) ───────────────────┐
+│  Take: 20(all) + 30(all)                 │
+│  [██████████][███████████████]       │
+│  Value: 100 + 120 = 220                  │
+└─────────────────────────────────────────│
+
+Fractional(240) ≥ 0/1(220) always!
+```
+
 ---
 
 ## Example 4: Maximize Profit Loading Truck
@@ -223,6 +287,25 @@ func main() {
 	boxes2 := []Box{{5, 10}, {2, 5}, {4, 7}, {3, 9}}
 	fmt.Println(maximumUnits(boxes2, 10)) // 91
 }
+```
+
+**Textual Figure:**
+```
+Maximize Profit Loading Truck (truckSize = 4)
+
+Boxes sorted by units/box (descending):
+  ┌─────────┬──────────┬──────────┐
+  │ Units   │ Quantity │ Take     │
+  ├─────────┼──────────┼──────────┤
+  │   3     │    1     │  1 box   │
+  │   2     │    2     │  2 boxes │
+  │   1     │    3     │  1 box   │
+  └─────────┴──────────┴──────────┘
+
+  Truck: [███ 3] [▓▓ 2] [▓▓ 2] [░ 1]  = 4 boxes
+  Total units: 3 + 2 + 2 + 1 = 8
+
+Greedy: load highest-value boxes first
 ```
 
 ---
@@ -281,6 +364,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Job Scheduling: Maximize Profit
+
+Jobs sorted by profit (descending):
+  Job5(d=3,p=50) Job3(d=1,p=40) Job4(d=1,p=30)
+  Job1(d=4,p=20) Job2(d=1,p=10)
+
+Slot assignment:
+  Slot:   [1]     [2]     [3]     [4]
+           ────    ────    ────    ────
+
+  Job5 (d=3, p=50): slot 3 ✓
+          [ ]     [ ]    [J5]    [ ]
+
+  Job3 (d=1, p=40): slot 1 ✓
+         [J3]     [ ]    [J5]    [ ]
+
+  Job4 (d=1, p=30): slot 1 full → skip ✗
+
+  Job1 (d=4, p=20): slot 4 ✓
+         [J3]     [ ]    [J5]   [J1]
+
+  Result: Jobs [5,3,1], Profit = 50+40+20 = 110
+```
+
 ---
 
 ## Example 6: Minimize Lateness (Scheduling)
@@ -327,6 +436,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Minimize Lateness: Earliest Deadline First
+
+Tasks sorted by deadline:
+  A(dur=3,d=6) B(dur=2,d=8) C(dur=1,d=9)
+  D(dur=4,d=9) E(dur=3,d=14) F(dur=2,d=15)
+
+Timeline:
+  0    3    5    6    10   13   15
+  │────│────│────│────│────│────│
+  [A: 3] [B: 2] [C:1][D:  4][E:  3][F:2]
+
+  Task  Finish  Deadline  Lateness
+  ────  ──────  ────────  ────────
+   A      3       6        0
+   B      5       8        0
+   C      6       9        0
+   D     10       9        1 ← late!
+   E     13      14        0
+   F     15      15        0
+
+  Max lateness: 1 (minimized by EDD rule)
+```
+
 ---
 
 ## Example 7: Greedy Choice Proof for Fractional Knapsack
@@ -358,6 +492,28 @@ func main() {
 	fmt.Println("  Fractional: can take any amount → smooth exchange")
 	fmt.Println("  0/1: must take all or nothing → exchange may violate capacity")
 }
+```
+
+**Textual Figure:**
+```
+Exchange Argument for Fractional Knapsack
+
+G (greedy) sorts by ratio descending and fills:
+  Item A(r=6) → Item B(r=5) → Item C(r=4)
+
+O (optimal) takes less of A, more of C:
+  ┌───────────────────────────────────────┐
+  │ O:  A(5kg) + B(20kg) + C(25kg) = 50kg  │
+  │     v = 30 + 100 + 100 = 230            │
+  ├───────────────────────────────────────┤
+  │ Exchange: shift 5kg from C to A         │
+  │ Δvalue = 5×6 - 5×4 = +10                 │
+  ├───────────────────────────────────────┤
+  │ O': A(10kg) + B(20kg) + C(20kg) = 50kg │
+  │     v = 60 + 100 + 80 = 240  ≥ 230      │
+  └───────────────────────────────────────┘
+
+Repeat until O = G → G is optimal ∎
 ```
 
 ---
@@ -412,6 +568,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Minimum Cost to Fill Bag: target = 30
+
+Packages sorted by cost/weight ratio (ascending = cheapest):
+  ┌────────┬──────┬──────┬───────┐
+  │ Weight │ Cost │ Ratio│ Take  │
+  ├────────┼──────┼──────┼───────┤
+  │   20   │  25  │ 1.25 │ all   │ ← cheapest
+  │    5   │  10  │ 2.00 │ all   │
+  │   10   │  15  │ 1.50 │ 5/10  │ ← fraction
+  └────────┴──────┴──────┴───────┘
+
+  Fill: 20 + 5 + 5(fraction) = 30
+  Cost: 25 + 10 + 7.50 = 42.50
+
+Greedy: cheapest per unit weight first
+```
+
 ---
 
 ## Example 9: Activity Selection by Value/Time Ratio
@@ -462,6 +637,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Task Selection by Value/Time Ratio (totalTime = 8)
+
+Tasks sorted by value/time ratio (descending):
+  ┌─────────┬──────┬───────┬────────┐
+  │ Task    │ Time │ Value │ Ratio  │
+  ├─────────┼──────┼───────┼────────┤
+  │ Deploy  │   1  │  30   │  30.0  │
+  │ Design  │   3  │  80   │  26.7  │
+  │ Review  │   2  │  50   │  25.0  │
+  │ Code    │   4  │ 100   │  25.0  │
+  │ Test    │   2  │  40   │  20.0  │
+  └─────────┴──────┴───────┴────────┘
+
+  Pick Deploy(1) + Design(3) + Review(2) = 6 hrs  ≤ 8
+  Remaining: 2 hrs → pick Test(2)
+  Total: 1+3+2+2 = 8,  Value: 30+80+50+40 = 200
+```
+
 ---
 
 ## Example 10: Fractional Knapsack Variants Summary
@@ -501,6 +696,28 @@ func main() {
 	fmt.Println("Key insight: Fractional ≥ 0/1 ≥ Bounded")
 	fmt.Println("More flexibility → higher optimal value")
 }
+```
+
+**Textual Figure:**
+```
+Fractional Knapsack Variants
+
+┌─────────────────────────────────────────────┐
+│ Variant          │ Sort by        │ Method   │
+├──────────────────┼────────────────┼──────────┤
+│ Max value        │ v/w DESC       │ Greedy   │
+│ Min cost         │ c/w ASC        │ Greedy   │
+│ Load truck       │ value DESC     │ Greedy   │
+│ Task scheduling  │ v/t DESC       │ Greedy   │
+│ 0/1 Knapsack     │ N/A            │ DP O(nW) │
+└──────────────────┴────────────────┴──────────┘
+
+Flexibility hierarchy:
+  Fractional ≥ 0/1 ≥ Bounded
+  (most flex)       (least flex)
+
+  More flexibility → higher optimal value
+  Fractional allows partial items → greedy works
 ```
 
 ---

@@ -47,6 +47,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+House Robber: nums = [2, 7, 9, 3, 1]
+
+Index:   0   1   2    3    4
+nums:    2   7   9    3    1
+       ┌───┬───┬────┬────┬────┐
+  dp:  │ 2 │ 7 │ 11 │ 11 │ 12 │
+       └───┴───┴────┴────┴────┘
+
+Transition trace:
+  dp[0] = 2                                (base)
+  dp[1] = max(2, 7) = 7                    (base)
+  dp[2] = max(dp[1], dp[0]+9) = max(7, 11) = 11   ← rob house 0,2
+  dp[3] = max(dp[2], dp[1]+3) = max(11,10) = 11   ← skip house 3
+  dp[4] = max(dp[3], dp[2]+1) = max(11,12) = 12   ← rob house 0,2,4
+
+  State transition:
+  dp[i-2] + nums[i] ──┐
+                      ├──→ dp[i] = max(skip, rob)
+  dp[i-1]           ──┘
+   (skip i)            (rob i)
+```
+
 ---
 
 ## Example 2: 2D Transition — Unique Paths with Obstacles (LeetCode 63)
@@ -88,6 +113,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Unique Paths with Obstacles:
+
+Grid (0=free, 1=obstacle):      dp table:
+┌───┬───┬───┐                    ┌───┬───┬───┐
+│ 0 │ 0 │ 0 │                    │ 1 │ 1 │ 1 │
+├───┼───┼───┤                    ├───┼───┼───┤
+│ 0 │ X │ 0 │                    │ 1 │ 0 │ 1 │
+├───┼───┼───┤                    ├───┼───┼───┤
+│ 0 │ 0 │ 0 │                    │ 1 │ 1 │[2]│
+└───┴───┴───┘                    └───┴───┴───┘
+
+Transition:
+  obstacle:  dp[i][j] = 0
+  otherwise: dp[i][j] = dp[i-1][j] + dp[i][j-1]
+                         ↑ above      ← left
+
+  Path 1: → → ↓ ↓       Path 2: ↓ ↓ → →
+  (goes right first)     (goes down first)
+```
+
 ---
 
 ## Example 3: Multi-Choice Transition — Decode Ways (LeetCode 91)
@@ -126,6 +174,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Decode Ways: s = "226"
+
+Index:   0   1   2   3
+       ┌───┬───┬───┬───┐
+  dp:  │ 1 │ 1 │ 2 │ 3 │
+       └───┴───┴───┴───┘
+
+Trace:
+  dp[0] = 1 (empty prefix)
+  dp[1] = 1 ("2" → B)
+  dp[2]: single='2' valid → +dp[1]=1
+         two='22' (10≤22≤26) → +dp[0]=1   → dp[2] = 2
+  dp[3]: single='6' valid → +dp[2]=2
+         two='26' (10≤26≤26) → +dp[1]=1   → dp[3] = 3
+
+  Decodings: "2|2|6" = BBF
+             "22|6"  = VF
+             "2|26"  = BZ
+
+  Multi-choice transition:
+  dp[i] ───┤── +dp[i-1]  if s[i-1] ∈ '1'..'9'
+         └── +dp[i-2]  if s[i-2..i-1] ∈ 10..26
+```
+
 ---
 
 ## Example 4: Min/Max Transition — Minimum Path Sum (LeetCode 64)
@@ -161,6 +236,32 @@ func main() {
 	grid := [][]int{{1,3,1},{1,5,1},{4,2,1}}
 	fmt.Println("Min path sum:", minPathSum(grid)) // 7
 }
+```
+
+**Textual Figure:**
+
+```
+Minimum Path Sum: grid = [[1,3,1],[1,5,1],[4,2,1]]
+
+Grid:                       dp table:
+┌───┬───┬───┐               ┌───┬───┬───┐
+│ 1 │ 3 │ 1 │               │ 1 │ 4 │ 5 │
+├───┼───┼───┤               ├───┼───┼───┤
+│ 1 │ 5 │ 1 │               │ 2 │ 7 │ 6 │
+├───┼───┼───┤               ├───┼───┼───┤
+│ 4 │ 2 │ 1 │               │ 6 │ 8 │[7]│
+└───┴───┴───┘               └───┴───┴───┘
+
+Optimal path: 1 → 3 → 1 → 1 → 1 = 7
+
+  (0,0)─→(0,1)─→(0,2)
+                  │
+                (1,2)
+                  │
+                (2,2)  = 1+3+1+1+1 = 7
+
+Transition: dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])
+                                       ↑ above      ← left
 ```
 
 ---
@@ -204,6 +305,34 @@ func main() {
 	fmt.Println(maxProfit([]int{1, 2, 3, 0, 2})) // 3
 	fmt.Println(maxProfit([]int{1}))               // 0
 }
+```
+
+**Textual Figure:**
+
+```
+Buy/Sell Stock with Cooldown: prices = [1, 2, 3, 0, 2]
+
+State machine:
+  ┌───────┐  sell   ┌───────┐  wait   ┌───────┐
+  │ HOLD  │──────→│ SOLD  │──────→│ REST  │
+  └───┬───┘        └───────┘        └───┬───┘
+      │  ↑                              │  ↑
+      └──┘ hold                    buy │  │
+                                   ┌──┘  └──┐ rest
+                                   └───────┘
+
+Day:      0     1     2     3     4
+Price:    1     2     3     0     2
+        ┌─────┬─────┬─────┬─────┬─────┐
+ hold:  │  -1 │  -1 │  -1 │   1 │   1 │
+        ├─────┼─────┼─────┼─────┼─────┤
+ sold:  │   0 │   1 │   2 │  -1 │  [3]│
+        ├─────┼─────┼─────┼─────┼─────┤
+ rest:  │   0 │   0 │   1 │   2 │   2 │
+        └─────┴─────┴─────┴─────┴─────┘
+
+  Answer: max(sold[4], rest[4]) = max(3, 2) = 3
+  Strategy: buy@1, sell@3, cooldown, buy@0, sell@2
 ```
 
 ---
@@ -256,6 +385,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Wildcard Matching: s = "adceb", p = "*a*b"
+
+         ""    *     a     *     b
+    ┌────┬────┬─────┬─────┬─────┐
+ "" │  T │  T │  F  │  F  │  F  │  * matches empty
+    ├────┼────┼─────┼─────┼─────┤
+  a │  F │  T │  T  │  T  │  F  │
+    ├────┼────┼─────┼─────┼─────┤
+  d │  F │  T │  F  │  T  │  F  │
+    ├────┼────┼─────┼─────┼─────┤
+  c │  F │  T │  F  │  T  │  F  │
+    ├────┼────┼─────┼─────┼─────┤
+  e │  F │  T │  F  │  T  │  F  │
+    ├────┼────┼─────┼─────┼─────┤
+  b │  F │  T │  F  │  T  │ [T] │
+    └────┴────┴─────┴─────┴─────┘
+
+  Transition:
+    p[j]=='?' or p[j]==s[i]: dp[i][j] = dp[i-1][j-1]  (↖)
+    p[j]=='*':              dp[i][j] = dp[i][j-1]     (← match empty)
+                                     || dp[i-1][j]    (↑ match one more)
+    else:                   dp[i][j] = false
+```
+
 ---
 
 ## Example 7: Interval Transition — Burst Balloons (LeetCode 312)
@@ -294,6 +450,32 @@ func maxCoins(nums []int) int {
 func main() {
 	fmt.Println(maxCoins([]int{3, 1, 5, 8})) // 167
 }
+```
+
+**Textual Figure:**
+
+```
+Burst Balloons: nums = [3, 1, 5, 8]
+Padded: [1, 3, 1, 5, 8, 1]  (indices 0..5)
+
+dp[i][j] = max coins from bursting all between i and j (exclusive)
+k = LAST balloon to burst in (i,j)
+
+     j=0  j=1  j=2  j=3  j=4  j=5
+i=0 [  0    0    3    30   159  167 ]
+i=1 [       0    0    15    64  135 ]
+i=2 [            0    0     40   48 ]
+i=3 [                 0     0    40 ]
+i=4 [                       0    0  ]
+i=5 [                            0  ]
+
+Example: dp[0][5] (answer)
+  k=1: dp[0][1]+dp[1][5] + 1*3*1 = 0+135+3  = 138
+  k=2: dp[0][2]+dp[2][5] + 1*1*1 = 3+48+1   = 52
+  k=3: dp[0][3]+dp[3][5] + 1*5*1 = 30+40+5  = 75
+  k=4: dp[0][4]+dp[4][5] + 1*8*1 = 159+0+8  = 167 ← max!
+
+  Answer: 167
 ```
 
 ---
@@ -335,6 +517,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Maximum Product Subarray: nums = [-2, 3, -4]
+
+Index:    0     1     2
+nums:    -2     3    -4
+       ┌─────┬─────┬─────┐
+maxP:  │  -2 │   3 │  24 │
+       ├─────┼─────┼─────┤
+minP:  │  -2 │  -6 │ -12 │
+       └─────┴─────┴─────┘
+
+Trace:
+  i=0: maxP=-2, minP=-2, result=-2
+  i=1: nums[1]=3 > 0 (no swap)
+       maxP = max(3, -2*3) = max(3,-6) = 3
+       minP = min(3, -6)   = -6
+       result = 3
+  i=2: nums[2]=-4 < 0 → SWAP maxP,minP
+       (after swap: maxP=-6, minP=3)
+       maxP = max(-4, -6*-4) = max(-4, 24) = 24
+       minP = min(-4, 3*-4)  = min(-4,-12) = -12
+       result = 24
+
+  Key: Track both max AND min (negative*negative = positive!)
+```
+
 ---
 
 ## Example 9: Transition Diagram Visualization
@@ -369,6 +579,38 @@ func main() {
 	fmt.Println("   dp[i][j] ←── dp[i][k] + dp[k][j] + cost(i,k,j)")
 	fmt.Println("   for all k in (i,j)")
 }
+```
+
+**Textual Figure:**
+
+```
+State Transition Diagrams:
+
+1. Linear (House Robber):
+   dp[i-2] ───┐         dp[i-1] ───┐
+    +nums[i] │ rob        skip   │
+             └───→ dp[i] ────┘
+
+2. Grid (LCS):
+           j-1    j
+   i-1  ┌────┬────┐
+        │ ↖  │ ↑  │    match: ↖+1
+   i    ├────┼────┤    no match: max(↑, ←)
+        │ ←  │ ?  │
+        └────┴────┘
+
+3. State Machine (Stock Cooldown):
+        ┌────┐ hold   ┌────┐ wait   ┌────┐
+   ┌──→│HOLD│─sell─→│SOLD│─────→│REST│──┐
+   │   └────┘       └────┘       └─┬──┘  │
+   └──────────── buy ───────────┘     └─┘
+                                      rest
+
+4. Interval (Burst Balloons):
+   dp[i][j] = max over k ∈ (i,j):
+   ┌───────┐   ┌───┐   ┌───────┐
+   │dp[i][k]│ + │cost│ + │dp[k][j]│
+   └───────┘   └───┘   └───────┘
 ```
 
 ---
@@ -407,6 +649,48 @@ func main() {
 	fmt.Printf("%-20s %s\n", "Interval: dp[i][k]", "MCM, burst balloons")
 	fmt.Printf("%-20s %s\n", "Machine:  state→state", "Stock problems")
 }
+```
+
+**Textual Figure:**
+
+```
+State Transition Design — 6-Step Process:
+
+  ┌────────────────┐
+  │ 1. Identify     │    What params define a subproblem?
+  │    State        │    e.g., (index), (index, capacity)
+  └────────┬───────┘
+           │
+  ┌────────┴───────┐
+  │ 2. Define Value  │    What does dp[state] represent?
+  │    (count/min/   │    count, min cost, max profit...
+  │     max)         │
+  └────────┬───────┘
+           │
+  ┌────────┴───────┐
+  │ 3. Find          │    dp[i] = f(dp[i-1], dp[i-2], ...)
+  │    Transitions   │
+  └────────┬───────┘
+           │
+  ┌────────┴───────┐
+  │ 4. Base Cases    │    dp[0]=?, dp[0][0]=?
+  └────────┬───────┘
+           │
+  ┌────────┴───────┐
+  │ 5. Fill Order    │    left→right? row by row?
+  └────────┬───────┘
+           │
+  ┌────────┴───────┐
+  │ 6. Extract       │    dp[n]? dp[n][m]? max(dp[*])?
+  │    Answer        │
+  └────────────────┘
+
+  Common patterns:
+  Linear:    dp[i-1], dp[i-2]       (Fibonacci, House Robber)
+  Grid:      dp[i-1][j], dp[i][j-1] (Paths, LCS, Edit Dist)
+  Knapsack:  dp[i-1][w-wt]          (0/1 knapsack, subset sum)
+  Interval:  dp[i][k], dp[k+1][j]   (MCM, burst balloons)
+  Machine:   state → state           (stock problems)
 ```
 
 ---

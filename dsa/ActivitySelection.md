@@ -57,6 +57,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Activity Selection: Sort by finish time, pick non-overlapping
+
+Activities sorted by finish:
+  [1,4) [3,5) [0,6) [5,7) [3,9) [5,9) [6,10) [8,11) [8,12) [2,14) [12,16)
+
+Timeline:
+  0    2    4    6    8   10   12   14   16
+  │────│────│────│────│────│────│────│────│
+  ████████         [1,4)  ← PICK ✓
+     ░░░░░░░░      [3,5)  ← skip (overlaps)
+  ░░░░░░░░░░░░░   [0,6)  ← skip (overlaps)
+           █████   [5,7)  ← PICK ✓
+     ░░░░░░░░░░░░░ [3,9)  ← skip
+           ░░░░░░░ [5,9)  ← skip
+              ░░░░░░ [6,10) ← skip
+                █████ [8,11) ← PICK ✓
+                ░░░░░░ [8,12) ← skip
+  ░░░░░░░░░░░░░░░░░░░ [2,14) ← skip
+                      █████ [12,16) ← PICK ✓
+
+Selected: [1,4) [5,7) [8,11) [12,16)  = 4 activities
+```
+
 ---
 
 ## Example 2: Recursive Activity Selection
@@ -106,6 +131,32 @@ func main() {
 		fmt.Printf("  [%d, %d)\n", a.Start, a.Finish)
 	}
 }
+```
+
+**Textual Figure:**
+```
+Recursive Activity Selection (same data as Example 1)
+
+Call tree:
+  selectActivities(acts, 0, 12)        ← start from dummy [−1,0)
+  ├─ Find first activity starting ≥ 0
+  │  → acts[1] = [1,4)  ✓ PICK
+  │
+  ├─ selectActivities(acts, 1, 12)
+  │  ├─ Find first starting ≥ 4
+  │  │  → acts[4] = [5,7)  ✓ PICK
+  │  │
+  │  ├─ selectActivities(acts, 4, 12)
+  │  │  ├─ Find first starting ≥ 7
+  │  │  │  → acts[8] = [8,11)  ✓ PICK
+  │  │  │
+  │  │  ├─ selectActivities(acts, 8, 12)
+  │  │  │  ├─ Find first starting ≥ 11
+  │  │  │  │  → acts[11] = [12,16)  ✓ PICK
+  │  │  │  │
+  │  │  │  └─ No more → return nil
+
+Result: [1,4) → [5,7) → [8,11) → [12,16)  = 4 activities
 ```
 
 ---
@@ -174,6 +225,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Weighted Activity Selection: maximize total weight
+
+Activities (sorted by finish):
+  A:[1,3) w=5   B:[2,5) w=6   C:[4,6) w=5
+  D:[6,7) w=4   E:[5,8) w=11  F:[7,9) w=2
+
+Timeline with weights:
+  1    2    3    4    5    6    7    8    9
+  │────│────│────│────│────│────│────│────│
+  █████          A(w=5)
+     ░░░░░░░░░   B(w=6)
+           ░░░░░  C(w=5)
+                 ░░  D(w=4)
+              ███████ E(w=11)
+                   ░░░ F(w=2)
+
+DP table: dp[i] = max weight using first i activities
+  dp[0]=5  dp[1]=6  dp[2]=10  dp[3]=10  dp[4]=17  dp[5]=17
+
+Optimal: A(5) + E(11) + pick = 17
+Note: Greedy by weight would fail → need DP!
+```
+
 ---
 
 ## Example 4: Meeting Rooms — Can Attend All? (LC 252)
@@ -203,6 +279,29 @@ func main() {
 	fmt.Println(canAttendAll([][]int{{0, 30}, {5, 10}, {15, 20}}))  // false
 	fmt.Println(canAttendAll([][]int{{7, 10}, {2, 4}}))              // true
 }
+```
+
+**Textual Figure:**
+```
+Meeting Rooms: Can attend all?
+
+Test 1: [[0,30], [5,10], [15,20]]
+Sorted by start:
+  0         10        20        30
+  │──────────│──────────│──────────│
+  ██████████████████████████████  [0,30)
+       ▓▓▓▓▓                          [5,10)  ← OVERLAP!
+                ▓▓▓▓▓                  [15,20) ← OVERLAP!
+Result: false ✗
+
+Test 2: [[7,10], [2,4]]
+Sorted by start:
+  0    2    4    6    8   10
+  │────│────│────│────│────│
+       ████               [2,4)
+                  █████  [7,10)
+  No overlap
+Result: true ✓
 ```
 
 ---
@@ -262,6 +361,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Maximum Number of Events Attended
+
+Events: [[1,2], [2,3], [3,4]]
+
+Day:  1    2    3    4
+      │────│────│────│
+E1:   █████     [1,2]
+E2:        █████ [2,3]
+E3:             ████ [3,4]
+
+Greedy (min-heap of end times):
+  Day 1: heap=[2], attend E1 (ends 2) ✓
+  Day 2: heap=[3], attend E2 (ends 3) ✓
+  Day 3: heap=[4], attend E3 (ends 4) ✓
+
+Result: 3 events attended
+
+Strategy: Each day, attend the event with
+earliest deadline (soonest expiring first)
+```
+
 ---
 
 ## Example 6: Non-overlapping Intervals — Min Removals (LC 435)
@@ -301,6 +423,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Non-overlapping Intervals: Min Removals
+
+Intervals: [[1,2], [2,3], [3,4], [1,3]]
+Sorted by end: [1,2] [1,3] [2,3] [3,4]
+
+Timeline:
+  1    2    3    4
+  │────│────│────│
+  █████         [1,2) ← KEEP
+  ░░░░░░░░░     [1,3) ← REMOVE (overlaps [1,2))
+       █████    [2,3) ← KEEP
+            ████ [3,4) ← KEEP
+
+Kept: 3, Removed: 1
+Same logic as activity selection (keep max non-overlapping)
+```
+
 ---
 
 ## Example 7: Minimum Arrows to Burst Balloons (LC 452)
@@ -337,6 +478,29 @@ func main() {
 	fmt.Println()
 	fmt.Println("Same pattern: sort by end, count non-overlapping groups")
 }
+```
+
+**Textual Figure:**
+```
+Minimum Arrows to Burst Balloons
+
+Balloons: [[10,16], [2,8], [1,6], [7,12]]
+Sorted by end: [1,6] [2,8] [7,12] [10,16]
+
+Number line:
+  0    2    4    6    8   10   12   14   16
+  │────│────│────│────│────│────│────│────│
+  ─███████████───      [1,6]
+     ─████████████──   [2,8]
+               ─█████████─   [7,12]
+                    ─███████████─  [10,16]
+
+  Arrow 1 at x=6: bursts [1,6] and [2,8]  ← group 1
+         ↑
+  Arrow 2 at x=12: bursts [7,12] and [10,16]  ← group 2
+         ↑
+
+Result: 2 arrows  (2 non-overlapping groups)
 ```
 
 ---
@@ -402,6 +566,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Job Sequencing with Deadlines
+
+Jobs sorted by profit (descending):
+  a(d=2,p=100)  c(d=2,p=27)  d(d=1,p=25)  b(d=1,p=19)  e(d=3,p=15)
+
+Slot assignment (latest available slot):
+  Slot:  [1]      [2]      [3]
+         ─────    ─────    ─────
+
+  Job a (d=2, p=100): try slot 2 → empty ✓
+         [ ]      [a]      [ ]
+
+  Job c (d=2, p=27):  try slot 2 → full, try 1 → empty ✓
+         [c]      [a]      [ ]
+
+  Job d (d=1, p=25):  try slot 1 → full → skip ✗
+
+  Job b (d=1, p=19):  try slot 1 → full → skip ✗
+
+  Job e (d=3, p=15):  try slot 3 → empty ✓
+         [c]      [a]      [e]
+
+  ┌──────────────────────────────┐
+  │ Max profit: 100+27+15 = 142   │
+  │ Scheduled: [c, a, e]          │
+  └──────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Activity Selection with K Rooms
@@ -449,6 +643,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Activity Selection with K Rooms (Meeting Rooms II)
+
+Intervals: [[0,30], [5,10], [15,20]]
+Sorted by start time.
+
+Min-heap tracks end times of active rooms:
+
+Step 1: [0,30] → heap: [30]       ← room 1 opens
+Step 2: [5,10] → heap top 30 > 5  ← room 2 opens
+                  heap: [10, 30]
+Step 3: [15,20]→ heap top 10 ≤ 15 ← room 2 reused!
+                  pop 10, push 20
+                  heap: [20, 30]
+
+  Room 1: ██████████████████████████████  [0,30)
+  Room 2: ─────█████─────█████──────────  [5,10)[15,20)
+
+Result: 2 rooms needed
+```
+
 ---
 
 ## Example 10: Activity Selection Patterns Summary
@@ -489,6 +705,33 @@ func main() {
 	fmt.Println("Key insight: ALWAYS sort by finish time for")
 	fmt.Println("non-overlapping selection problems.")
 }
+```
+
+**Textual Figure:**
+```
+Activity Selection Patterns Overview
+
+┌───────────────────────────────────────────────────┐
+│ Pattern 1: Max Non-overlapping                  │
+│   Sort by: FINISH → pick earliest non-conflict   │
+│   ████  ░░░  █████  ░░░  ████                   │
+├───────────────────────────────────────────────────┤
+│ Pattern 2: Min Rooms                             │
+│   Sort by: START → min-heap of end times         │
+│   Room1: ███████████████                          │
+│   Room2: ───█████───████                          │
+├───────────────────────────────────────────────────┤
+│ Pattern 3: Min Arrows / Groups                   │
+│   Sort by: END → count groups                    │
+│   Group1: ███████     Group2: ███████              │
+│          ███████████        ███████              │
+├───────────────────────────────────────────────────┤
+│ Pattern 4: Weighted (DP Required)                │
+│   Sort by: FINISH → DP[i] = max(incl, excl)      │
+│   Binary search for last compatible activity      │
+└───────────────────────────────────────────────────┘
+
+Key: Always sort by FINISH TIME for selection problems
 ```
 
 ---

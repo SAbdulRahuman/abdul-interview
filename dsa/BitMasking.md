@@ -59,6 +59,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│    Set Operations with Bitmask (4 elements)     │
+├────────────────────────────────────────────────┤
+│  Element:   3   2   1   0                       │
+│  A = 1010:  {1, 3}                              │
+│  B = 1100:  {2, 3}                              │
+│                                                  │
+│  A | B  (union):                                 │
+│    1010 | 1100 = 1110  → {1, 2, 3}               │
+│                                                  │
+│  A & B  (intersection):                          │
+│    1010 & 1100 = 1000  → {3}                     │
+│                                                  │
+│  A &^ B (difference A\B):                        │
+│    1010 &^ 1100 = 0010  → {1}                    │
+│                                                  │
+│  A ^ B  (symmetric difference):                  │
+│    1010 ^ 1100 = 0110  → {1, 2}                  │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Enumerate All Subsets
@@ -92,6 +115,27 @@ func main() {
 	}
 	fmt.Printf("Total: %d subsets\n", 1<<len(nums))
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│   Enumerate All Subsets: nums = {1, 2, 3}       │
+├────────────────────────────────────────────────┤
+│  mask    bit2 bit1 bit0   subset                │
+│  ────    ──── ──── ────   ──────                │
+│  000 (0)   0    0    0    {}                    │
+│  001 (1)   0    0    1    {1}                   │
+│  010 (2)   0    1    0    {2}                   │
+│  011 (3)   0    1    1    {1, 2}                │
+│  100 (4)   1    0    0    {3}                   │
+│  101 (5)   1    0    1    {1, 3}                │
+│  110 (6)   1    1    0    {2, 3}                │
+│  111 (7)   1    1    1    {1, 2, 3}             │
+│                                                  │
+│  Total: 2^3 = 8 subsets                          │
+│  Each bit i → include nums[i] in subset           │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -134,6 +178,26 @@ func main() {
 	}
 	fmt.Printf("Total: %d subsets\n", count)
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Enumerate Subsets of mask = 1011 = {0,1,3}     │
+├────────────────────────────────────────────────┤
+│  Trick: sub = (sub - 1) & mask                  │
+│                                                  │
+│  Start: sub = 1011 = {0,1,3}                    │
+│    sub-1 = 1010, & 1011 = 1010 → {1,3}          │
+│    sub-1 = 1001, & 1011 = 1001 → {0,3}          │
+│    sub-1 = 1000, & 1011 = 1000 → {3}            │
+│    sub-1 = 0111, & 1011 = 0011 → {0,1}          │
+│    sub-1 = 0010, & 1011 = 0010 → {1}            │
+│    sub-1 = 0001, & 1011 = 0001 → {0}            │
+│    sub-1 = 0000, & 1011 = 0000 → {}             │
+│                                                  │
+│  Total: 8 subsets (= 2^|mask| = 2^3)            │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -195,6 +259,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Bitmask DP — TSP (4 cities)                    │
+├────────────────────────────────────────────────┤
+│  dp[mask][i] = min cost visiting cities in mask  │
+│                ending at city i                  │
+│                                                  │
+│  mask = 0001  city {0} visited                   │
+│  mask = 0011  cities {0,1} visited               │
+│  mask = 0111  cities {0,1,2} visited             │
+│  mask = 1111  all 4 cities visited (full=15)     │
+│                                                  │
+│  Transition: dp[mask|1<<v][v] =                  │
+│      min(dp[mask][u] + dist[u][v])               │
+│      for each u in mask, v not in mask            │
+│                                                  │
+│  Example path: 0→10→1→35→2→30→3→20→0              │
+│  Total = 10 + 35 + 30 + 20 = 95                 │
+│  Optimal: 80 (0→1→3→2→0 = 10+25+30+15)          │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Partition Equal Subset Sum (Bitmask)
@@ -233,6 +320,27 @@ func main() {
 		fmt.Printf("%v → canPartition: %v\n", nums, canPartition(nums))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Partition Equal Subset Sum: [1, 5, 11, 5]      │
+├────────────────────────────────────────────────┤
+│  total = 22, target = 11                         │
+│  n = 4 elements → 2^4 = 16 masks                │
+│                                                  │
+│  mask  elem3 elem2 elem1 elem0  sum              │
+│  0000    -     -     -     -      0              │
+│  0001    -     -     -     1      1              │
+│  0010    -     -     5     -      5              │
+│  0110    -     -     5    11     16              │
+│  1010    5     -     5     -     10              │
+│  1011    5     -     5     1     11 ← target!    │
+│                                                  │
+│  mask 1011 = {0,1,3} → {1, 5, 5} sums to 11     │
+│  Remaining {2} → {11} also sums to 11  ✓          │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -274,6 +382,31 @@ func main() {
 	fmt.Println("Strategy: greedily set bits from MSB to LSB")
 	fmt.Println("  Keep a bit if ≥2 numbers have all set bits so far")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Maximum AND of Pair: [12, 15, 10, 14]          │
+├────────────────────────────────────────────────┤
+│  12 = 1100    15 = 1111                         │
+│  10 = 1010    14 = 1110                         │
+│                                                  │
+│  Greedy from MSB (bit 3 to 0):                   │
+│  bit 3: candidate=1000                            │
+│    12&1000=1000✓ 15&1000=1000✓                   │
+│    10&1000=1000✓ 14&1000=1000✓  count≥2 ✓       │
+│    result = 1000                                 │
+│                                                  │
+│  bit 2: candidate=1100                            │
+│    12&1100=1100✓ 15&1100=1100✓                   │
+│    14&1100=1100✓  count≥2 ✓                      │
+│    result = 1100 = 12                            │
+│                                                  │
+│  bit 1: candidate=1110                            │
+│    15&1110=1110✓ 14&1110=1110✓  count≥2 ✓       │
+│    result = 1110 = 14  (max AND of 14 & 15)      │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -326,6 +459,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Permission System with Bitmask                 │
+├────────────────────────────────────────────────┤
+│  Bit:   3     2     1     0                      │
+│  Perm: Admin Exec Write Read                    │
+│                                                  │
+│  alice: 1111 = R W X A  (all permissions)       │
+│  bob  : 0011 = R W - -                          │
+│  carol: 0001 = R - - -                          │
+│                                                  │
+│  Check Bob has Write?                            │
+│    0011 & 0010 = 0010 ≠ 0 → true                │
+│                                                  │
+│  Grant Carol Write:  carol |= 0010               │
+│    0001 | 0010 = 0011  → R W                    │
+│                                                  │
+│  Revoke Bob Write:   bob &^= 0010               │
+│    0011 &^ 0010 = 0001  → R only                │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Minimum Number of Vertices to Reach All
@@ -368,6 +524,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Prerequisite Bitmask — Min Starting Set         │
+├────────────────────────────────────────────────┤
+│  Task 0: prereqs = 0000 (none) ← start           │
+│  Task 1: prereqs = 0000 (none) ← start           │
+│  Task 2: prereqs = 0011 (needs 0,1)             │
+│  Task 3: prereqs = 0100 (needs 2)               │
+│                                                  │
+│  Dependency graph:                               │
+│    [0] ──┐                                        │
+│          ├─→ [2] ──→ [3]                        │
+│    [1] ──┘                                        │
+│                                                  │
+│  Start set mask = 0011 → tasks {0, 1}            │
+│  (tasks with prereqs == 0000)                    │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Counting Subsets with Given Sum
@@ -404,6 +580,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Count Subsets With Sum: [1,2,3,4,5], target=6  │
+├────────────────────────────────────────────────┤
+│  Iterate all 2^5 = 32 masks:                    │
+│                                                  │
+│  mask  bit4 bit3 bit2 bit1 bit0  subset   sum   │
+│  00110   0    0    1    1    0   {2,3}     5    │
+│  00111   0    0    1    1    1   {1,2,3}   6 ✓  │
+│  01001   0    1    0    0    1   {1,4}     5    │
+│  01010   0    1    0    1    0   {2,4}     6 ✓  │
+│  01100   0    1    1    0    0   {3,4}     7    │
+│  10001   1    0    0    0    1   {1,5}     6 ✓  │
+│  10010   1    0    0    1    0   {2,5}     7    │
+│                                                  │
+│  Check: mask & (1<<i) selects element i          │
+│  Sum selected elements, compare to target        │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Bitmask Patterns Summary
@@ -437,6 +634,25 @@ func main() {
 		fmt.Printf("  %30s→ %s\n\n", "", p.use)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Bitmask Patterns Quick Reference                │
+├────────────────┬───────────────────────────────┤
+│  Operation       │  Example (n=4 elements)       │
+├────────────────┼───────────────────────────────┤
+│  Full set        │  (1<<4)-1 = 1111 = {0,1,2,3} │
+│  Add elem 2      │  mask | 0100                  │
+│  Remove elem 1   │  mask &^ 0010                 │
+│  Check elem 3    │  mask & 1000 != 0             │
+│  Toggle elem 0   │  mask ^ 0001                  │
+│  All subsets      │  for m=0; m<(1<<n); m++      │
+│  Sub-subsets      │  sub = (sub-1) & mask        │
+│  LSB (iterate)   │  mask & (-mask)               │
+│  Is subset a⊆b   │  a & b == a                   │
+└────────────────┴───────────────────────────────┘
 ```
 
 ---

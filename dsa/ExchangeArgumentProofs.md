@@ -61,6 +61,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Exchange Argument for Activity Selection
+
+Intervals: [1,4] [3,5] [0,6] [5,7] [3,9] [5,9] [6,10] [8,11]
+
+Greedy (G):  picks earliest finish
+  G: [1,4]  [5,7]  [8,11]
+
+Optimal (O): suppose different first pick
+  O: [0,6]  [...]  [...]    (o₁ finishes later)
+
+Exchange step:
+  ┌───────────────────────────────────────┐
+  │ O:  [0,──────6]  [rest of O...]      │
+  │      ↓ swap with g₁                │
+  │ O': [1,─4]  [rest of O...]          │
+  │                                       │
+  │ g₁ finishes EARLIER than o₁          │
+  │ → doesn't conflict with O's rest    │
+  │ → |O'| = |O| and O' matches G      │
+  │   at position 1                      │
+  └───────────────────────────────────────┘
+
+Repeat at each position → O = G → G is optimal ∎
+```
+
 ---
 
 ## Example 2: Scheduling to Minimize Total Completion Time
@@ -102,6 +129,30 @@ func main() {
 	fmt.Println("    Total completion decreases → original wasn't optimal")
 	fmt.Println("  Therefore: sort by processing time (SPT) is optimal ∎")
 }
+```
+
+**Textual Figure:**
+```
+Minimize Total Completion Time: jobs = [3, 1, 2]
+
+Greedy (SPT): sort ascending → [1, 2, 3]
+  Job 1: finish at 1     (completion = 1)
+  Job 2: finish at 1+2=3 (completion = 3)
+  Job 3: finish at 3+3=6 (completion = 6)
+  Total: 1+3+6 = 10 ✓
+
+Exchange argument:
+  ┌────────────────────────────────────────┐
+  │ If job i (p=3) before job j (p=1):    │
+  │   [..., 3, 1, ...]                     │
+  │         ↓  swap                        │
+  │   [..., 1, 3, ...]                     │
+  │                                        │
+  │ Before swap: C_i=t+3,  C_j=t+3+1=t+4  │
+  │ After swap:  C_j=t+1,  C_i=t+1+3=t+4  │
+  │ Total change: (t+1+t+4)-(t+3+t+4) = -2│
+  │ Net improvement! → SPT is optimal ∎   │
+  └────────────────────────────────────────┘
 ```
 
 ---
@@ -157,6 +208,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Minimize Maximum Lateness (EDD Rule)
+
+Jobs sorted by deadline:
+  J1(d=1,p=4) J2(d=3,p=6) J3(d=2,p=12) J4(d=4,p=8) J5(d=3,p=14) J6(d=2,p=15)
+
+Exchange argument (adjacent swap):
+  ┌───────────────────────────────────────────┐
+  │ If d_i > d_j and i is before j:          │
+  │                                           │
+  │ Before: [..., i, j, ...]                  │
+  │   i finishes at t + p_i                   │
+  │   j finishes at t + p_i + p_j             │
+  │   max lateness of pair:                   │
+  │     max(t+p_i-d_i, t+p_i+p_j-d_j)        │
+  │                                           │
+  │ After swap: [..., j, i, ...]              │
+  │   j finishes at t + p_j                   │
+  │   i finishes at t + p_j + p_i             │
+  │   max lateness of pair:                   │
+  │     max(t+p_j-d_j, t+p_i+p_j-d_i)        │
+  │                                           │
+  │ Since d_i > d_j: swap doesn't increase    │
+  │ the max lateness → EDD optimal ∎         │
+  └───────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Fractional Knapsack Exchange
@@ -208,6 +287,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Exchange Argument for Fractional Knapsack
+
+Items: A(w=10,v=60,r=6) B(w=20,v=100,r=5) C(w=30,v=120,r=4)
+
+Greedy G: maximize ratio first
+  A(all, 10kg) + B(all, 20kg) + C(2/3, 20kg) = 240
+
+Optimal O (suppose different):
+  A(half, 5kg) + B(all, 20kg) + C(all, 25kg?) = ?
+
+  ┌───────────────────────────────────────┐
+  │ Exchange: shift δ=5kg from C to A      │
+  │                                         │
+  │ O:  A(5kg)  B(20kg)  C(25kg)            │
+  │      ↑ +δ            ↑ -δ               │
+  │ O': A(10kg) B(20kg)  C(20kg)            │
+  │                                         │
+  │ Δvalue = δ×r_A - δ×r_C                  │
+  │       = 5×6 - 5×4 = +10 ≥ 0            │
+  │ O' is at least as good → repeat ∎      │
+  └───────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Optimal Merge Pattern Exchange
@@ -257,6 +361,32 @@ func main() {
 	fmt.Println("    s appears in fewer future merges (deeper in tree)")
 	fmt.Println("    Total cost doesn't increase → greedy is optimal ∎")
 }
+```
+
+**Textual Figure:**
+```
+Optimal Merge Pattern Exchange: files = [4, 3, 2, 6]
+
+Greedy: always merge two smallest
+  Step 1: 2+3=5(cost 5)  Step 2: 4+5=9(cost 9)  Step 3: 6+9=15(cost 15)
+  Total: 29
+
+Exchange argument:
+  ┌──────────────────────────────────────────┐
+  │ OPT merges a,b first (a > smallest s):   │
+  │                                            │
+  │ OPT tree:        Greedy tree:              │
+  │     (a+b)            (s+b)                 │
+  │    ┏━━┓             ┏━━┓                  │
+  │   a    b            s    b                 │
+  │                                            │
+  │ Swap s into a's position:                  │
+  │   First merge: s+b < a+b (since s < a)    │
+  │   s is deeper, merged more times           │
+  │   But s is smaller → total cost ≤ OPT     │
+  │                                            │
+  │ Greedy is optimal ∎                       │
+  └──────────────────────────────────────────┘
 ```
 
 ---
@@ -330,6 +460,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Stable Matching (Gale-Shapley)
+
+Men's prefs:    Women's prefs:
+  M0: W0>W1>W2    W0: M1>M0>M2
+  M1: W1>W0>W2    W1: M0>M1>M2
+  M2: W0>W1>W2    W2: M0>M1>M2
+
+Proposal rounds:
+  Round 1: M0→W0✓  M1→W1✓  M2→W0(W0 prefers M0→reject)
+  Round 2: M2→W1(W1 prefers M1→reject)
+  Round 3: M2→W2✓
+
+  Result:  M0───W0    M1───W1    M2───W2
+
+  ┌─────────────────────────────────────┐
+  │ Stability check:                   │
+  │ No pair (M,W) where both prefer    │
+  │ each other over current partner    │
+  │ → Matching is stable ✓            │
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Huffman Exchange Proof
@@ -364,6 +518,38 @@ func main() {
 	fmt.Println()
 	fmt.Println("  Therefore Huffman is optimal ∎")
 }
+```
+
+**Textual Figure:**
+```
+Huffman Exchange Proof
+
+Claim: Two lowest-freq symbols should be
+deepest siblings in optimal tree.
+
+  Optimal tree T:            After exchange:
+       (root)                     (root)
+      ┏━━━┓                      ┏━━━┓
+    ... x(high)  ...           ... a(low)  ...
+       ┏━┓                        ┏━┓
+      ...                        ...
+      a(low, deep)              x(high, deep)
+
+  ┌────────────────────────────────────────┐
+  │ Swap a (low freq) and x (high freq):   │
+  │                                        │
+  │ Cost change:                           │
+  │   (freq(a)-freq(x))×(depth(a)-depth(x))│
+  │                                        │
+  │ freq(a) ≤ freq(x) and                  │
+  │ depth(a) ≥ depth(x)                    │
+  │ → product ≤ 0 → cost doesn't increase  │
+  │                                        │
+  │ Similarly swap b with y.               │
+  │ Now a,b are deepest siblings →         │
+  │ Huffman's first merge step.            │
+  │ Recurse → Huffman is optimal ∎        │
+  └────────────────────────────────────────┘
 ```
 
 ---
@@ -423,6 +609,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Kruskal's MST: Cut Property Exchange
+
+Suppose MST T doesn't include min crossing edge e:
+
+  Cut (S, V-S):
+   ┌─────────┐    e (min)     ┌─────────┐
+   │  S       │─── ─ ─ ────│  V\S     │
+   │    u ●  │             │  ● v     │
+   │         │───────────│         │
+   └─────────┘    f (in T)   └─────────┘
+
+  T has path u───v. Path crosses cut at edge f.
+
+  Exchange:
+  ┌────────────────────────────────────┐
+  │ T' = T - f + e                       │
+  │ w(e) ≤ w(f) since e is min crossing  │
+  │ w(T') ≤ w(T)                         │
+  │ T' is still spanning & connected     │
+  │ → T' is also MST                    │
+  │                                      │
+  │ Kruskal processes edges by weight    │
+  │ Each added edge is min for some cut  │
+  │ → Kruskal produces MST ∎           │
+  └────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Common Exchange Argument Patterns
@@ -459,6 +674,33 @@ func main() {
 	fmt.Println("  Assume optimal for k steps, prove for k+1.")
 	fmt.Println("  Used for: general greedy algorithms")
 }
+```
+
+**Textual Figure:**
+```
+Exchange Argument Templates
+
+┌─────────────────────────────────────────────┐
+│ Template 1: Adjacent Swap                    │
+│   [..., a, b, ...]  →  [..., b, a, ...]      │
+│   Show: swap improves if a,b in wrong order  │
+│   Used for: scheduling, sorting-based greedy │
+├─────────────────────────────────────────────┤
+│ Template 2: Global Swap                      │
+│   O: [o1, o2, ...]  →  O': [g1, o2, ...]    │
+│   Replace OPT's choice with greedy's choice  │
+│   Used for: activity selection, knapsack     │
+├─────────────────────────────────────────────┤
+│ Template 3: Structural Exchange               │
+│   Modify tree/graph structure of OPT         │
+│   to match greedy's structure                │
+│   Used for: Huffman, MST                     │
+├─────────────────────────────────────────────┤
+│ Template 4: Inductive Exchange                │
+│   Base: greedy optimal at step 1             │
+│   Inductive: if optimal for k, prove k+1     │
+│   Used for: general greedy algorithms        │
+└─────────────────────────────────────────────┘
 ```
 
 ---
@@ -507,6 +749,28 @@ func main() {
 	fmt.Println("  • Not handling ties properly")
 	fmt.Println("  • Assuming exchange works without proving it")
 }
+```
+
+**Textual Figure:**
+```
+Exchange Argument Step-by-Step Guide
+
+  Step 1          Step 2           Step 3
+  ┌────────┐   ┌──────────┐   ┌───────────┐
+  │ Define │   │ Assume O  │   │ Exchange   │
+  │ greedy │──▶│ ≠ G at k  │──▶│ O’s choice │
+  │ algo   │   │          │   │ with G’s   │
+  └────────┘   └──────────┘   └─────┬─────┘
+                                    │
+                                    ▼
+  Step 6          Step 5           Step 4
+  ┌────────┐   ┌──────────┐   ┌───────────┐
+  │ Repeat │   │ Show O’   │   │ Show O’    │
+  │ until  │◀──│ ≥ O in   │◀──│ is feasible│
+  │ O = G  │   │ value    │   │            │
+  └────────┘   └──────────┘   └───────────┘
+
+  Conclusion: G is optimal ∎
 ```
 
 ---

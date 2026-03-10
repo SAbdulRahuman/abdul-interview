@@ -58,6 +58,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Distance & Operations: A(1,2) B(4,6)            │
+├─────────────────────────────────────────────────┤
+│  Y                                               │
+│  6 │            • B(4,6)                         │
+│  5 │          /                                   │
+│  4 │    M(2.5,4)   ← midpoint                    │
+│  3 │      /                                       │
+│  2 │ • A(1,2)                                    │
+│  1 │                                               │
+│    └──────────────── X                           │
+│      1  2  3  4  5                                │
+│                                                 │
+│  dist = √((4-1)²+(6-2)²) = √(9+16) = 5.0       │
+│  dist² = 25  (avoid sqrt when possible)          │
+│  slope = (6-2)/(4-1) = 4/3 ≈ 1.3333             │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Cross Product and Orientation
@@ -98,6 +119,28 @@ func main() {
 			t.p, t.q, t.r, names[o], cross(t.p, t.q, t.r))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Cross Product & Orientation                     │
+├─────────────────────────────────────────────────┤
+│  cross(P,Q,R) = (Q-P) × (R-P)                     │
+│                                                 │
+│   R(1,2)         > 0: CCW (left turn)           │
+│    ∙              cross = (4-0)(2-0)-(4-0)(1-0) │
+│  P ─────── Q             = 8-4 = 4 > 0          │
+│  (0,0)   (4,4)                                  │
+│                                                 │
+│  P ─────── Q     < 0: CW (right turn)           │
+│  (0,0)   (4,4)   cross = (4-0)(1-0)-(4-0)(2-0) │
+│    ∙                    = 4-8 = -4 < 0          │
+│   R(2,1)                                        │
+│                                                 │
+│  P ──── Q ──── R  = 0: Collinear               │
+│  (0,0) (2,2) (4,4)                              │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -144,6 +187,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Triangle Area via Cross Product                 │
+├─────────────────────────────────────────────────┤
+│  3-4-5 right triangle: (0,0)(4,0)(0,3)           │
+│                                                 │
+│  Y                                               │
+│  3 │ C(0,3)                                     │
+│    │ │╲                                          │
+│  2 │ │  ╲                                        │
+│    │ │   ╲                                       │
+│  1 │ │    ╲                                      │
+│    │ │     ╲                                     │
+│  0 │ A─────B(4,0)                                │
+│    └────────── X                               │
+│                                                 │
+│  Area = ½|cross| = ½|(4)(3) - (0)(0)| = 6.0     │
+│  Collinear check: cross == 0 means area = 0     │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Shoelace Formula (Polygon Area)
@@ -186,6 +251,26 @@ func main() {
 	irreg := []Point{{0, 0}, {5, 0}, {5, 3}, {3, 5}, {0, 3}}
 	fmt.Printf("  Irregular area: %.1f\n", polygonArea(irreg))
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Shoelace Formula: Polygon Area                  │
+├─────────────────────────────────────────────────┤
+│  Square (0,0)(4,0)(4,4)(0,4):                    │
+│  (0,4)──────(4,4)                                │
+│    │          │                                    │
+│    │          │    A = ½|Σ(xᵢyᵢ₊₁ - xᵢ₊₁yᵢ)|    │
+│    │          │                                    │
+│  (0,0)──────(4,0)                                │
+│                                                 │
+│  = ½|0×0-4×0 + 4×4-4×0 + 4×4-0×4 + 0×0-0×4| │
+│  = ½|0 + 16 + 16 + 0| = ½×32 = 16.0             │
+│                                                 │
+│  Triangle (0,0)(6,0)(3,4): area = 12.0           │
+│  Works for any simple polygon, O(n)              │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -251,6 +336,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Convex Hull (Andrew's Monotone Chain)            │
+├─────────────────────────────────────────────────┤
+│  Y                                                │
+│  4 │ •(0,4)────┬────(4,4)                       │
+│    │ │       ∙(3,3)  │                            │
+│  3 │ │   (1,3)       │                            │
+│    │ │  ∙       ∙    │                            │
+│  2 │ │      (2,2)    │  ← points inside hull      │
+│    │ │    ∙ (2,1)   │     are excluded            │
+│  1 │ │  (1,1)       │                            │
+│    │ │             │                             │
+│  0 │ •(0,0)────┴────(4,0)                       │
+│    └─────────────────── X                      │
+│                                                 │
+│  Hull: (0,0)→(4,0)→(4,4)→(0,4) (4 of 9 pts)   │
+│  Lower hull: sort by x, keep CCW turns only      │
+│  Upper hull: reverse, same rule                  │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Line Segment Intersection
@@ -311,6 +419,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Line Segment Intersection Tests                 │
+├─────────────────────────────────────────────────┤
+│  Parallel (no intersect):                        │
+│    ──────────  seg1                              │
+│    ──────────  seg2                              │
+│                                                 │
+│  X-shape (intersect ✓):                          │
+│       ╲ /                                        │
+│        X    cross products have opposite signs   │
+│       / ╲                                        │
+│                                                 │
+│  Method: check orientation of 4 triples          │
+│    d1=cross(p2,q2,p1)  d2=cross(p2,q2,q1)       │
+│    d3=cross(p1,q1,p2)  d4=cross(p1,q1,q2)       │
+│    Intersect if (d1,d2) diff sign & (d3,d4) diff │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Point in Polygon (Ray Casting)
@@ -352,6 +481,26 @@ func main() {
 		fmt.Printf("  Point (%.0f,%.0f): inside=%v\n", p.X, p.Y, pointInPolygon(p, polygon))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Point in Polygon: Ray Casting                   │
+├─────────────────────────────────────────────────┤
+│  Polygon: (0,0)(10,0)(10,10)(0,10) — square      │
+│                                                 │
+│  (0,10)────────(10,10)                           │
+│    │              │                                │
+│    │   (5,5)∙─────────→ ray hits 1 edge = inside  │
+│    │              │                                │
+│    │              │  (11,5)∙──→ ray hits 0 = out  │
+│    │              │                                │
+│  (0,0)─────────(10,0)                            │
+│                                                 │
+│  Rule: cast horizontal ray → count crossings    │
+│    odd crossings = inside, even = outside        │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -424,6 +573,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Closest Pair: Divide & Conquer                  │
+├─────────────────────────────────────────────────┤
+│    •(2,3) •(3,4)  │  •(5,1)      •(12,10)       │
+│       ←───→       │                              │
+│      d=1.41      │          •(12,30)           │
+│     closest!     │                      •(40,50)│
+│                   │                              │
+│    Left half     midline    Right half           │
+│                                                 │
+│  1. Sort by X                                    │
+│  2. Split at median                              │
+│  3. Solve each half recursively                  │
+│  4. Check strip (width 2δ) near midline          │
+│  5. Each point checks ≤7 neighbors in strip      │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Rotate Point / Reflect Point
@@ -473,6 +642,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Point Rotation & Reflection                     │
+├─────────────────────────────────────────────────┤
+│  P(3,4) rotated around origin:                   │
+│                                                 │
+│  Y      (-4,3)←─90°                              │
+│  4 │      ∙    ∙ P(3,4)                          │
+│  3 │                                             │
+│  2 │                                             │
+│  1 │                                             │
+│  0 ┴─────────── X                              │
+│ -3 │    ∙ (-3,-4)  ← 180°                       │
+│ -4 │                                             │
+│                                                 │
+│  Rotation matrix: [cosθ  -sinθ]                │
+│                   [sinθ   cosθ]                 │
+│  Reflect X-axis: (3,-4)   Y-axis: (-3,4)        │
+│  Reflect y=x: (4,3)  ← swap coordinates          │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Coordinate Geometry Patterns
@@ -503,6 +695,24 @@ func main() {
 		fmt.Printf("  %-22s %-38s %s\n", p.technique, p.use, p.complexity)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Coordinate Geometry Toolkit                     │
+├─────────────────────────────────────────────────┤
+│  Point ops     → distance, midpoint, slope O(1) │
+│  Cross product → orientation, area         O(1) │
+│  Shoelace      → polygon area              O(n) │
+│  Convex hull   → enclosing polygon     O(nlogn) │
+│  Intersection  → segment crossing          O(1) │
+│  Ray casting   → point-in-polygon          O(n) │
+│  Closest pair  → min distance D&C      O(nlogn) │
+│  Rotation      → transform by angle        O(1) │
+│                                                 │
+│  Tip: use squared distances to avoid floats!    │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

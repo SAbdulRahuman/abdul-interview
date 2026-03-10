@@ -55,6 +55,34 @@ func main() {
 }
 ```
 
+**Textual Figure — Linked List Cycle Detection:**
+
+```
+  List: 1 → 2 → 3 → 4 → (back to 2)
+
+  1 → 2 → 3 → 4
+       ↑         │
+       └─────────┘
+
+  Step   Slow   Fast
+    0      1      1
+    1      2      3     (slow+1, fast+2)
+    2      3      2     (slow+1, fast: 4→2)
+    3      4      4     slow == fast → CYCLE!
+
+  No cycle: 1 → 2 → 3 → nil
+  Step   Slow   Fast
+    0      1      1
+    1      2      3
+    2      3      nil   fast.Next == nil → NO CYCLE
+
+  ┌───────────────────────────────────┐
+  │ Slow: 1 step    Fast: 2 steps     │
+  │ If they meet → cycle exists       │
+  │ If fast hits nil → no cycle       │
+  └───────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Find Cycle Start (LC 142)
@@ -109,6 +137,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Find Cycle Start (Floyd’s Phase 2):**
+
+```
+  List: 1 → 2 → 3 → 4 → 5 → (back to 3)
+
+  1 → 2 → 3 → 4 → 5
+            ↑         │
+            └─────────┘
+
+  Phase 1 — Detect cycle:
+  Step   Slow   Fast
+    0      1      1
+    1      2      3
+    2      3      5
+    3      4      4     meet! (inside cycle)
+
+  Phase 2 — Find start:
+  Reset slow to head, both move 1 step:
+  Step   Slow   Fast
+    0      1      4
+    1      2      5
+    2      3      3     meet! → cycle start = node 3
+
+  ┌────────────────────────────────────────┐
+  │ Phase 1: slow=1x, fast=2x → meet     │
+  │ Phase 2: reset slow to head          │
+  │   both move 1x → meet at cycle start │
+  └────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Find Middle of Linked List (LC 876)
@@ -155,6 +213,37 @@ func main() {
 }
 ```
 
+**Textual Figure — Find Middle of Linked List:**
+
+```
+  Odd length:  1 → 2 → 3 → 4 → 5
+
+  Step   Slow   Fast
+    0      1      1
+    1      2      3
+    2      3      5     fast.Next == nil → STOP
+                        slow = 3 ← middle!
+
+  1 → 2 → [3] → 4 → 5
+           ↑
+         slow
+
+  Even length: 1 → 2 → 3 → 4 → 5 → 6
+
+  Step   Slow   Fast
+    0      1      1
+    1      2      3
+    2      3      5
+    3      4      nil   fast == nil → STOP
+                        slow = 4 ← second middle!
+
+  1 → 2 → 3 → [4] → 5 → 6
+                ↑
+              slow
+
+  When fast reaches end, slow is at middle.
+```
+
 ---
 
 ## Example 4: Happy Number (LC 202)
@@ -196,6 +285,38 @@ func main() {
 	fmt.Println("\n19: 1²+9²=82 → 8²+2²=68 → 6²+8²=100 → 1 ✓")
 	fmt.Println("2: cycles back without reaching 1 ✗")
 }
+```
+
+**Textual Figure — Happy Number (Cycle in Digit Sequences):**
+
+```
+  n = 19 (Happy ✓)
+
+  19 → 1²+9² = 82
+  82 → 8²+2² = 68
+  68 → 6²+8² = 100
+  100 → 1²+0²+0² = 1  ← reached 1!
+
+  Step   Slow   Fast
+    1     82     68    (slow: 1 step, fast: 2 steps)
+    2     68      1    fast == 1 → happy!
+
+  n = 2 (Not Happy ✗)
+
+  2 → 4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 → 4 ...
+                                                  ↑
+                ┌────────── cycle! ──────────┘
+
+  Step   Slow   Fast
+    1      4     16
+    2     16     58
+    3     37     42
+    4     58      4
+    5     89     16
+    6    145     58
+    7     42      4
+    8     20     16
+    9      4      4    slow == fast → cycle → NOT happy
 ```
 
 ---
@@ -241,6 +362,36 @@ func main() {
 
 	fmt.Println("\nO(n) time, O(1) space — no modifying array!")
 }
+```
+
+**Textual Figure — Find Duplicate (Array as Linked List):**
+
+```
+  nums = [1, 3, 4, 2, 2]
+  Index:  0  1  2  3  4
+
+  Treat as linked list: index → nums[index]
+  0 → 1 → 3 → 2 → 4 → 2 (cycle!)
+                  ↑      │
+                  └──────┘
+
+  Phase 1 — Find meeting point:
+  Step   Slow          Fast
+    0    nums[0]=1     nums[nums[0]]=3
+    1    nums[1]=3     nums[nums[3]]=4
+    2    nums[3]=2     nums[nums[4]]=4
+    3    nums[2]=4     nums[nums[2]]=2
+    4    nums[4]=2     nums[nums[4]]=2   meet at 2!
+
+  Phase 2 — Find cycle start:
+  slow = 0
+  Step   Slow   Fast
+    0      0      2
+    1      1      4
+    2      3      2
+    3      2      2     meet! → duplicate = 2
+
+  Result: 2
 ```
 
 ---
@@ -308,6 +459,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Palindrome Linked List:**
+
+```
+  List: 1 → 2 → 2 → 1
+
+  Step 1 — Find middle (fast/slow):
+  Step   Slow   Fast
+    0      1      1
+    1      2      2     fast.Next.Next == nil → STOP
+    slow is at node 2 (first middle)
+
+  Step 2 — Reverse second half:
+  Before: 1 → 2 | 2 → 1
+  After:  1 → 2   1 → 2
+          first    second (reversed)
+
+  Step 3 — Compare:
+  first:  1 → 2
+  second: 1 → 2
+    1 == 1 ✓
+    2 == 2 ✓
+  All match → PALINDROME!
+
+  For [1,2,3]:  first: 1→2  second: 3
+    1 != 3 ✗ → NOT palindrome
+```
+
 ---
 
 ## Example 7: Linked List Cycle Length
@@ -352,6 +530,31 @@ func main() {
 
 	fmt.Printf("Cycle length: %d\n", cycleLength(nodes[0]))
 }
+```
+
+**Textual Figure — Linked List Cycle Length:**
+
+```
+  List: 1 → 2 → 3 → 4 → 5 → (back to 3)
+
+  1 → 2 → 3 → 4 → 5
+            ↑         │
+            └─────────┘
+            cycle: 3 → 4 → 5 → 3
+
+  Phase 1: Find meeting point (slow+fast)
+  Step   Slow   Fast
+    0      1      1
+    1      2      3
+    2      3      5
+    3      4      4     meet!
+
+  Phase 2: Count cycle length
+  Start at meeting point (4), walk until return:
+    4 → 5 → 3 → 4  → back!
+    count: 1   2   3
+
+  Cycle length = 3
 ```
 
 ---
@@ -432,6 +635,34 @@ func main() {
 }
 ```
 
+**Textual Figure — Reorder List:**
+
+```
+  Input: 1 → 2 → 3 → 4 → 5
+
+  Step 1 — Find middle (fast/slow):
+  slow stops at 3 → split:
+    first:  1 → 2 → 3
+    second: 4 → 5
+
+  Step 2 — Reverse second half:
+    second: 5 → 4
+
+  Step 3 — Merge alternating:
+    first:   1   2   3
+    second:  5   4
+
+    Take from first:  1 →
+    Take from second: 1 → 5 →
+    Take from first:  1 → 5 → 2 →
+    Take from second: 1 → 5 → 2 → 4 →
+    Take from first:  1 → 5 → 2 → 4 → 3
+
+  Result: 1 → 5 → 2 → 4 → 3
+
+  Pattern: L0 → Ln → L1 → Ln-1 → L2 ...
+```
+
 ---
 
 ## Example 9: Circular Array Loop (LC 457)
@@ -488,6 +719,40 @@ func main() {
 		fmt.Printf("%v → %v\n", nums, circularArrayLoop(cp))
 	}
 }
+```
+
+**Textual Figure — Circular Array Loop:**
+
+```
+  nums = [2, -1, 1, 2, 2]
+  Index:  0    1  2  3  4
+
+  Movement: index i → (i + nums[i]) % n
+
+  From 0: (0+2)%5 = 2
+  From 2: (2+1)%5 = 3
+  From 3: (3+2)%5 = 0  → back to 0!
+
+  Cycle: 0 → 2 → 3 → 0  (all positive → same direction ✓)
+
+  ┌───┬────┬───┬───┬───┐
+  │ 2 │ -1 │ 1 │ 2 │ 2 │
+  └───┴────┴───┴───┴───┘
+    0    1   2   3   4
+    │        ↑   │
+    └────────┘   │
+         └───────┘
+    ┌─────────────┘
+    │  Cycle: 0→2→3→0
+
+  Floyd’s on circular array:
+  Step   Slow              Fast
+    0    next(0)=2         next(next(0))=3
+    1    next(2)=3         next(next(3))=2
+    2    next(3)=0         next(next(2))=0
+    3    next(0)=2         next(next(0))=3
+    ...  eventually slow == fast → cycle found
+    Check length > 1 ✓ → true
 ```
 
 ---

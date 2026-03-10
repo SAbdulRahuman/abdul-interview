@@ -53,6 +53,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Basic Coordinate Compression                   │
+├─────────────────────────────────────────────────┤
+│  Original: [100, 5000, 3, 999999, 3, 100]       │
+│                                                 │
+│  Step 1: Sort unique values                     │
+│    [3, 100, 5000, 999999]                       │
+│                                                 │
+│  Step 2: Assign ranks                           │
+│    3 → 0,  100 → 1,  5000 → 2,  999999 → 3    │
+│                                                 │
+│  Step 3: Replace originals                      │
+│    [100, 5000, 3, 999999, 3, 100]               │
+│     ↓     ↓    ↓    ↓      ↓   ↓                  │
+│    [ 1,    2,  0,    3,    0,  1]               │
+│                                                 │
+│  Range: [0, 999999] → [0, 3]  (4 distinct)     │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Count Inversions with Compression + BIT
@@ -112,6 +134,26 @@ func main() {
 		fmt.Printf("  %v → inversions = %d\n", arr, countInversions(arr))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Count Inversions with BIT + Compression        │
+├─────────────────────────────────────────────────┤
+│  arr = [7, 5, 6, 4]                             │
+│  Compressed ranks: {4→0, 5→1, 6→2, 7→3}      │
+│  → [3, 1, 2, 0]                                 │
+│                                                 │
+│  Process right-to-left, query BIT:              │
+│    i=3: val=0, query(0-1)=0, add 0. inv +=0    │
+│    i=2: val=2, query(2-1)=1, add 2. inv +=1    │
+│    i=1: val=1, query(1-1)=1, add 1. inv +=1    │
+│    i=0: val=3, query(3-1)=3, add 3. inv +=3    │
+│                                                 │
+│  Total inversions: 0+1+1+3 = 5                  │
+│  BIT enables O(n log n) counting                │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -177,6 +219,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Count Smaller After Self                       │
+├─────────────────────────────────────────────────┤
+│  nums = [5, 2, 6, 1]                            │
+│  Ranks: {1→0, 2→1, 5→2, 6→3}                 │
+│                                                 │
+│  Process right-to-left:                         │
+│    i=3: add rank 0 (val=1)                      │
+│          BIT: [1,0,0,0]  query(-1)=0           │
+│    i=2: add rank 3 (val=6)                      │
+│          BIT: [1,0,0,1]  query(2)=1            │
+│    i=1: add rank 1 (val=2)                      │
+│          BIT: [1,1,0,1]  query(0)=1            │
+│    i=0: add rank 2 (val=5)                      │
+│          BIT: [1,1,1,1]  query(1)=2            │
+│                                                 │
+│  Result: [2, 1, 1, 0]                           │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Range Sum with Coordinate Compression
@@ -236,6 +300,28 @@ func uniqueInts(a []int) []int {
 	for i := 1; i < len(a); i++ { if a[i] != a[i-1] { r = append(r, a[i]) } }
 	return r
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Range Sum on Sparse Coordinates                │
+├─────────────────────────────────────────────────┤
+│  Events at positions: 50, 100, 10⁶, 10⁹-1       │
+│  Range [0, 10⁹] is huge but only 4 positions!   │
+│                                                 │
+│  Compress:                                      │
+│  pos:   50  100  10⁶   999999999               │
+│  rank:   0    1    2        3                    │
+│                                                 │
+│  BIT on ranks [0..3]:                           │
+│  ┌───┬───┬───┬───┐                                │
+│  │ 7 │ 7 │ 3 │10 │  (values at each rank)      │
+│  └───┴───┴───┴───┘                                │
+│  Sum all = 27,  Sum at pos 100 = 7              │
+│                                                 │
+│  BIT size = 4 instead of 10⁹!                   │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -318,6 +404,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Count of Range Sum                             │
+├─────────────────────────────────────────────────┤
+│  nums=[-2,5,-1], lower=-2, upper=2              │
+│                                                 │
+│  Prefix sums: [0, -2, 3, 2]                     │
+│                                                 │
+│  For each i, count j<i where:                   │
+│    lower ≤ prefix[i]-prefix[j] ≤ upper           │
+│    → prefix[i]-upper ≤ prefix[j] ≤ prefix[i]-lower│
+│                                                 │
+│  i=0: prefix=0, range [-2,2] → 0 matches       │
+│  i=1: prefix=-2, range [-4,0]                   │
+│    prefix[0]=0 is in [-4,0] ✓                   │
+│  i=2: prefix=3, range [1,5]                     │
+│    prefix[1]=-2 ✘, prefix[0]=0 ✘               │
+│  i=3: prefix=2, range [0,4]                     │
+│    prefix[0]=0 ✓, prefix[2]=3 ✓                │
+│  Total: 3                                       │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Rectangle Area with Sweep Line + Compression
@@ -397,6 +507,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Rectangle Area: Sweep Line + Compression       │
+├─────────────────────────────────────────────────┤
+│  R1=(0,0,4,4)  R2=(2,2,6,6)                     │
+│                                                 │
+│  6 │    ┌────────┐                               │
+│  4 │────┼────┐   │  overlap region            │
+│    │    │████│   │  (2,2)-(4,4) = 4 area      │
+│  2 │    └────┼───┘                               │
+│    │         │                                   │
+│  0 ┴─────────┘                                   │
+│    0  2  4  6                                    │
+│                                                 │
+│  Sweep line (bottom to top), track active x     │
+│  Compress x-coords: {0,2,4,6} → ranks {0,1,2,3}│
+│  Area = 16 + 16 - 4 = 28                        │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Offline Queries with Compression
@@ -467,6 +598,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Offline Queries: Count Distinct in Range       │
+├─────────────────────────────────────────────────┤
+│  arr = [1, 2, 1, 3, 2, 1, 4]                    │
+│  idx:   0  1  2  3  4  5  6                     │
+│                                                 │
+│  Sort queries by right endpoint:                │
+│    [0,2], [1,4], [3,6], [0,6]                   │
+│                                                 │
+│  Process with BIT, track lastSeen:              │
+│    At r=2: seen {1:2, 2:1}                      │
+│      [0,2] → distinct = 2                       │
+│    At r=4: seen {1:2, 2:4, 3:3}                 │
+│      [1,4] → distinct = 3                       │
+│    At r=6: seen {1:5, 2:4, 3:3, 4:6}            │
+│      [3,6] → distinct = 4                       │
+│      [0,6] → distinct = 4                       │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Compress for Segment Tree Range Operations
@@ -527,6 +680,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Max Overlapping Intervals + Compression        │
+├─────────────────────────────────────────────────┤
+│  Intervals: [1,5] [2,7] [4,6] [8,10] [3,9]      │
+│                                                 │
+│  Timeline:                                      │
+│  1  2  3  4  5  6  7  8  9  10                  │
+│  ────────── [1,5]                            │
+│     ───────────── [2,7]                       │
+│           ────── [4,6]                         │
+│        ─────────────── [3,9]                  │
+│                       ───── [8,10]             │
+│                                                 │
+│  Diff array on compressed coords:               │
+│  At point 4: [1,5]✓ [2,7]✓ [4,6]✓ [3,9]✓ = 4  │
+│  Max overlap = 4                                 │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Sort + Binary Search Compression (In-Place)
@@ -578,6 +752,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Binary Search Compression                     │
+├─────────────────────────────────────────────────┤
+│  arr = [10⁹, 1, 5×10⁸, 2, 1]                   │
+│                                                 │
+│  Sorted unique: [1, 2, 500000000, 1000000000]  │
+│                                                 │
+│  SearchInts(sorted, val) → index:              │
+│    10⁹ → bisect → idx 3                        │
+│    1   → bisect → idx 0                        │
+│    5e8 → bisect → idx 2                        │
+│    2   → bisect → idx 1                        │
+│    1   → bisect → idx 0                        │
+│                                                 │
+│  Result: [3, 0, 2, 1, 0]                        │
+│                                                 │
+│  vs HashMap: avoids alloc, cache-friendly       │
+│  Trade-off: O(log k) per lookup vs O(1) avg     │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Coordinate Compression Patterns Summary
@@ -615,6 +812,30 @@ func main() {
 	fmt.Println("  4. Use ranks with BIT/segment tree/array")
 	fmt.Println("  5. Decompress results if needed")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Coordinate Compression Workflow                │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ┌───────────────┐                               │
+│  │ Collect values │  all relevant positions     │
+│  └───────┬───────┘                               │
+│          ↓                                      │
+│  ┌───────────────┐                               │
+│  │ Sort + dedup  │  O(k log k)                 │
+│  └───────┬───────┘                               │
+│          ↓                                      │
+│  ┌───────────────┐                               │
+│  │ Map val→rank  │  hash map or binary search  │
+│  └───────┬───────┘                               │
+│          ↓                                      │
+│  ┌───────────────┐                               │
+│  │ Use BIT/SegT  │  on ranks [0, k)            │
+│  └───────────────┘                               │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

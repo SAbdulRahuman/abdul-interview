@@ -54,6 +54,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Brute Force Closest Pair                       │
+├─────────────────────────────────────────────────┤
+│  Points: (2,3)(12,30)(40,50)(5,1)(12,10)(3,4)  │
+│                                                 │
+│  Check ALL C(6,2) = 15 pairs:                   │
+│    (2,3)-(12,30)   = 28.79                      │
+│    (2,3)-(40,50)   = 58.52                      │
+│    (2,3)-(5,1)     = 3.61                       │
+│    (2,3)-(12,10)   = 12.21                      │
+│    (2,3)-(3,4)  →  = 1.41  ★ closest!          │
+│    (12,30)-(40,50) = 33.53                      │
+│    ...  (10 more pairs)                         │
+│                                                 │
+│  Answer: (2,3)-(3,4), dist = 1.4142             │
+│  Time: O(n²) — checks every pair                │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Divide & Conquer O(n log n)
@@ -135,6 +156,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Divide & Conquer Closest Pair                  │
+├─────────────────────────────────────────────────┤
+│  Sorted by X: (2,3)(3,4)(5,1)(12,10)(12,30)(40,50)│
+│                                                 │
+│  ┌── Left ──┐ mid ┌─── Right ───┐              │
+│  (2,3)(3,4)(5,1)  (12,10)(12,30)(40,50)        │
+│     δL=1.41          δR=20.0                    │
+│                                                 │
+│  δ = min(1.41, 20.0) = 1.41                     │
+│                                                 │
+│  Strip: points within 1.41 of midline x=5       │
+│    → (3,4)(5,1) — check pairs in strip          │
+│    → no pair < 1.41 in strip                    │
+│                                                 │
+│  Final: δ = 1.4142  → (2,3)-(3,4)              │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Closest Pair with Pair Tracking
@@ -211,6 +253,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Closest Pair with Result Tracking              │
+├─────────────────────────────────────────────────┤
+│  Points sorted by X:                            │
+│  (0,0)(1,1)(2,1.5)(3,3)(5,5)(7,7)(8,9)(10,10)  │
+│                                                 │
+│  Recursive trace:                               │
+│    Left [0..3]: best=(1,1)-(2,1.5) d=1.12      │
+│    Right[4..7]: best=(7,7)-(8,9)   d=2.24      │
+│    δ = min(1.12, 2.24) = 1.12                   │
+│                                                 │
+│  Strip near x=3:                                │
+│    Check cross-boundary pairs near midline      │
+│    (2,1.5)-(3,3) = 1.80 > 1.12, skip           │
+│                                                 │
+│  Returns: Result{1.12, (1,1), (2,1.5)}          │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Closest Pair in 1D (Simpler Case)
@@ -252,6 +315,26 @@ func main() {
 	fmt.Println("2D: D&C with strip check = O(n log n)")
 	fmt.Println("3D+: same D&C extends but gets more complex")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  1D Closest Pair: Sort + Adjacent Check         │
+├─────────────────────────────────────────────────┤
+│  arr = [7, 1, 4, 9, 2, 15, 3]                  │
+│                                                 │
+│  After sorting:                                 │
+│  ┌───┬───┬───┬───┬───┬───┬───┐                 │
+│  │ 1 │ 2 │ 3 │ 4 │ 7 │ 9 │15 │                 │
+│  └───┴───┴───┴───┴───┴───┴───┘                 │
+│    ↕1  ↕1  ↕1  ↕3  ↕2  ↕6   ← adjacent diffs  │
+│                                                 │
+│  min diff = 1 → pair (1,2) or (2,3) or (3,4)   │
+│                                                 │
+│  Key insight: in 1D, closest pair is always     │
+│  adjacent after sorting → O(n log n)            │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -332,6 +415,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Integer Coordinates — Squared Distance         │
+├─────────────────────────────────────────────────┤
+│  Points: (0,0)(3,4)(1,1)(5,2)(7,8)(2,1)        │
+│                                                 │
+│  Using distSq (avoids sqrt!):                   │
+│    distSq((1,1),(2,1)) = (2-1)²+(1-1)² = 1     │
+│    distSq((0,0),(1,1)) = 1²+1²         = 2     │
+│    distSq((1,1),(3,4)) = 2²+3²         = 13    │
+│                                                 │
+│  Compare squared distances directly:            │
+│    1 < 2 < 13 ...                               │
+│                                                 │
+│  Closest: (1,1)-(2,1)                           │
+│    dist² = 1, dist = 1.0000                     │
+│                                                 │
+│  Tip: int64 for overflow safety on large coords │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Why Strip Has at Most 7 Comparisons
@@ -366,6 +471,26 @@ func main() {
 	fmt.Println("Total: T(n) = 2T(n/2) + O(n log n) = O(n log²n)")
 	fmt.Println("With pre-sorted Y: T(n) = 2T(n/2) + O(n) = O(n log n)")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Strip Analysis: Why ≤7 Comparisons              │
+├─────────────────────────────────────────────────┤
+│  The δ×2δ rectangle around the midline:            │
+│                                                 │
+│   ┌─────────┬─────────┐                          │
+│   │  ∙   ∙  │  ∙   ∙  │  4 points max per half │
+│   │ L-half │ R-half │  (else d < δ in that   │
+│   │  ∙   ∙  │  ∙   ∙  │   half — contradiction)  │
+│   └─────────┴─────────┘                          │
+│     ←─ δ ─→ ←─ δ ─→   ↑ height = δ            │
+│                                                 │
+│  At most 8 pts in δ×2δ box → 7 comparisons     │
+│  Sort strip by Y, check only next 7 neighbors  │
+│  Strip check total: O(7n) = O(n)                │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -457,6 +582,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Optimized: Pre-Sorted Y Coordinates            │
+├─────────────────────────────────────────────────┤
+│  Naive: sort strip by Y each recursion          │
+│    → O(n log n) per level → O(n log²n) total   │
+│                                                 │
+│  Optimized: maintain PY (Y-sorted) throughout   │
+│    ┌───────────────────────────────────┐      │
+│    │ PX (sorted by X)              │      │
+│    │ PY (sorted by Y)              │      │
+│    │                               │      │
+│    │ Split PY into PYleft, PYright  │      │
+│    │ using set membership in O(n)   │      │
+│    └───────────────────────────────────┘      │
+│    Strip from PY: already sorted by Y!         │
+│    T(n) = 2T(n/2) + O(n) = O(n log n)          │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Application — Nearest Neighbor Search
@@ -519,6 +665,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Nearest Neighbor Search                        │
+├─────────────────────────────────────────────────┤
+│  Points: (1,1)(3,4)(5,2)(7,8)(2,6)(9,3)         │
+│  Query: Q(4,3)                                  │
+│                                                 │
+│   8 │       ∙(7,8)                               │
+│   6 │  ∙(2,6)                                    │
+│   4 │    ∙(3,4)                                  │
+│   3 │      Q───→1.41                              │
+│   2 │        ∙(5,2)              ∙(9,3)          │
+│   1 │ ∙(1,1)                                     │
+│   0 ┴───────────────────────                     │
+│                                                 │
+│  NN: (3,4) at d=1.41                            │
+│  3-NN: {(3,4),(5,2),(1,1)} by distance          │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Closest Pair on Collinear Points
@@ -561,6 +728,25 @@ func main() {
 
 	fmt.Println("\nCollinear case: O(n log n) by sorting")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Collinear Points: y = 2x + 1                   │
+├─────────────────────────────────────────────────┤
+│  X coords: [1, 5, 2, 8, 3, 7, 4]               │
+│                                                 │
+│  Sorted: 1  2  3  4  5  7  8                    │
+│          ∙──∙──∙──∙──∙────∙──∙  on number line  │
+│          ↕1  ↕1  ↕1  ↕1  ↕2  ↕1                   │
+│                                                 │
+│  Min Δx = 1 → between consecutive points        │
+│  Actual distance = Δx × √(1+slope²)             │
+│                   = 1 × √(1+4) = √5 ≈ 2.236    │
+│                                                 │
+│  Reduces 2D → 1D: sort + adjacent check O(nlogn)│
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -610,6 +796,26 @@ func main() {
 	}
 	for _, r := range related { fmt.Println("  • " + r) }
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Closest Pair: Complexity Comparison             │
+├─────────────────────────────────────────────────┤
+│  Approach            Time        Strip Sort      │
+│  ────────────────────────────────────────         │
+│  Brute force         O(n²)      N/A             │
+│  D&C sort-each-time  O(nlog²n)  O(nlogn)/level  │
+│  D&C pre-sorted Y   O(nlogn)   O(n)/level      │
+│  Randomized grid     O(n) exp   N/A             │
+│  1D (just sort)      O(nlogn)   N/A             │
+│                                                 │
+│  T(n) recurrence:                               │
+│    T(n) = 2T(n/2) + [strip work per level]      │
+│    O(nlogn) strip → O(nlog²n) total             │
+│    O(n) strip     → O(nlogn)  total  ★          │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

@@ -61,6 +61,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Dynamic Array: Amortized O(1) Append
+
+Append  Size  Cap  Cost  Array State
+──────  ────  ───  ────  ──────────────────────────────
+  1      1    1    1    [█]
+  2      2    2    2    [██]              ← resize! copy 1
+  3      3    4    3    [███░]            ← resize! copy 2
+  4      4    4    1    [████]
+  5      5    8    5    [█████░░░]        ← resize! copy 4
+  6      6    8    1    [██████░░]
+  7      7    8    1    [███████░]
+  8      8    8    1    [████████]
+  9      9   16    9    [█████████░░░░░░░]  ← resize! copy 8
+
+Cost pattern: 1, 2, 3, 1, 5, 1, 1, 1, 9, 1, 1, 1, 1, 1, 1, 1, 17...
+Resizes at powers of 2: cost n+1, but happen every n ops
+Total cost for n appends ≤ 3n → amortized O(1)
+```
+
 ---
 
 ## Example 2: Stack with MultiPop — Amortized O(1)
@@ -119,6 +140,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Stack with MultiPop: Amortized O(1)
+
+Operations sequence:
+  Push(0..9)  → stack: [0,1,2,3,4,5,6,7,8,9]
+  MultiPop(5) → stack: [0,1,2,3,4]         pops 5
+  Push(10..14)→ stack: [0,1,2,3,4,10,11,12,13,14]
+  MultiPop(100)→ stack: []                  pops 10
+
+Accounting method:
+  ┌─────────────────────────────────────────┐
+  │ Each Push pays $2:                      │
+  │   $1 for the push itself                │
+  │   $1 saved as credit on the element     │
+  │                                         │
+  │ Each Pop costs $1, paid by credit       │
+  │                                         │
+  │ Push: [○$][○$][○$][○$][○$]             │
+  │ Pop:  [○✗][○✗][○✗][○✗][○✗]  uses $     │
+  │                                         │
+  │ Total: n pushes ≤ 2n cost               │
+  │ Any pops ≤ n (can't pop more than push) │
+  │ Amortized: O(1) per operation            │
+  └─────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Incrementing Binary Counter
@@ -175,6 +223,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Binary Counter: 8-bit, 16 increments
+
+ Inc  Binary    Flips
+ ───  ────────  ─────
+  1   00000001    1
+  2   00000010    2     ← bit 0 flips every 1
+  3   00000011    1
+  4   00000100    3     ← bit 1 flips every 2
+  5   00000101    1
+  6   00000110    2
+  7   00000111    1
+  8   00001000    4     ← bit 2 flips every 4
+  9   00001001    1
+  10  00001010    2
+  11  00001011    1
+  12  00001100    3
+  13  00001101    1
+  14  00001110    2
+  15  00001111    1
+  16  00010000    5     ← bit 3 flips every 8
+
+  Total flips: 31 for 16 increments
+  Amortized: 31/16 ≈ 1.94 flips/increment
+
+  Bit k flips n/2^k times in n increments:
+    Σ(n/2^k) = n(1 + 1/2 + 1/4 + ...) < 2n
+    → amortized O(1)
+```
+
 ---
 
 ## Example 4: MinStack — O(1) Push/Pop/GetMin
@@ -226,6 +305,32 @@ func main() {
 	s.Pop()
 	fmt.Printf("  Pop()   → min=%d, top=%d\n", s.GetMin(), s.Top())
 }
+```
+
+**Textual Figure:**
+```
+MinStack: O(1) Push/Pop/GetMin
+
+Operation     Stack        MinStack     GetMin
+──────────    ─────────    ─────────    ──────
+
+Push(-2)      [-2]         [-2]         -2
+Push(0)       [-2, 0]      [-2]         -2
+Push(-3)      [-2, 0, -3]  [-2, -3]     -3
+
+  Stack:     MinStack:
+  ┌───┐     ┌───┐
+  │-3 │     │-3 │  ← current min
+  ├───┤     ├───┤
+  │ 0 │     │-2 │  ← previous min
+  ├───┤     └───┘
+  │-2 │
+  └───┘
+
+Pop()         [-2, 0]      [-2]         -2
+  (popped -3, which was minStack top, so pop minStack too)
+
+All operations O(1)!
 ```
 
 ---
@@ -294,6 +399,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Queue with Two Stacks: Amortized O(1)
+
+Enqueue 1,2,3,4,5:
+  Inbox:  [1,2,3,4,5]    Outbox: []
+          ↑ push here
+
+Dequeue (outbox empty → transfer):
+  Inbox:  []    Outbox: [5,4,3,2,1]
+                         ↑ pop here = 1 (FIFO!)
+
+  Transfer visualization:
+  Inbox:           Outbox:
+  ┌───┐            ┌───┐
+  │ 5 │───┐        │ 5 │ bottom
+  │ 4 │   │        │ 4 │
+  │ 3 │   │───▶    │ 3 │
+  │ 2 │   │  flip  │ 2 │
+  │ 1 │───┘        │ 1 │ top ← pop this
+  └───┘            └───┘
+
+Dequeue: 1, 2, 3 (from outbox)
+Enqueue 6, 7 (to inbox)
+Dequeue: 4, 5, 6, 7
+
+Each element: push to inbox once, transfer once, pop once
+→ Amortized O(1) per operation
+```
+
 ---
 
 ## Example 6: Union-Find with Path Compression + Rank
@@ -355,6 +490,37 @@ func main() {
 	fmt.Println("  Amortized O(α(n)) ≈ O(1) per operation")
 	fmt.Println("  α = inverse Ackermann function, practically constant")
 }
+```
+
+**Textual Figure:**
+```
+Union-Find: Path Compression + Union by Rank
+
+Before path compression (chain):
+  0 → 1 → 2 → 3 → ... → 15
+
+After Find(0) with path compression:
+          ┌─── 15 (root) ───┐
+          │    │  │  │       │
+          0    1  2  3  ...  14
+          (all point directly to root)
+
+First pass finds: O(n) total (long chains)
+Second pass finds: O(n) total (all compressed → O(1) each)
+
+  ┌────────────────────────────────────┐
+  │ Union by rank:                     │
+  │   Shorter tree attached under      │
+  │   taller tree's root               │
+  │   → tree height ≤ O(log n)        │
+  │                                    │
+  │ Path compression:                  │
+  │   Every node points to root        │
+  │   after Find                       │
+  │   → subsequent Finds O(1)         │
+  │                                    │
+  │ Combined: amortized O(α(n)) ≈ O(1)│
+  └────────────────────────────────────┘
 ```
 
 ---
@@ -459,6 +625,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Splay Tree: Amortized O(log n)
+
+Insert sequence: 10, 20, 30, 15, 25, 5
+
+After insertions (each insert splays to root):
+  Insert 10:  root=10
+  Insert 20:  root=20 (splay 20 to top)
+  Insert 30:  root=30
+  Insert 15:  root=15
+  Insert 25:  root=25
+  Insert  5:  root=5
+
+After splay(10):
+       10  ← accessed node becomes root
+      ┏  ┓
+     5    25
+         ┏  ┓
+        15   30
+           ┓
+           20
+
+  ┌─────────────────────────────────────┐
+  │ Worst case single op: O(n)           │
+  │ But: splaying balances the tree       │
+  │ Amortized over m ops: O(m log n)     │
+  │ Recently accessed → near root        │
+  │ → great cache locality              │
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: MaxQueue — O(1) Amortized Max
@@ -511,6 +709,28 @@ func main() {
 
 	fmt.Println("\nMonotonic deque maintains max in amortized O(1)")
 }
+```
+
+**Textual Figure:**
+```
+MaxQueue: Monotonic Deque for O(1) Max
+
+Enqueue sequence: 3, 1, 5, 2, 8, 4
+
+  Op          Queue      Deque (monotonic ↓)  Max
+  ────────    ───────    ─────────────────    ───
+  Enq(3)      [3]        [3]                  3
+  Enq(1)      [3,1]      [3,1]                3
+  Enq(5)      [3,1,5]    [5]   ← flush 3,1    5
+  Enq(2)      [3,1,5,2]  [5,2]                5
+  Enq(8)      [..5,2,8]  [8]   ← flush 5,2    8
+  Enq(4)      [...,8,4]  [8,4]                8
+
+  Deque invariant: always decreasing
+  ┌────────┐
+  │ 8 │ 4  │  ← front is always the max
+  └────────┘
+  When dequeuing, if value == deque front, pop deque too
 ```
 
 ---
@@ -595,6 +815,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+LRU Cache (capacity = 2)
+
+  HashMap + Doubly Linked List:
+  HEAD ↔ [node] ↔ [node] ↔ TAIL
+  (most recent)    (least recent)
+
+Operations:
+  Put(1,1):  HEAD ↔ [1] ↔ TAIL           map:{1}
+  Put(2,2):  HEAD ↔ [2] ↔ [1] ↔ TAIL     map:{1,2}
+  Get(1):    HEAD ↔ [1] ↔ [2] ↔ TAIL     (move 1 to front)
+  Put(3,3):  HEAD ↔ [3] ↔ [1] ↔ TAIL     (evict 2, LRU)
+             Get(2) = -1 (evicted)
+  Put(4,4):  HEAD ↔ [4] ↔ [3] ↔ TAIL     (evict 1)
+             Get(1) = -1 (evicted)
+  Get(3)=3:  HEAD ↔ [3] ↔ [4] ↔ TAIL
+  Get(4)=4:  HEAD ↔ [4] ↔ [3] ↔ TAIL
+
+  ┌─────────────────────────────────┐
+  │ All operations O(1):            │
+  │   Get: HashMap lookup + move    │
+  │   Put: HashMap insert + evict   │
+  └─────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Amortized Patterns Summary
@@ -632,6 +878,27 @@ func main() {
 	fmt.Println("  Accounting: Assign credits, pay from savings")
 	fmt.Println("  Potential: Φ(state) function, amortized = actual + ΔΦ")
 }
+```
+
+**Textual Figure:**
+```
+Amortized Analysis: Three Methods
+
+┌────────────────┬────────────┬────────┬───────────────────┐
+│ Data Structure │ Worst Case │ Amort. │ Method            │
+├────────────────┼────────────┼────────┼───────────────────┤
+│ Dynamic Array  │ O(n)       │ O(1)   │ Aggregate         │
+│ Stack+MultiPop │ O(n)       │ O(1)   │ Accounting        │
+│ Binary Counter │ O(k)       │ O(1)   │ Aggregate         │
+│ Union-Find     │ O(log n)   │ O(α(n))│ Potential         │
+│ Splay Tree     │ O(n)       │ O(logn)│ Potential         │
+│ Two-Stack Queue│ O(n)       │ O(1)   │ Accounting        │
+│ MaxQueue       │ O(n)       │ O(1)   │ Monotonic deque   │
+│ LRU Cache      │ O(1)       │ O(1)   │ HashMap+DLL       │
+└────────────────┴────────────┴────────┴───────────────────┘
+
+Key insight: Amortized ≠ Average!
+Amortized is a GUARANTEE over any sequence.
 ```
 
 ---

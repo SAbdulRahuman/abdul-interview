@@ -39,6 +39,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Euclidean Algorithm Trace: GCD(48, 36)          │
+├─────────────────────────────────────────────────┤
+│  gcd(48, 36)                                    │
+│    → 48 % 36 = 12                               │
+│  gcd(36, 12)                                    │
+│    → 36 % 12 = 0                                │
+│  gcd(12, 0)                                     │
+│    → b == 0, return 12  ✓                       │
+│                                                 │
+│  GCD(100, 75):                                  │
+│    100%75=25 → 75%25=0 → return 25              │
+│                                                 │
+│  GCD(17, 13):                                   │
+│    17%13=4 → 13%4=1 → 4%1=0 → return 1         │
+│    (coprime!)                                   │
+│                                                 │
+│  Time: O(log min(a,b)) — Lamé's theorem        │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: LCM
@@ -77,6 +100,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  LCM Computation                                  │
+├──────────────────────────────────────────────────┤
+│  LCM(a,b) = a / gcd(a,b) * b  (divide first!)    │
+│                                                  │
+│  LCM(4,6): gcd=2 → 4/2*6 = 12                   │
+│  LCM(12,15): gcd=3 → 12/3*15 = 60               │
+│  LCM(7,5): gcd=1 → 7/1*5 = 35  (coprime)        │
+│                                                  │
+│  LCM of array {2,3,4,5,6}:                       │
+│    lcm(2,3)     = 6                              │
+│    lcm(6,4)     = 12                             │
+│    lcm(12,5)    = 60                             │
+│    lcm(60,6)    = 60  ← 6 already divides 60     │
+│    Result: 60                                    │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Extended Euclidean Algorithm
@@ -105,6 +148,26 @@ func main() {
 			p[0], x, p[1], y, p[0]*x+p[1]*y)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Extended GCD Trace: extGCD(35, 15)               │
+├──────────────────────────────────────────────────┤
+│  extGCD(35, 15)                                   │
+│    → extGCD(15, 5)     [35%15=5]                 │
+│      → extGCD(5, 0)     [15%5=0]                 │
+│        → return (5, 1, 0) [base: a=5, b=0]      │
+│      g=5, x=0, y=1   [y1-(15/5)*x1 = 0-3*1=-3]  │
+│      → but actually: x=0, y=1                    │
+│    g=5, x=1, y=-2                                │
+│                                                  │
+│  Result: 35×(1) + 15×(-2) = 35 - 30 = 5 = gcd ✓ │
+│                                                  │
+│  Use: find x in a·x ≡ 1 (mod m)                  │
+│  → modular inverse when gcd(a,m) = 1              │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -154,6 +217,24 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Fraction Simplification via GCD                 │
+├─────────────────────────────────────────────────┤
+│   6/8:  gcd(6,8)=2  →  3/4                       │
+│  -4/6:  gcd(4,6)=2  → -2/3                      │
+│  15/25: gcd(15,25)=5 →  3/5                      │
+│  12/-18: gcd(12,18)=6 → -2/3  (normalize sign)  │
+│                                                 │
+│  Fraction Addition:                              │
+│    1/3 + 1/6                                     │
+│    = (1×6 + 1×3) / (3×6)                         │
+│    = 9/18                                        │
+│    gcd(9,18) = 9 → 1/2  ✓                       │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: GCD of Array (LeetCode-style)
@@ -201,6 +282,23 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌───────────────────────────────────────────────────┐
+│  GCD of Array — Fold Operation                    │
+├───────────────────────────────────────────────────┤
+│  {12, 18, 24}:                                    │
+│    gcd(12,18) = 6  →  gcd(6,24) = 6              │
+│    → GCD = 6                                      │
+│                                                   │
+│  {6, 10, 15}:                                     │
+│    gcd(6,10) = 2  →  gcd(2,15) = 1               │
+│    → GCD = 1 (has GCD one: true)                  │
+│                                                   │
+│  Early termination: once g=1, done (can't go lower)│
+└───────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Water Jug Problem (GCD Application)
@@ -236,6 +334,24 @@ func main() {
 	fmt.Println()
 	fmt.Println("Bézout's identity: ax + by = target solvable iff gcd(a,b) | target")
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Water Jug Problem: Can we measure target?        │
+├──────────────────────────────────────────────────┤
+│  Jugs(3,5) → target=4:                           │
+│    gcd(3,5)=1, 4%1==0 → YES  ✓                   │
+│    Bézout: 3×2 + 5×(-1) = 1                      │
+│    Scale ×4: 3×8 + 5×(-4) = 4                    │
+│                                                  │
+│  Jugs(2,6) → target=5:                           │
+│    gcd(2,6)=2, 5%2≠0 → NO   ✗                   │
+│    (can only measure multiples of 2)              │
+│                                                  │
+│  Rule: target measurable ⇔ target % gcd(a,b) == 0 │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -285,6 +401,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Ugly Numbers: factors only {2, 3, 5}             │
+├──────────────────────────────────────────────────┤
+│  Three pointers merging sorted sequences:         │
+│    ×2: 2, 4, 6, 8, 10, 12, ...                    │
+│    ×3: 3, 6, 9, 12, 15, ...                       │
+│    ×5: 5, 10, 15, 20, 25, ...                     │
+│                                                  │
+│  Step  i2  i3  i5  next2 next3 next5  min ugly[] │
+│    1   0   0   0    2     3     5     2  [1,2]   │
+│    2   1   0   0    4     3     5     3  [1,2,3] │
+│    3   1   1   0    4     6     5     4  [...,4] │
+│    4   2   1   0    6     6     5     5  [...,5] │
+│    5   2   1   1    6     6    10     6  [...,6] │
+│  (both i2,i3 advance when next=6)                │
+│                                                  │
+│  First 15: 1,2,3,4,5,6,8,9,10,12,15,16,18,20,24 │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Binary GCD (Stein's Algorithm)
@@ -327,6 +465,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Binary GCD (Stein's): GCD(48, 36)                │
+├──────────────────────────────────────────────────┤
+│  48 = 110000₂    36 = 100100₂                      │
+│                                                  │
+│  Step 1: Both even → divide by 2, track shift    │
+│    48/2=24, 36/2=18  shift=1                      │
+│    24/2=12, 18/2=9   shift=2                      │
+│                                                  │
+│  Step 2: Remove 2s from a: 12→6→3                 │
+│                                                  │
+│  Step 3: Loop (subtract smaller from larger):    │
+│    a=3, b=9 → remove 2s from b → b=9             │
+│    swap: a=3, b=9-3=6 → remove 2s → b=3          │
+│    swap: a=3, b=3-3=0 → done                     │
+│                                                  │
+│  Result: a << shift = 3 << 2 = 12  ✓             │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Count Pairs with GCD = K
@@ -365,6 +525,23 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  Count Pairs with GCD = K                         │
+├──────────────────────────────────────────────────┤
+│  nums = {2, 4, 6, 8, 10}                          │
+│                                                  │
+│  GCD=2: (2,4)(2,6)(2,8)(2,10)(4,6)(4,10)(6,8)   │
+│         (6,10)(8,10) = 9 pairs                   │
+│  GCD=4: (4,8) = 1 pair                           │
+│                                                  │
+│  Check each pair:                                │
+│    gcd(2,4)=2  gcd(2,6)=2  gcd(4,6)=2           │
+│    gcd(4,8)=4  gcd(6,8)=2  gcd(8,10)=2          │
+└──────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: GCD/LCM Patterns
@@ -395,6 +572,24 @@ func main() {
 		fmt.Printf("  %-18s %-30s → %s\n", p.topic, p.key, p.use)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌──────────────────────────────────────────────────┐
+│  GCD / LCM Decision Map                          │
+├──────────────────────────────────────────────────┤
+│  gcd(a,b)?  ──► Euclidean: gcd(b, a%b)          │
+│  lcm(a,b)?  ──► a / gcd(a,b) * b                │
+│  ax+by=g?   ──► Extended GCD                     │
+│  a⁻¹ mod m? ──► extGCD when gcd(a,m)=1          │
+│  coprime?   ──► gcd(a,b) == 1                    │
+│  simplify?  ──► divide num & den by gcd          │
+│  water jug? ──► target % gcd(a,b) == 0           │
+│  no division?──► Binary GCD (shifts only)        │
+│  array gcd? ──► fold gcd across elements         │
+│  array lcm? ──► fold lcm across elements         │
+└──────────────────────────────────────────────────┘
 ```
 
 ---

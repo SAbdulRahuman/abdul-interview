@@ -45,6 +45,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Corporate Flight Bookings: n=5 flights
+
+Bookings: [1,2,+10] [2,3,+20] [2,5,+25]
+
+Difference array construction:
+  Flight:   1     2     3     4     5     6
+  diff:   [+10] [+45] [-10]  [0]   [0]  [-25]
+            │     │     │                   │
+            │    +10   -10 (booking 1)      │
+            │    +20        -20              │
+            │    +25                        -25
+
+Prefix sum scan:
+  Flight:   1     2     3     4     5
+  Seats:   10    55    45    25    25
+
+Timeline:
+  Flight 1: ▓▓▓▓▓▓▓▓▓▓         10 seats
+  Flight 2: ███████████████  55 seats (10+20+25)
+  Flight 3: ████████████     45 seats (20+25)
+  Flight 4: ▓▓▓▓▓▓▓▓▓         25 seats
+  Flight 5: ▓▓▓▓▓▓▓▓▓         25 seats
+
+Result: [10, 55, 45, 25, 25]
+```
+
 ---
 
 ## Example 2: Process Timeline Events
@@ -97,6 +125,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Process Timeline Events
+
+Events sorted by time (departures before arrivals):
+
+  Time  Event         Active Set        Count
+  ────  ──────────    ────────────    ─────
+  t=1   arrive P1     {P1}              1
+  t=3   arrive P2     {P1, P2}          2
+  t=4   query         → 2 active        ─
+  t=5   depart P1     {P2}              1
+  t=6   query         → 1 active        ─
+  t=7   depart P2     {}                0
+
+Timeline:
+  t:  1    2    3    4    5    6    7
+      │────│────│────│────│────│────│
+  P1: ████████████████████
+                                ↑out
+  P2:           ████████████████████
+             ↑in     Q(2)  Q(1)     ↑out
+```
+
 ---
 
 ## Example 3: Maximum Population Year
@@ -133,6 +185,33 @@ func main() {
 	logs2 := [][]int{{1950, 1961}, {1960, 1971}, {1970, 1981}}
 	fmt.Println("Max population year:", maximumPopulation(logs2)) // 1960
 }
+```
+
+**Textual Figure:**
+```
+Maximum Population Year
+
+Logs: [1950,1961] [1960,1971] [1970,1981]
+
+Difference array:
+  1950: +1       1961: -1
+  1960: +1       1971: -1
+  1970: +1       1981: -1
+
+Population over time:
+  Year:  1950  1955  1960  1965  1970  1975  1980
+  Pop:     1     1     2     2     2     2     1
+
+  1950────────────1961
+              1960────────────1971
+                        1970────────────1981
+  Pop:
+  2 │          ██████████████████████
+  1 │██████████                      ███████████
+  0 │───────────────────────────────────────────
+    1950      1960      1970      1981
+
+Max population year: 1960 (pop = 2)
 ```
 
 ---
@@ -210,6 +289,29 @@ func main() {
 		fmt.Println(msg)
 	}
 }
+```
+
+**Textual Figure:**
+```
+Task Scheduler with Priority-Based Events
+
+Tasks: T1(pri=1, [0,5])  T2(pri=3, [2,7])  T3(pri=2, [4,6])
+
+Events sorted by time (ends before starts):
+  t=0: T1 starts   active={T1(1)}       → T1 running
+  t=2: T2 starts   active={T1(1),T2(3)} → T2 running (higher pri)
+  t=4: T3 starts   active={T1,T2,T3}    → T2 running (pri=3)
+  t=5: T1 ends     active={T2(3),T3(2)} → T2 running
+  t=6: T3 ends     active={T2(3)}       → T2 running
+  t=7: T2 ends     active={}            → idle
+
+Timeline:
+  t:  0    1    2    3    4    5    6    7
+      │────│────│────│────│────│────│────│
+  T1: ░░░░░░░░░░░░░░░░░░░░░░░░░   (pri=1)
+  T2:         ████████████████████   (pri=3, highest)
+  T3:                   ▒▒▒▒▒▒▒▒▒▒   (pri=2)
+  Run: [T1 ][   T2 runs (preempts)   ]
 ```
 
 ---
@@ -298,6 +400,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Online vs Offline Event Processing
+
+Intervals: [1,5] [2,6] [4,8]   Queries: t=3, t=5, t=7
+
+Offline: sort ALL events together
+  ┌────────┬──────┬───────────┐
+  │ Time   │ Type │ Active    │
+  ├────────┼──────┼───────────┤
+  │ t=1    │ +1   │ 1         │
+  │ t=2    │ +1   │ 2         │
+  │ t=3    │ Q    │ → ans: 2  │
+  │ t=4    │ +1   │ 3         │
+  │ t=5    │ -1,Q │ 2, ans: 2 │
+  │ t=6    │ -1   │ 1         │
+  │ t=7    │ Q    │ → ans: 1  │
+  │ t=8    │ -1   │ 0         │
+  └────────┴──────┴───────────┘
+
+Online: monotonic pointer advances as queries arrive
+  Query t=3: advance pointer to t=3, active=2
+  Query t=5: advance pointer to t=5, active=2
+  Query t=7: advance pointer to t=7, active=1
+```
+
 ---
 
 ## Example 6: Server Load Analysis
@@ -355,6 +483,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Server Load Analysis
+
+Requests: R1[1,5,load=100]  R2[2,4,load=200]  R3[3,6,load=150]
+
+Events sorted by time:
+  t=1: +100   t=2: +200   t=3: +150
+  t=4: -200   t=5: -100   t=6: -150
+
+Load over time:
+  450 │          ██
+  300 │     █████     █████
+  250 │                     █████
+  150 │                          █████
+  100 │█████
+    0 │───────────────────────────────
+      t=1  t=2  t=3  t=4  t=5  t=6
+
+  Peak load: 450 at time t=3
+  (100 + 200 + 150 all active)
+```
+
 ---
 
 ## Example 7: Brightness of Lamps on a Street
@@ -403,6 +554,31 @@ func main() {
 	lights := [][]int{{-3, 2}, {1, 2}, {3, 3}}
 	fmt.Println("Brightest position:", brightestPosition(lights))
 }
+```
+
+**Textual Figure:**
+```
+Brightness of Lamps on a Street
+
+Lights: [-3,range=2]  [1,range=2]  [3,range=3]
+
+Light coverage:
+  Lamp 1 (pos=-3, r=2): covers [-5, -1]
+  Lamp 2 (pos= 1, r=2): covers [-1,  3]
+  Lamp 3 (pos= 3, r=3): covers [ 0,  6]
+
+Events:
+  pos=-5: +1    pos=-1: +1,+1   pos=0: +1
+  pos=-1+1: -1  pos=4: -1       pos=7: -1
+
+Brightness along number line:
+  -5   -3   -1    0    1    3    4    6    7
+   │────│────│────│────│────│────│────│────│
+   ───────────          Lamp 1
+              ─────────────    Lamp 2
+                   ─────────────────  Lamp 3
+
+Brightness sweep → peak at overlap of lamps 2 & 3
 ```
 
 ---
@@ -468,6 +644,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Process Logs: Find Busiest Period
+
+Logs:
+  t=1: enter 3   t=2: enter 5   t=4: exit 2
+  t=5: enter 4   t=6: exit 3    t=7: exit 7
+
+People count over time:
+  t=1: +3 =  3
+  t=2: +5 =  8  ← peak!
+  t=4: -2 =  6
+  t=5: +4 = 10  ← new peak!
+  t=6: -3 =  7
+  t=7: -7 =  0
+
+  10 │               ██
+   8 │     ████████
+   7 │                    ██
+   6 │          █████
+   3 │█████
+   0 │─────────────────────────
+     t=1  t=2  t=4  t=5  t=6  t=7
+
+Busiest period: [5, 6) with 10 people
+```
+
 ---
 
 ## Example 9: Falling Squares (Height Tracking)
@@ -515,6 +718,37 @@ func main() {
 	positions := [][]int{{1, 2}, {2, 3}, {6, 1}}
 	fmt.Println(fallingSquares(positions)) // [2, 5, 5]
 }
+```
+
+**Textual Figure:**
+```
+Falling Squares: positions = [[1,2], [2,3], [6,1]]
+
+Step 1: Square [1,2] (left=1, side=2)
+  Height:
+  2 │ ┌───┐
+  1 │ │   │
+  0 │─┴───┴────────────
+     1   3        6  7
+  maxH = 2
+
+Step 2: Square [2,3] (left=2, side=3)
+  Overlaps with [1,3) → base height = 2
+  Height:
+  5 │   ┌───────┐
+  4 │   │       │
+  3 │   │       │
+  2 │ ┌─┤       │
+  1 │ │ │       │
+  0 │─┴─┴───────┴─────
+     1 2         5  6  7
+  maxH = 5
+
+Step 3: Square [6,1] (left=6, side=1)
+  No overlap → base = 0, height = 1
+  maxH = 5 (unchanged)
+
+Result: [2, 5, 5]
 ```
 
 ---
@@ -570,6 +804,30 @@ func main() {
 		fmt.Printf("    Examples: %s\n\n", p.examples)
 	}
 }
+```
+
+**Textual Figure:**
+```
+Event-Based Processing Patterns
+
+┌───────────────────┬─────────────────┬───────────────┐
+│ Pattern           │ Events          │ State         │
+├───────────────────┼─────────────────┼───────────────┤
+│ Difference Array  │ +val/-val       │ Prefix sum    │
+│ Timeline Sweep    │ start/end       │ Active count  │
+│ Multi-Type Events │ typed + priority│ State machine │
+│ Offline Queries   │ data + queries  │ Answer during │
+│ Online Processing │ incremental     │ Mono pointer  │
+└───────────────────┴─────────────────┴───────────────┘
+
+Event processing pipeline:
+  Raw Data → Create Events → Sort by time → Process
+      │            │             │              │
+┌────┴───┐  ┌────┴───┐  ┌────┴────┐  ┌────┴───┐
+│intervals│  │+start  │  │by time  │  │sweep &  │
+│bookings │  │-end    │  │then type│  │aggregate│
+│logs     │  │+query  │  │         │  │         │
+└─────────┘  └────────┘  └─────────┘  └─────────┘
 ```
 
 ---

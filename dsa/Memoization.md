@@ -37,6 +37,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Memoization Call Tree for fib(5):
+
+                      fib(5)
+                     ╱      ╲
+                fib(4)      fib(3) ← CACHE HIT ✓
+               ╱      ╲
+          fib(3)      fib(2) ← CACHE HIT ✓
+         ╱      ╲
+    fib(2)      fib(1)=1
+   ╱      ╲
+fib(1)=1  fib(0)=0
+
+Memo Map After fib(5):
+┌─────────┬───────┬────────────────────────────────┐
+│   Key   │ Value │ How Computed                     │
+├─────────┼───────┼────────────────────────────────┤
+│ memo[2] │   1   │ fib(1)+fib(0) = 1+0              │
+│ memo[3] │   2   │ fib(2)+fib(1) = 1+1              │
+│ memo[4] │   3   │ fib(3)+fib(2) = 2+1 (cache hit)  │
+│ memo[5] │   5   │ fib(4)+fib(3) = 3+2 (cache hit)  │
+└─────────┴───────┴────────────────────────────────┘
+
+Only 6 unique calls instead of 15 naive recursive calls!
+```
+
 ---
 
 ## Example 2: Memoization with Array (Faster)
@@ -61,6 +89,27 @@ func main() {
 
 	fmt.Printf("fib(%d) = %d\n", n, fib(n, memo))
 }
+```
+
+**Textual Figure:**
+
+```
+Array-Based Memo for fib(7):
+
+Index:    0    1    2    3    4    5    6    7
+        ┌────┬────┬────┬────┬────┬────┬────┬────┐
+Init:   │ -1 │ -1 │ -1 │ -1 │ -1 │ -1 │ -1 │ -1 │  (-1 = not computed)
+        └────┴────┴────┴────┴────┴────┴────┴────┘
+
+After fib(7) completes (filled top-down):
+        ┌────┬────┬────┬────┬────┬────┬────┬────┐
+memo:   │  0 │  1 │  1 │  2 │  3 │  5 │  8 │ 13 │
+        └────┴────┴────┴────┴────┴────┴────┴────┘
+          ↑    ↑    ↑                   ↑     ↑
+        base base  1+0                5+3   8+5
+
+Fill order: 0→1→2→3→4→5→6→7 (deepest call returns first)
+Array lookup O(1) with better cache locality than map.
 ```
 
 ---
@@ -104,6 +153,36 @@ func main() {
 	fmt.Println(coinChange([]int{2}, 3))                // -1
 	fmt.Println(coinChange([]int{1, 3, 4}, 6))          // 2
 }
+```
+
+**Textual Figure:**
+
+```
+Memoized Call Tree for coinChange([1,3,4], 6):
+
+                          solve(6)
+                        ╱    │     ╲
+                  coin=1│  coin=3  coin=4╲
+                       ╱     │           ╲
+                 solve(5)  solve(3)    solve(2)
+                ╱  │  ╲    ╱   ╲        ╱
+              s(4) s(2) s(1) s(2)↵ s(0) s(1)↵
+              ...  ...   1  HIT✓   0   HIT✓
+
+Memo Array (amt → min coins):
+┌─────┬──────┬───────────────────┐
+│ amt │ memo │ Best combination   │
+├─────┼──────┼───────────────────┤
+│  0  │   0  │ base case          │
+│  1  │   1  │ 1 coin  (1)        │
+│  2  │   2  │ 2 coins (1+1)      │
+│  3  │   1  │ 1 coin  (3)        │
+│  4  │   1  │ 1 coin  (4)        │
+│  5  │   2  │ 2 coins (1+4)      │
+│  6  │   2  │ 2 coins (3+3) ✓    │
+└─────┴──────┴───────────────────┘
+
+Result: 2 coins needed for amount 6
 ```
 
 ---
@@ -152,6 +231,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Grid Minimum Path Sum — Memoization:
+
+Original Grid:            Memo Table (filled top-down):
+┌───┬───┬───┐             ┌───┬───┬───┐
+│ 1 │ 3 │ 1 │             │ 7 │ 6 │ 3 │ ← solve(0,0)=7
+├───┼───┼───┤             ├───┼───┼───┤
+│ 1 │ 5 │ 1 │             │ 8 │ 7 │ 2 │
+├───┼───┼───┤             ├───┼───┼───┤
+│ 4 │ 2 │ 1 │             │ 7 │ 3 │ 1 │ ← base: solve(2,2)=1
+└───┴───┴───┘             └───┴───┴───┘
+
+Optimal Path (cost = 7):
+  ┌───┐───┐───┐
+  │*1 │ 3 │*1 │     Path: (0,0)→(1,0)→(1,1)→(1,2)→(2,2)
+  ├───┼───┼───┤     Cost: 1 + 1 + 5 + 1 + 1 = ... wait
+  │*1 │*5 │*1 │     Actually: (0,0)→(0,1)→(0,2)→(1,2)→(2,2)
+  ├───┼───┼───┤     Cost: 1 + 3 + 1 + 1 + 1 = 7 ✓
+  │ 4 │ 2 │*1 │
+  └───┴───┴───┘
+
+Memo avoids recomputing overlapping cells reached
+from both right-then-down and down-then-right.
+```
+
 ---
 
 ## Example 5: Longest Common Subsequence — Memoized
@@ -191,6 +297,43 @@ func main() {
 	fmt.Println(longestCommonSubsequence("abcde", "ace"))   // 3
 	fmt.Println(longestCommonSubsequence("abc", "def"))     // 0
 }
+```
+
+**Textual Figure:**
+
+```
+Memoized LCS("abcde", "ace") — Call Tree:
+
+              solve(0,0)
+                  │ s1[0]='a' == s2[0]='a' → match!
+             1 + solve(1,1)
+                ╱            ╲
+  s1[1]='b' ≠ s2[1]='c'      (no match)
+    ╱                  ╲
+solve(2,1)          solve(1,2)
+    │                   │
+  'c'=='c' match     'b'≠'e'
+    │                 ╱      ╲
+1+solve(3,2)     solve(2,2)  solve(1,3)=0
+    │                │
+  'd'≠'e'        'c'≠'e'
+  ╱      ╲        ╱      ╲
+s(4,2)  s(3,3)  s(3,2)↵  s(2,3)=0
+  │      =0     HIT✓
+ 'e'=='e'
+  │
+1+s(5,3)=0
+
+Memo Table (sparse, only reachable states filled):
+        j→  0('a')  1('c')  2('e')
+  i↓
+  0 'a'  │   3    │        │       │
+  1 'b'  │        │   2    │   0   │
+  2 'c'  │        │   2    │   1   │
+  3 'd'  │        │        │   1   │
+  4 'e'  │        │        │   1   │
+
+Result: LCS = 3 ("ace")
 ```
 
 ---
@@ -233,6 +376,37 @@ func main() {
 	fmt.Println(wordBreak("applepenapple", []string{"apple", "pen"}))  // true
 	fmt.Println(wordBreak("catsandog", []string{"cats","dog","sand","and","cat"})) // false
 }
+```
+
+**Textual Figure:**
+
+```
+Word Break Memoization for "leetcode", dict=["leet","code"]:
+
+Call Tree:
+  solve(0)
+    │ try s[0:1]="l"  ✖
+    │ try s[0:2]="le" ✖
+    │ try s[0:3]="lee" ✖
+    │ try s[0:4]="leet" ✔ → solve(4)
+    │                        │ try s[4:5]="c"    ✖
+    │                        │ try s[4:6]="co"   ✖
+    │                        │ try s[4:7]="cod"  ✖
+    │                        │ try s[4:8]="code" ✔ → solve(8)
+    │                        │                        │ start==len(s) → true!
+    │                        └→ return true
+    └→ return true
+
+Memo Cache:
+┌───────┬───────┬──────────────────┐
+│ start │ result │ Reason            │
+├───────┼───────┼──────────────────┤
+│   8   │  true  │ base case (end)   │
+│   4   │  true  │ "code" → solve(8) │
+│   0   │  true  │ "leet" → solve(4) │
+└───────┴───────┴──────────────────┘
+
+Segmentation: "leet" | "code" → true
 ```
 
 ---
@@ -278,6 +452,36 @@ func main() {
 	values := []int{3, 4, 5, 6}
 	fmt.Println("Max value:", knapsack(weights, values, 8)) // 10
 }
+```
+
+**Textual Figure:**
+
+```
+2D Knapsack Memoization: weights=[2,3,4,5], values=[3,4,5,6], W=8
+
+Call Tree (top-down):
+              solve(0, 8)
+             ╱            ╲
+       skip item 0      take item 0 (w=2,v=3)
+       solve(1, 8)      solve(1, 6)
+      ╱         ╲       ╱         ╲
+   s(2,8)   s(2,5)   s(2,6)   s(2,3)
+    ...      ...      ...      ...
+
+Memo Table (only reachable states):
+        w→  0   1   2   3   4   5   6   7   8
+  i↓
+  0       │ 0 │   │   │   │   │   │   │   │ 10│
+  1       │ 0 │   │   │   │   │   │   │   │ 10│
+  2       │ 0 │   │   │ 4 │ 5 │ 5 │ 9 │ 9 │ 10│
+  3       │ 0 │   │   │   │   │ 6 │ 6 │   │ 6 │
+  4 (end) │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │ 0 │
+
+Optimal: take items 1(v=4) + 2(v=5) = skip 0,3 → w=3+4=7≤8, val=9
+Wait — actually items 0+1+2: w=2+3+4=9>8. Items 1+2: w=7, val=9.
+But result is 10: items 0+2+3? w=2+4+5=11>8. Items 1+3: w=3+5=8, val=4+6=10 ✓
+
+Result: max value = 10 (items 1 and 3, weight=8)
 ```
 
 ---
@@ -333,6 +537,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Palindrome Partition Min Cut for "aab":
+
+Step 1 — isPalin table (s[i..j] palindrome?):
+          j→  0('a')  1('a')  2('b')
+  i↓
+  0 'a'       true    true    false
+  1 'a'                true   false
+  2 'b'                        true
+
+Step 2 — Memoized calls:
+  solve(0): try palindromes starting at 0
+    │ s[0..0]="a" is palindrome → 1 + solve(1)
+    │   solve(1): try palindromes starting at 1
+    │     │ s[1..1]="a" → 1 + solve(2)
+    │     │   solve(2): s[2..2]="b" → 1 + solve(3)
+    │     │     solve(3): return -1 (past end)
+    │     │   → solve(2) = 0
+    │     │ s[1..2]="ab" not palindrome
+    │   → solve(1) = 1
+    │ s[0..1]="aa" is palindrome → 1 + solve(2) = 1
+    │ s[0..2]="aab" not palindrome
+  → solve(0) = min(2, 1) = 1
+
+Result: "aa" | "b" → 1 cut
+```
+
 ---
 
 ## Example 9: Memoization vs Tabulation — When to Choose
@@ -363,6 +596,34 @@ func main() {
 		fmt.Printf("%-20s %-32s %s\n", r.aspect, r.memo, r.tab)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Memoization vs Tabulation — Decision Flow:
+
+                   DP Problem
+                      │
+            ┌─────────┴─────────┐
+            │                   │
+     Sparse state space?   Dense state space?
+     Few states reachable   All states needed
+            │                   │
+            ▼                   ▼
+     ┌─────────────┐    ┌─────────────┐
+     │ MEMOIZATION │    │  TABULATION  │
+     ├─────────────┤    ├─────────────┤
+     │ Top-down    │    │ Bottom-up   │
+     │ Recursive   │    │ Iterative   │
+     │ Lazy eval   │    │ All states  │
+     │ Stack risk  │    │ No stack    │
+     │ Map/array   │    │ Table/array │
+     └─────────────┘    └─────────────┘
+
+Space optimization: Tabulation wins (rolling arrays)
+Ease of coding:     Memoization wins (just add cache)
+Performance:        Tabulation wins (no call overhead)
 ```
 
 ---
@@ -414,6 +675,40 @@ func main() {
 		fmt.Printf("trib(%2d) = %d\n", i, trib(i))
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Generic Memoize Pattern — Cache Flow:
+
+   call memoized(n)
+         │
+    ┌────┴─────┐
+    │ In cache? │
+    └────┬─────┘
+     yes│    no│
+    ┌───┴─┐  ┌──┴───────────┐
+    │return│  │ compute f(n) │
+    │cached│  │ using recurse│
+    └──────┘  └─────┬───────┘
+                   │
+            ┌─────┴───────┐
+            │ store in cache│
+            │ return result │
+            └─────────────┘
+
+Fibonacci via memoize():
+  fib(5) → cache miss → compute fib(4)+fib(3)
+  fib(4) → cache miss → compute fib(3)+fib(2)
+  fib(3) → cache miss → compute fib(2)+fib(1)
+  fib(2) → cache miss → compute fib(1)+fib(0) = 1
+  fib(1) → base case = 1
+  fib(0) → base case = 0
+  fib(3) → CACHE HIT = 2  (reused by fib(4))
+  fib(2) → CACHE HIT = 1  (reused by fib(3) call from fib(4))
+
+Cache: {0:0, 1:1, 2:1, 3:2, 4:3, 5:5}
 ```
 
 ---

@@ -52,6 +52,30 @@ func main() {
 }
 ```
 
+**Textual Figure — Maximum Sum Subarray of Size K:**
+
+```
+  arr = [2, 1, 5, 1, 3, 2]    k = 3
+
+  ┌───┬───┬───┬───┬───┬───┐
+  │ 2 │ 1 │ 5 │ 1 │ 3 │ 2 │
+  └───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5
+
+  Window slides → one element enters, one leaves:
+
+  Step 1: [2, 1, 5]           sum = 8
+          ├─────────┤
+  Step 2:    [1, 5, 1]        sum = 7   (−2, +1)
+             ├─────────┤
+  Step 3:       [5, 1, 3]     sum = 9   (−1, +3)  ← max
+                ├─────────┤
+  Step 4:          [1, 3, 2]  sum = 6   (−5, +2)
+                   ├─────────┤
+
+  Result: max sum = 9  (window [5, 1, 3])
+```
+
 ---
 
 ## Example 2: Maximum of All Subarrays of Size K (LC 239)
@@ -97,6 +121,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Sliding Window Maximum with Monotonic Deque:**
+
+```
+  nums = [1, 3, -1, -3, 5, 3, 6, 7]    k = 3
+
+  ┌───┬───┬────┬────┬───┬───┬───┬───┐
+  │ 1 │ 3 │ -1 │ -3 │ 5 │ 3 │ 6 │ 7 │
+  └───┴───┴────┴────┴───┴───┴───┴───┘
+    0   1    2    3   4   5   6   7
+
+  Window          Deque (vals)   Max
+  ├───────┤
+  [1, 3,-1]       [3, -1]        3
+     ├───────┤
+  [3,-1,-3]       [3, -1, -3]    3
+        ├────────┤
+  [-1,-3, 5]      [5]            5
+           ├────────┤
+  [-3, 5, 3]      [5, 3]         5
+              ├────────┤
+  [5, 3, 6]       [6]            6
+                 ├────────┤
+  [3, 6, 7]       [7]            7
+
+  Result: [3, 3, 5, 5, 6, 7]
+
+  Deque invariant: front = max of current window
+  Smaller elements removed from back (never useful)
+```
+
 ---
 
 ## Example 3: Average of Subarrays of Size K
@@ -129,6 +183,31 @@ func main() {
 	fmt.Printf("Array: %v, k=%d\n", arr, k)
 	fmt.Printf("Averages: %v\n", averages(arr, k))
 }
+```
+
+**Textual Figure — Average of Subarrays of Size K:**
+
+```
+  arr = [1, 3, 2, 6, -1, 4, 1, 8, 2]    k = 5
+
+  ┌───┬───┬───┬───┬────┬───┬───┬───┬───┐
+  │ 1 │ 3 │ 2 │ 6 │ -1 │ 4 │ 1 │ 8 │ 2 │
+  └───┴───┴───┴───┴────┴───┴───┴───┴───┘
+    0   1   2   3    4   5   6   7   8
+
+  Window (size 5)             Sum    Avg
+  ├───────────────────┤
+  [1, 3, 2, 6, -1]           11     2.2
+     ├───────────────────┤
+  [3, 2, 6, -1, 4]           14     2.8
+        ├───────────────────┤
+  [2, 6, -1, 4, 1]           12     2.4
+           ├───────────────────┤
+  [6, -1, 4, 1, 8]           18     3.6
+              ├───────────────────┤
+  [-1, 4, 1, 8, 2]           14     2.8
+
+  Averages: [2.2, 2.8, 2.4, 3.6, 2.8]
 ```
 
 ---
@@ -171,6 +250,34 @@ func main() {
 		fmt.Printf("nums=%v k=%d → %v\n", t.nums, t.k, containsNearbyDuplicate(t.nums, t.k))
 	}
 }
+```
+
+**Textual Figure — Contains Duplicate II (Hash Set Window):**
+
+```
+  nums = [1, 2, 3, 1]    k = 3
+
+  ┌───┬───┬───┬───┐
+  │ 1 │ 2 │ 3 │ 1 │
+  └───┴───┴───┴───┘
+    0   1   2   3
+
+  Window (hash set) of at most k+1 elements:
+
+  i=0: window={1}         │ 1 not seen → add
+  i=1: window={1,2}       │ 2 not seen → add
+  i=2: window={1,2,3}     │ 3 not seen → add
+  i=3: window={2,3,1}     │ 1 seen? No (removed at i-k=0)
+       Wait — check: i=3, i-k=0 → remove nums[0]=1
+       Actually: add 1, check first → 1 IS in {1,2,3} → true!
+
+  ┌────────────────────────────────────────┐
+  │ Maintain a set of size k as window     │
+  │ If new element already in set → true   │
+  │ Remove element leaving window (i−k)    │
+  └────────────────────────────────────────┘
+
+  Result: true (nums[0]=1 and nums[3]=1, distance=3 ≤ k=3)
 ```
 
 ---
@@ -217,6 +324,37 @@ func main() {
 }
 ```
 
+**Textual Figure — Maximum Vowels in Substring of Size K:**
+
+```
+  s = "abciiidef"    k = 3
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ a │ b │ c │ i │ i │ i │ d │ e │ f │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8
+    V           V   V   V       V
+  (V = vowel)
+
+  Window (size 3)       Vowels
+  ├───────┤
+  [a,b,c]               1 (a)
+     ├───────┤
+  [b,c,i]               1 (i)         −a, +i
+        ├───────┤
+  [c,i,i]               2 (i,i)       −b, +i
+           ├───────┤
+  [i,i,i]               3 (i,i,i)     −c, +i  ← max
+              ├───────┤
+  [i,i,d]               2 (i,i)       −i, +d
+                 ├───────┤
+  [i,d,e]               2 (i,e)       −i, +e
+                    ├───────┤
+  [d,e,f]               1 (e)         −i, +f
+
+  Result: max vowels = 3
+```
+
 ---
 
 ## Example 6: Number of Sub-arrays of Size K with Average ≥ Threshold (LC 1343)
@@ -248,6 +386,28 @@ func main() {
 	fmt.Printf("Count: %d\n", numOfSubarrays(arr, k, threshold))
 	// [2,5,5]=12≥12, [5,5,5]=15≥12, [5,5,8]=18≥12 → 3 (actually more...)
 }
+```
+
+**Textual Figure — Subarrays with Average ≥ Threshold:**
+
+```
+  arr = [2, 2, 2, 2, 5, 5, 5, 8]   k = 3   threshold = 4
+  target = threshold × k = 12  (compare sum directly)
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 2 │ 2 │ 2 │ 2 │ 5 │ 5 │ 5 │ 8 │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7
+
+  Window        Sum   ≥ 12?
+  [2,2,2]        6     ✗
+  [2,2,2]        6     ✗
+  [2,2,5]        9     ✗
+  [2,5,5]       12     ✓  count=1
+  [5,5,5]       15     ✓  count=2
+  [5,5,8]       18     ✓  count=3
+
+  Result: count = 3
 ```
 
 ---
@@ -296,6 +456,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Grumpy Bookstore Owner:**
+
+```
+  customers = [1, 0, 1, 2, 1, 1, 7, 5]
+  grumpy    = [0, 1, 0, 1, 0, 1, 0, 1]
+  minutes   = 3
+
+  Base satisfied (grumpy=0):  1 + 1 + 1 + 7 = 10
+
+  Index:      0   1   2   3   4   5   6   7
+  Customers: [1] [0] [1] [2] [1] [1] [7] [5]
+  Grumpy:     0   1   0   1   0   1   0   1
+              ✓   ✗   ✓   ✗   ✓   ✗   ✓   ✗
+
+  Slide window (size 3) → extra saved from grumpy=1:
+
+  Window [0..2]: grumpy[1]=1 → extra=0     total=10+0=10
+  Window [1..3]: grumpy[1,3]=1 → extra=0+2=2  total=10+2=12
+  Window [2..4]: grumpy[3]=1 → extra=2     total=10+2=12
+  Window [3..5]: grumpy[3,5]=1 → extra=2+1=3 total=10+3=13
+  Window [4..6]: grumpy[5]=1 → extra=1     total=10+1=11
+  Window [5..7]: grumpy[5,7]=1 → extra=1+5=6 total=10+6=16 ← max
+
+  Result: 16
+```
+
 ---
 
 ## Example 8: K Radius Subarray Averages (LC 2090)
@@ -330,6 +516,35 @@ func main() {
 	fmt.Printf("nums=%v k=%d\n", nums, k)
 	fmt.Printf("K-radius averages: %v\n", getAverages(nums, k))
 }
+```
+
+**Textual Figure — K Radius Subarray Averages:**
+
+```
+  nums = [7, 4, 3, 9, 1, 8, 5, 2, 6]    k = 3
+  windowSize = 2×3+1 = 7
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 7 │ 4 │ 3 │ 9 │ 1 │ 8 │ 5 │ 2 │ 6 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7   8
+
+  Index 0,1,2: not enough left neighbors → -1
+  Index 6,7,8: not enough right neighbors → -1
+
+  i=3 (center): window [0..6]
+  ├─────────────────────────┤
+  [7,4,3,9,1,8,5] sum=37 avg=37/7=5
+
+  i=4 (center): window [1..7]
+     ├─────────────────────────┤
+  [4,3,9,1,8,5,2] sum=32 avg=32/7=4
+
+  i=5 (center): window [2..8]
+        ├─────────────────────────┤
+  [3,9,1,8,5,2,6] sum=34 avg=34/7=4
+
+  Result: [-1,-1,-1, 5, 4, 4, -1,-1,-1]
 ```
 
 ---
@@ -373,6 +588,36 @@ func main() {
 		fmt.Printf("s1=%q s2=%q → %v\n", t.s1, t.s2, checkInclusion(t.s1, t.s2))
 	}
 }
+```
+
+**Textual Figure — Permutation in String (Char Frequency Window):**
+
+```
+  s1 = "ab"   s2 = "eidbaooo"   k = len(s1) = 2
+
+  need: [a=1, b=1]
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ e │ i │ d │ b │ a │ o │ o │ o │
+  └───┴───┴───┴───┴───┴───┴───┴───┘
+    0   1   2   3   4   5   6   7
+
+  Window (size 2)    have          Match?
+  ├───┤
+  [e,i]             [e=1,i=1]      ✗
+     ├───┤
+  [i,d]             [i=1,d=1]      ✗
+        ├───┤
+  [d,b]             [d=1,b=1]      ✗
+           ├───┤
+  [b,a]             [a=1,b=1]      ✓ == need!
+
+  Result: true  ("ba" is a permutation of "ab")
+
+  ┌───────────────────────────────────────┐
+  │ Compare frequency arrays directly:   │
+  │ need == have → permutation found     │
+  └───────────────────────────────────────┘
 ```
 
 ---

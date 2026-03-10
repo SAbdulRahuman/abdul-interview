@@ -42,6 +42,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Greedy Coin Change: amount = 41, coins = [25, 10, 5, 1]
+
+Step   Coin   Remaining   Coins Selected
+─────  ────   ─────────   ──────────────────────────
+  1     25     41→16      [25]
+  2     10     16→ 6      [25, 10]
+  3      5      6→ 1      [25, 10, 5]
+  4      1      1→ 0      [25, 10, 5, 1]
+
+┌─────────────────────────────────────────┐
+│  Amount: 41                             │
+│  ┌────┐ ┌────┐ ┌───┐ ┌───┐             │
+│  │ 25 │+│ 10 │+│ 5 │+│ 1 │ = 41  ✓     │
+│  └────┘ └────┘ └───┘ └───┘             │
+│  Total coins: 4 (optimal for US coins)  │
+└─────────────────────────────────────────┘
+
+Greedy choice: always pick LARGEST coin that fits
+→ Works because US coins are a canonical system
+```
+
 ---
 
 ## Example 2: Coin Change — Greedy Fails (Non-Canonical)
@@ -74,6 +97,24 @@ func main() {
 	fmt.Println("Lesson: Greedy choice property must be PROVEN,")
 	fmt.Println("not assumed. It doesn't hold for all coin systems.")
 }
+```
+
+**Textual Figure:**
+```
+Greedy FAILS: amount = 8, coins = [6, 4, 1]
+
+┌─── Greedy approach ───────────┐    ┌─── Optimal approach ─────────┐
+│ Step 1: pick 6  → rem = 2    │    │ Step 1: pick 4  → rem = 4   │
+│ Step 2: pick 1  → rem = 1    │    │ Step 2: pick 4  → rem = 0   │
+│ Step 3: pick 1  → rem = 0    │    │                              │
+│                               │    │                              │
+│ ┌───┐ ┌───┐ ┌───┐            │    │ ┌───┐ ┌───┐                 │
+│ │ 6 │+│ 1 │+│ 1 │= 8         │    │ │ 4 │+│ 4 │= 8              │
+│ └───┘ └───┘ └───┘            │    │ └───┘ └───┘                 │
+│ 3 coins ✗ (suboptimal)       │    │ 2 coins ✓ (optimal)         │
+└───────────────────────────────┘    └──────────────────────────────┘
+
+Lesson: Greedy choice property must be PROVEN, not assumed!
 ```
 
 ---
@@ -113,6 +154,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Jump Game: nums = [2, 3, 1, 1, 4]
+
+Index:     0    1    2    3    4
+Value:    [2]  [3]  [1]  [1]  [4]
+           │    │    │    │    │
+Farthest:  2    4    4    4    ─
+           ├────┘    │         │
+           │    ├────┴─────────┘
+           │    └─── reach extends to index 4 ✓
+           └── can jump 1 or 2 steps
+
+Result: TRUE (farthest ≥ last index)
+
+─────────────────────────────────────────
+Jump Game: nums = [3, 2, 1, 0, 4]
+
+Index:     0    1    2    3    4
+Value:    [3]  [2]  [1]  [0]  [4]
+           │    │    │    │
+Farthest:  3    3    3    3    ← stuck!
+                          ╳
+                     i=3 > farthest? No, but 3+0=3
+                     i=4 > farthest(3)? → BLOCKED
+
+Result: FALSE (can't get past index 3)
+```
+
 ---
 
 ## Example 4: Minimum Jump Game II
@@ -144,6 +214,32 @@ func main() {
 	fmt.Println("Greedy choice: at each 'level', jump to farthest reachable")
 	fmt.Println("Similar to BFS — each jump is a level")
 }
+```
+
+**Textual Figure:**
+```
+Minimum Jumps: nums = [2, 3, 1, 1, 4]
+
+Index:    0     1     2     3     4
+Value:   [2]   [3]   [1]   [1]   [4]
+          │
+          ├──── Jump 1: from idx 0, reach idx 1..2
+          │     ┌─────────────────────┐
+          │     │ Level 1: idx 1,2    │
+          │     │ farthest = max(1+3, │
+          │     │   2+1) = 4          │
+          │     └─────────────────────┘
+          │               │
+          │               ├── Jump 2: from level boundary
+          │               │   reach idx 3..4
+          │               │   ┌──────────────┐
+          │               │   │ Level 2:     │
+          │               │   │ idx 3,4 ✓    │
+          │               │   └──────────────┘
+          │               │
+          └───────────────┘
+
+Result: 2 jumps  (BFS-style level expansion)
 ```
 
 ---
@@ -183,6 +279,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Assign Cookies: greed = [1,2,3], cookies = [1,1]
+
+Sorted greed:   [1, 2, 3]    (child appetite)
+Sorted cookies: [1, 1]       (cookie sizes)
+
+Step   Child   Cookie   Match?
+─────  ─────   ──────   ──────────────────
+  1    g=1     c=1      1 ≥ 1 → ✓ satisfied
+  2    g=2     c=1      1 < 2 → ✗ skip cookie
+       (no more cookies)
+
+┌──────────────────────────────────────────┐
+│ Child 1 (g=1): Cookie 1 (s=1) → ✓       │
+│ Child 2 (g=2): no cookie big enough → ✗  │
+│ Child 3 (g=3): no cookie left → ✗        │
+│                                          │
+│ Result: 1 child satisfied                │
+└──────────────────────────────────────────┘
+
+Greedy: smallest cookie → least greedy child
+```
+
 ---
 
 ## Example 6: Best Time to Buy and Sell Stock II
@@ -211,6 +331,33 @@ func main() {
 	fmt.Println("Greedy choice: collect every positive price difference")
 	fmt.Println("Equivalent to buying/selling at every local min/max")
 }
+```
+
+**Textual Figure:**
+```
+Stock Prices: [7, 1, 5, 3, 6, 4]
+
+Price
+  7 │●
+  6 │              ●
+  5 │      ●
+  4 │                  ●
+  3 │          ●
+  2 │
+  1 │  ●
+    └──────────────────── Day
+       0  1  2  3  4  5
+
+Greedy: collect every upward move
+  Day 1→2: +4  (buy 1, sell 5)
+  Day 3→4: +3  (buy 3, sell 6)
+  Total profit: 4 + 3 = 7 ✓
+
+┌─────────────────────────────────┐
+│ Greedy choice: if price goes up,  │
+│ add the difference. Every         │
+│ positive delta is pure profit.    │
+└─────────────────────────────────┘
 ```
 
 ---
@@ -253,6 +400,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Gas Station: gas = [1,2,3,4,5], cost = [3,4,5,1,2]
+
+Station:    0     1     2     3     4
+Gas:       [1]   [2]   [3]   [4]   [5]
+Cost:      [3]   [4]   [5]   [1]   [2]
+Net:       -2    -2    -2    +3    +3
+
+Greedy search for start:
+  start=0, tank: -2 < 0 → restart at 1
+  start=1, tank: -2 < 0 → restart at 2
+  start=2, tank: -2 < 0 → restart at 3
+  start=3, tank: +3 → +6 → done!
+
+  totalGas(15) ≥ totalCost(15) → solution exists
+
+┌────────────────────────────────────────┐
+│  Station 3 → 4 → 0 → 1 → 2 → 3      │
+│  tank:   3   6   4   2   0  (back!) │
+│  Answer: start = 3 ✓                │
+└────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Partition Labels (LC 763)
@@ -291,6 +462,24 @@ func main() {
 	fmt.Println("Greedy: extend current partition to include all")
 	fmt.Println("occurrences of each character seen so far")
 }
+```
+
+**Textual Figure:**
+```
+Partition Labels: s = "ababcbacadefegdehijhklij"
+
+Character last occurrence map:
+  a:8  b:5  c:7  d:14  e:15  f:11  g:13  h:19  i:22  j:23  k:20  l:21
+
+Sweep through string:
+  ┌───────── Partition 1 ────────┐ ┌─── Part 2 ───┐ ┌─── Part 3 ────┐
+  a b a b c b a c a       d e f e g d e   h i j h k l i j
+  0 1 2 3 4 5 6 7 8       9      ...14    16          ...23
+  └──────────────────┘ └────────────┘ └──────────────┘
+     size = 9               size = 7        size = 8
+
+Result: [9, 7, 8]
+Greedy: extend end to include all occurrences of each char
 ```
 
 ---
@@ -333,6 +522,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Proving Greedy Choice Property — Three Methods
+
+┌───────────────────────────────────────────────┐
+│ Method 1: Greedy Stays Ahead              │
+│                                             │
+│  G:  g1 ≥ o1, g2 ≥ o2, ... gk ≥ ok         │
+│  O:  o1,      o2,      ... ok               │
+│       ↑        ↑            ↑                │
+│  Greedy is at least as good at EACH step    │
+├───────────────────────────────────────────────┤
+│ Method 2: Exchange Argument                │
+│                                             │
+│  O:  [o1, o2, ..., ok]                      │
+│        ↓ swap o1 with g1                     │
+│  O':  [g1, o2, ..., ok]  (no worse)         │
+│        ↓ repeat                              │
+│  O'': [g1, g2, ..., gk] = G ✓              │
+├───────────────────────────────────────────────┤
+│ Method 3: Cut-and-Paste                    │
+│                                             │
+│  OPT without greedy choice → cut it out     │
+│  Paste greedy choice in → still optimal     │
+└───────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Greedy vs Non-Greedy Decision
@@ -368,6 +584,32 @@ func main() {
 	fmt.Println("  Greedy: make ONE choice per step, never backtrack")
 	fmt.Println("  DP: consider ALL choices, use optimal substructure")
 }
+```
+
+**Textual Figure:**
+```
+Greedy vs Non-Greedy Decision Tree
+
+           ┌─────────────────────┐
+           │ Optimization problem? │
+           └──────────┬──────────┘
+                      │
+          ┌──────────┴───────────┐
+          │ Greedy choice property? │
+          └─────┬───────────┬─────┘
+             YES              NO
+              │                │
+     ┌───────┴─────┐  ┌────┴───────┐
+     │ Use GREEDY   │  │ Use DP       │
+     │ O(n log n)   │  │ O(n²) / O(nW)│
+     └──────────────┘  └─────────────┘
+
+✓ Greedy works:              ✗ Greedy fails:
+  • Activity selection          • 0/1 Knapsack
+  • Huffman coding              • Coin change (arb.)
+  • Fractional knapsack         • Edit distance
+  • MST (Kruskal/Prim)          • Matrix chain mult.
+  • Dijkstra (non-neg)          • Longest path
 ```
 
 ---

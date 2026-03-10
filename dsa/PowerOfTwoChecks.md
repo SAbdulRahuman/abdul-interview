@@ -35,6 +35,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Two: Three Methods                     │
+├────────────────────────────────────────────────┤
+│  Method 1: n & (n-1) == 0                        │
+│    16 = 10000,  16-1 = 01111                     │
+│    10000 & 01111 = 00000 → 0 ✓ power of 2        │
+│                                                  │
+│    6 = 0110,  6-1 = 0101                         │
+│    0110 & 0101 = 0100 ≠ 0 ✗ not power of 2       │
+│                                                  │
+│  Method 2: OnesCount(n) == 1                     │
+│    16=10000 has 1 set bit ✓                       │
+│     6=0110  has 2 set bits ✗                      │
+│                                                  │
+│  Method 3: n & (-n) == n                         │
+│    16 & (-16) = 10000 & 10000 = 10000 == 16 ✓    │
+│     6 & (-6)  = 0110  & 1010  = 0010  ≠ 6  ✗    │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Power of Three
@@ -66,6 +88,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Three Check                            │
+├────────────────────────────────────────────────┤
+│  3^19 = 1162261467 (largest pow3 in int32)        │
+│                                                  │
+│  Trick: 1162261467 % n == 0                      │
+│  3^19 = 3×3×3×...×3 (19 factors of 3)             │
+│                                                  │
+│  n=27:  1162261467 % 27 = 0  ✓ (27 = 3³)        │
+│  n=12:  1162261467 % 12 ≠ 0  ✗ (12 = 4×3)        │
+│                                                  │
+│  Loop method: keep dividing by 3                 │
+│  27 ÷ 3 = 9 ÷ 3 = 3 ÷ 3 = 1 ✓                    │
+│  12 ÷ 3 = 4 (not divisible by 3) ✗               │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Power of Four (LeetCode 342)
@@ -94,6 +135,28 @@ func main() {
 	fmt.Println("0x55555555 = ...01010101 → even bit positions only")
 	fmt.Println("Powers of 4 have their single bit at position 0, 2, 4, 6, ...")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Four Check                             │
+├────────────────────────────────────────────────┤
+│  Step 1: Must be power of 2 (n & (n-1) == 0)     │
+│  Step 2: Bit must be at even position             │
+│                                                  │
+│  0x55555555 = ...01010101010101010101              │
+│  Position:      ...10  8  6  4  2  0              │
+│                                                  │
+│  n=4:   00000100  (bit 2, even ✓)               │
+│    & 01010101 = 00000100 ≠ 0  ✓ power of 4       │
+│                                                  │
+│  n=8:   00001000  (bit 3, odd)                   │
+│    & 01010101 = 00000000 = 0  ✗ not power of 4   │
+│                                                  │
+│  Powers of 4: 1, 4, 16, 64, 256, 1024...         │
+│  (bits at positions 0, 2, 4, 6, 8, 10...)        │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -134,6 +197,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Nearest Power of Two                            │
+├────────────────────────────────────────────────┤
+│  Powers: 1  2  4  8  16  32  64  128  256 ...    │
+│                                                  │
+│  n=10:  ──8──────10──────16─                     │
+│         prev    n     next                       │
+│         nearest = 8  (10-8=2 < 16-10=6)          │
+│                                                  │
+│  nextPow2: 1 << bits.Len(n-1)                    │
+│    n=10: bits.Len(9) = 4 → 1<<4 = 16             │
+│                                                  │
+│  prevPow2: 1 << (bits.Len(n) - 1)                │
+│    n=10: bits.Len(10) = 4 → 1<<3 = 8             │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Align to Power of Two
@@ -163,6 +245,29 @@ func main() {
 		}
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Align to Power of Two (Memory Alignment)        │
+├────────────────────────────────────────────────┤
+│  alignUp(n, 8) = (n + 7) &^ 7                    │
+│                                                  │
+│  n = 13 = 00001101,  align = 8                   │
+│    n + 7     = 20 = 00010100                      │
+│    align - 1 =  7 = 00000111                      │
+│    &^ (AND NOT):                                 │
+│    00010100  &^  00000111  = 00010000 = 16  ✓    │
+│    (clears lower 3 bits)                         │
+│                                                  │
+│  alignDown(n, 8) = n &^ 7                        │
+│    00001101  &^  00000111  = 00001000 = 8   ✓    │
+│                                                  │
+│  0  8  16  24  32  ...   (multiples of 8)        │
+│     ↑      ↑                                     │
+│  down=8  up=16  for n=13                         │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -203,6 +308,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Hash Table Size (Power of 2 + Fast Mod)         │
+├────────────────────────────────────────────────┤
+│  Table size must be power of 2 for fast mod      │
+│                                                  │
+│  Need 50 slots → next pow2 = 64                  │
+│  bits.Len(49) = 6 → 1 << 6 = 64                 │
+│                                                  │
+│  Fast modulo: hash & (size - 1)                  │
+│  size = 16 = 10000,  size-1 = 01111              │
+│                                                  │
+│  hash = 33:  00100001                            │
+│           &  00001111  (16-1)                     │
+│              ────────                            │
+│              00000001 = 1   (33 % 16 = 1 ✓)     │
+│                                                  │
+│  Same as modulo, but single AND instruction!     │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Count Trailing Zeros
@@ -240,6 +367,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Trailing Zeros = log2(lowest set bit)            │
+├────────────────────────────────────────────────┤
+│  n=12:  00001100  trailing zeros = 2              │
+│                ↑↑ two zeros before first 1        │
+│                                                  │
+│  n=48:  00110000  trailing zeros = 4              │
+│              ↑↑↑↑ four zeros                      │
+│                                                  │
+│  n=16:  00010000  trailing zeros = 4              │
+│         pow2 ✓ so log2(16) = 4                   │
+│                                                  │
+│  Algorithm: shift right until bit 0 is 1         │
+│  12: 1100 → 110 → 11 (bit0=1, count=2)           │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Largest Power of 2 Dividing N (Factor of 2)
@@ -262,6 +408,27 @@ func main() {
 			n, factor, n, factor, n/factor)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Largest Power of 2 Dividing N: n & (-n)         │
+├────────────────────────────────────────────────┤
+│  n=12: 00001100                                  │
+│  -12:  11110100  (two's complement)               │
+│        ────────  AND                            │
+│        00000100  = 4                             │
+│  12 = 4 × 3  (largest pow2 factor = 4)            │
+│                                                  │
+│  n=48: 00110000                                  │
+│  -48:  11010000                                   │
+│        00010000  = 16                             │
+│  48 = 16 × 3  (largest pow2 factor = 16)          │
+│                                                  │
+│  n=64: 01000000 & 11000000 = 01000000 = 64       │
+│  64 is itself a power of 2                       │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -302,6 +469,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Two Decomposition: n = 42              │
+├────────────────────────────────────────────────┤
+│  42 = 00101010                                   │
+│  Bit:  5  4  3  2  1  0                          │
+│        1  0  1  0  1  0                          │
+│        ↑     ↑     ↑                              │
+│       2⁵   2³   2¹                              │
+│       32    8    2                               │
+│                                                  │
+│  42 = 32 + 8 + 2                                 │
+│     = 2⁵ + 2³ + 2¹                                │
+│                                                  │
+│  Every integer is a unique sum of distinct        │
+│  powers of 2 — this IS binary representation!   │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Power of Two Patterns Summary
@@ -332,6 +519,24 @@ func main() {
 		fmt.Printf("  %-20s %-30s → %s\n", c.name, c.test, c.note)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Two Patterns Summary                   │
+├──────────────┬─────────────────┬────────────────┤
+│  Check         │  Expression      │  Binary          │
+├──────────────┼─────────────────┼────────────────┤
+│  Power of 2    │  n&(n-1)==0      │  10000&01111=0  │
+│  Power of 4    │  +n&0x55!=0      │  bit at even pos│
+│  Next pow2     │  1<<bits.Len    │  round up        │
+│  Prev pow2     │  1<<(Len-1)     │  round down      │
+│  Align up      │  (n+a-1)&^(a-1) │  clear low bits  │
+│  Fast mod      │  n&(size-1)     │  keep low bits   │
+│  Trail zeros   │  TrailingZeros  │  count low 0s    │
+│  Largest fact  │  n&(-n)         │  isolate LSB     │
+└──────────────┴─────────────────┴────────────────┘
 ```
 
 ---

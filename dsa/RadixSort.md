@@ -60,6 +60,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+LSD Radix Sort: arr = [170, 45, 75, 90, 802, 24, 2, 66]
+
+  Pass 1 — sort by ONES digit:
+  ┌───────┬───────────────────┐
+  │ Digit │ Elements          │
+  ├───────┼───────────────────┤
+  │   0   │ 17(0), 9(0)       │
+  │   2   │ 80(2), (2)        │
+  │   4   │ 2(4)              │
+  │   5   │ 4(5), 7(5)        │
+  │   6   │ 6(6)              │
+  └───────┴───────────────────┘
+  → [170, 90, 802, 2, 24, 45, 75, 66]
+
+  Pass 2 — sort by TENS digit:
+  → [802, 2, 24, 45, 66, 170, 75, 90]
+
+  Pass 3 — sort by HUNDREDS digit:
+  → [2, 24, 45, 66, 75, 90, 170, 802]
+
+  Result: [2, 24, 45, 66, 75, 90, 170, 802]
+```
+
 ---
 
 ## Example 2: Radix Sort with Visualization
@@ -105,6 +131,26 @@ func main() {
 	arr := []int{170, 45, 75, 90, 802, 24, 2, 66}
 	radixSortVisualize(arr)
 }
+```
+
+**Textual Figure:**
+
+```
+Radix Sort Visualization: arr = [170, 45, 75, 90, 802, 24, 2, 66]
+
+  Initial: [170, 45, 75, 90, 802, 24, 2, 66]
+
+  ┌───────┬─────────────┬─────────────────────────────────┐
+  │ Pass  │ Digit place │ Result                          │
+  ├───────┼─────────────┼─────────────────────────────────┤
+  │   1   │ ones (x%10) │ [170,90,802,2,24,45,75,66]      │
+  │   2   │ tens        │ [802,2,24,45,66,170,75,90]      │
+  │   3   │ hundreds    │ [2,24,45,66,75,90,170,802]      │
+  └───────┴─────────────┴─────────────────────────────────┘
+
+  Digit extraction: (value / exp) % 10
+  170: ones=(170/1)%10=0, tens=(170/10)%10=7, hundreds=(170/100)%10=1
+  Each pass uses stable counting sort on that digit.
 ```
 
 ---
@@ -163,6 +209,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+MSD Radix Sort: arr = [170, 45, 75, 90, 802, 24, 2, 66]
+
+  max=802, highest exp=100
+
+  Pass 1 — hundreds digit (most significant):
+  Bucket 0: [45, 75, 90, 24, 2, 66]  (hundreds=0)
+  Bucket 1: [170]                    (hundreds=1)
+  Bucket 8: [802]                    (hundreds=8)
+
+  Recurse into Bucket 0 (exp=10, tens digit):
+    Bucket 0: [2, 24]    (tens=0)
+    Bucket 4: [45]       (tens=4)
+    Bucket 6: [66]       (tens=6)
+    Bucket 7: [75]       (tens=7)
+    Bucket 9: [90]       (tens=9)
+
+    Recurse into [2, 24] (exp=1, ones):
+      Bucket 2: [2]      Bucket 4: [24]
+      → [2, 24]
+
+  Concatenate all buckets:
+  [2, 24, 45, 66, 75, 90] + [170] + [802]
+
+  Result: [2, 24, 45, 66, 75, 90, 170, 802]
+  MSD: processes top-down, can short-circuit single-element buckets.
+```
+
 ---
 
 ## Example 4: Radix Sort for Strings (Fixed Length)
@@ -219,6 +295,32 @@ func main() {
 	radixSortStrings(words, 3)
 	fmt.Println(words) // [ant bat cat cow dog]
 }
+```
+
+**Textual Figure:**
+
+```
+Radix Sort Strings: words = ["cat", "bat", "ant", "dog", "cow"]
+  maxLen = 3, pad shorter words with spaces
+
+  Pass 1 — sort by char at position 2 (last char):
+  ┌─────┬─────────────────┐
+  │ Char│ Words           │
+  ├─────┼─────────────────┤
+  │  g  │ dog             │
+  │  t  │ cat, bat, ant   │
+  │  w  │ cow             │
+  └─────┴─────────────────┘
+  → [dog, cat, bat, ant, cow]
+
+  Pass 2 — sort by char at position 1 (middle):
+  → [bat, cat, cow, dog, ant]
+
+  Pass 3 — sort by char at position 0 (first):
+  → [ant, bat, cat, cow, dog]
+
+  Result: [ant, bat, cat, cow, dog]
+  LSD string sort: process rightmost char first.
 ```
 
 ---
@@ -285,6 +387,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Radix Sort with Negatives: arr = [-5, 3, -1, 0, 8, -10, 2]
+
+  Step 1: Separate positives and negatives
+  neg (negate): [5, 1, 10]     pos: [3, 0, 8, 2]
+
+  Step 2: Radix sort each group
+  neg sorted: [1, 5, 10]
+  pos sorted: [0, 2, 3, 8]
+
+  Step 3: Merge — reverse negatives, negate back
+  reversed neg: [10, 5, 1] → [-10, -5, -1]
+  ┌─────┬────┬────┬────┬────┬────┬────┐
+  │ -10 │ -5 │ -1 │  0 │  2 │  3 │  8 │
+  └─────┴────┴────┴────┴────┴────┴────┘
+   neg (reversed)     positives
+
+  Result: [-10, -5, -1, 0, 2, 3, 8]
+```
+
 ---
 
 ## Example 6: Base-256 Radix Sort (Byte-based)
@@ -324,6 +448,32 @@ func main() {
 	radixSort256(arr)
 	fmt.Println(arr) // [2 24 45 66 75 90 170 802]
 }
+```
+
+**Textual Figure:**
+
+```
+Base-256 Radix Sort: process 8 bits (1 byte) per pass
+  arr = [170, 45, 75, 90, 802, 24, 2, 66]
+
+  For 32-bit integers: 4 passes (8 bits each)
+  ┌──────┬────────┬────────┬────────┬────────┐
+  │ Pass │ Bits   │ Mask   │ k      │ Buckets│
+  ├──────┼────────┼────────┼────────┼────────┤
+  │  1   │ 0-7    │ 0xFF   │ 256    │ 256    │
+  │  2   │ 8-15   │ 0xFF   │ 256    │ 256    │
+  │  3   │ 16-23  │ 0xFF   │ 256    │ 256    │
+  │  4   │ 24-31  │ 0xFF   │ 256    │ 256    │
+  └──────┴────────┴────────┴────────┴────────┘
+
+  Digit extraction: (value >> shift) & 0xFF
+  170 = 0x000000AA → byte0=0xAA, byte1=0x00, ...
+
+  Base-10: d passes, k=10   → O(d×(n+10))
+  Base-256: 4 passes, k=256 → O(4×(n+256))
+  Fewer passes with larger base = faster for big n.
+
+  Result: [2, 24, 45, 66, 75, 90, 170, 802]
 ```
 
 ---
@@ -371,6 +521,29 @@ func main() {
 	fmt.Println(maximumGap([]int{3, 6, 9, 1}))  // 3
 	fmt.Println(maximumGap([]int{10}))            // 0
 }
+```
+
+**Textual Figure:**
+
+```
+Maximum Gap: nums = [3, 6, 9, 1]
+
+  Step 1: Radix sort
+  ┌───┬───┬───┬───┐        ┌───┬───┬───┬───┐
+  │ 3 │ 6 │ 9 │ 1 │  →  │ 1 │ 3 │ 6 │ 9 │
+  └───┴───┴───┴───┘        └───┴───┴───┴───┘
+
+  Step 2: Find max gap between consecutive elements
+  ┌───────────┬─────┐
+  │ Pair      │ Gap │
+  ├───────────┼─────┤
+  │ 1 → 3     │  2  │
+  │ 3 → 6     │  3  │ ← max
+  │ 6 → 9     │  3  │ ← max
+  └───────────┴─────┘
+
+  Maximum gap = 3
+  Time: O(d×(n+k)) for radix sort + O(n) scan = O(n)
 ```
 
 ---
@@ -427,6 +600,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Sort Records by ID (Radix Sort):
+  records = [(305,Alice),(102,Bob),(201,Charlie),(450,Dave),(110,Eve)]
+
+  Pass 1 — ones digit:
+  ┌─────┬────────────────┐
+  │ Dig │ Records        │
+  ├─────┼────────────────┤
+  │  0  │ (110,Eve)      │
+  │  0  │ (450,Dave)     │
+  │  1  │ (201,Charlie)  │
+  │  2  │ (102,Bob)      │
+  │  5  │ (305,Alice)    │
+  └─────┴────────────────┘
+  → [(110,Eve),(450,Dave),(201,Charlie),(102,Bob),(305,Alice)]
+
+  Pass 2 — tens, Pass 3 — hundreds...
+
+  Final sorted by ID:
+  102=Bob, 110=Eve, 201=Charlie, 305=Alice, 450=Dave
+
+  Stable: records with same digit keep relative order.
+```
+
 ---
 
 ## Example 9: Binary Radix Sort (Base 2)
@@ -466,6 +665,35 @@ func main() {
 	binaryRadixSort(arr)
 	fmt.Println(arr) // [2 24 45 66 75 90 170 802]
 }
+```
+
+**Textual Figure:**
+
+```
+Binary Radix Sort: arr = [170, 45, 75, 90, 802, 24, 2, 66]
+
+  Process each bit (LSB to MSB):
+  ┌───────┬─────────────────────┬─────────────────────┐
+  │ Bit   │ 0-bits              │ 1-bits              │
+  ├───────┼─────────────────────┼─────────────────────┤
+  │ bit 0 │ 170,90,802,24,2,66  │ 45,75               │
+  │ bit 1 │ ...                 │ ...                 │
+  │  ...  │                     │                     │
+  └───────┴─────────────────────┴─────────────────────┘
+
+  Each bit = 1 pass. max=802 → 10 bits needed.
+  Stable partition: 0-bits go first, then 1-bits.
+
+  Base-2 vs Base-10 vs Base-256:
+  ┌──────────┬─────────┬──────────┬───────────┐
+  │ Base     │ Passes  │ Buckets  │ Trade-off │
+  ├──────────┼─────────┼──────────┼───────────┤
+  │ 2        │ 32      │ 2        │ Many pass │
+  │ 10       │ 10      │ 10       │ Balanced  │
+  │ 256      │ 4       │ 256      │ Few pass  │
+  └──────────┴─────────┴──────────┴───────────┘
+
+  Result: [2, 24, 45, 66, 75, 90, 170, 802]
 ```
 
 ---
@@ -509,6 +737,33 @@ func main() {
 	fmt.Println("  • k is small relative to n")
 	fmt.Println("  • O(d × n) ≈ O(n) when d is constant")
 }
+```
+
+**Textual Figure:**
+
+```
+LSD vs MSD Radix Sort:
+
+  LSD (Least Significant First):     MSD (Most Significant First):
+  ┌─────────────────────┐     ┌─────────────────────┐
+  │ Process right→left   │     │ Process left→right   │
+  │ Iterative             │     │ Recursive             │
+  │ Always d passes       │     │ Can short-circuit     │
+  │ Naturally stable      │     │ Needs care for       │
+  │ Fixed-length keys     │     │ stability             │
+  │ Integers              │     │ Variable-length       │
+  └─────────────────────┘     │ strings               │
+                               └─────────────────────┘
+
+  Example with [170, 45, 75]:
+
+  LSD:                          MSD:
+  Pass 1 (ones): [170,45,75]   Pass 1 (hundreds): B0:[45,75]
+  Pass 2 (tens):  sorted tens                      B1:[170]
+  Pass 3 (hundreds): done       Recurse B0 on tens...
+
+  Time for both: O(d × (n + k))
+  d = digits, n = elements, k = base size
 ```
 
 ---

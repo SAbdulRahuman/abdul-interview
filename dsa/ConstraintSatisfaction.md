@@ -634,6 +634,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+3×3 Magic Square CSP   target = 3×(9+1)/2 = 15
+
+  Variables: 9 cells, Domain: {1..9}, Constraints: rows/cols/diags = 15
+
+  Backtracking with partial constraint checking:
+  ──────────────────────────────────────────────
+  pos=0: try 1       pos=0: try 2
+  ┌───┬───┬───┐     ┌───┬───┬───┐
+  │ 1 │   │   │     │ 2 │   │   │
+  ├───┼───┼───┤     ├───┼───┼───┤
+  │   │   │   │     │   │   │   │   ...
+  ├───┼───┼───┤     ├───┼───┼───┤
+  │   │   │   │     │   │   │   │
+  └───┴───┴───┘     └───┴───┴───┘
+    pos=1: try 2,3...    fill remaining...
+    When row complete (pos=2), check sum:
+      Row 0: 1+2+3=6 ≠ 15 ✂ PRUNE!
+
+  Solution found:
+  ┌───┬───┬───┐
+  │ 2 │ 7 │ 6 │  row=15 ✓
+  ├───┼───┼───┤
+  │ 9 │ 5 │ 1 │  row=15 ✓
+  ├───┼───┼───┤
+  │ 4 │ 3 │ 8 │  row=15 ✓
+  └───┴───┴───┘
+   c=15 c=15 c=15
+   d1=2+5+8=15 ✓   d2=6+5+4=15 ✓
+```
+
 ---
 
 ## Example 7: Latin Square
@@ -689,6 +722,34 @@ func main() {
 		fmt.Println()
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+3×3 Latin Square CSP
+  Variables: 9 cells, Domain: {1,2,3}
+  Constraints: each value appears once per row AND once per column
+
+  Backtracking trace:
+  ────────────────────────────────────────────────
+  pos(0,0)=1    pos(0,1)=2    pos(0,2)=3
+  ┌───┬───┬───┐   row constraint: each val once
+  │ 1 │ 2 │ 3 │   col constraint: each val once
+  ├───┼───┼───┤
+  │   │   │   │   pos(1,0): try 1 ││ col 0 has 1 ││→ ││
+  └───┴───┴───┘            try 2 ✓ (row OK, col OK)
+
+  pos(1,0)=2    pos(1,1): try 1││col has 2││ try 3 ✓
+  ┌───┬───┬───┐   pos(1,2): try 1 ✓
+  │ 1 │ 2 │ 3 │
+  ├───┼───┼───┤   Row 2: forced by columns
+  │ 2 │ 3 │ 1 │   pos(2,0)=3, pos(2,1)=1, pos(2,2)=2
+  ├───┼───┼───┤
+  │ 3 │ 1 │ 2 │ ✓
+  └───┴───┴───┘
+
+  Verify: Each row has {1,2,3} ✓   Each col has {1,2,3} ✓
 ```
 
 ---
@@ -777,6 +838,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph Coloring with AC-3 (3 colors, 4 vertices)
+
+  Graph:  0───1          Initial domains:
+          |\ /|           Var 0: {1, 2, 3}
+          | X |           Var 1: {1, 2, 3}
+          |/ \|           Var 2: {1, 2, 3}
+          2───3           Var 3: {1, 2, 3}
+
+  AC-3 arc queue: (0,1)(0,2)(1,0)(1,2)(1,3)(2,0)(2,1)(2,3)(3,1)(3,2)
+  ─────────────────────────────────────────────────────
+  Process arc (0,1): revise Var 0 w.r.t. Var 1
+    For each val in dom(0), is there a DIFFERENT val in dom(1)?
+    val=1: dom(1) has {2,3} ≠ 1 ✓  (has support)
+    val=2: dom(1) has {1,3} ≠ 2 ✓
+    val=3: dom(1) has {1,2} ≠ 3 ✓
+    No change → dom(0) stays {1,2,3}
+
+  Process arc (0,2): same analysis, no change
+  ... (all arcs processed, no domain reduction in this case)
+
+  After AC-3:
+    Var 0: {1, 2, 3}   (no reduction → need backtracking)
+    Var 1: {1, 2, 3}
+    Var 2: {1, 2, 3}
+    Var 3: {1, 2, 3}
+
+  Note: AC-3 is most effective when initial assignments
+        restrict domains, e.g., if Var 0 is pre-assigned
+        to 1, then dom(1) and dom(2) lose value 1.
+```
+
 ---
 
 ## Example 9: Job Scheduling CSP
@@ -850,6 +945,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Job Scheduling CSP   (5 jobs, 6 time slots, 2 resources)
+
+  Jobs: J0(dur=2,R0) J1(dur=3,R0) J2(dur=1,R1) J3(dur=2,R1) J4(dur=1,R0)
+
+  Backtracking: assign start times, check overlap on same resource
+  ───────────────────────────────────────────────────────
+    J0=0: [0,2) on R0
+    J1=0: [0,3) on R0 ││ J0 [0,2) overlaps! ✂
+    J1=2: [2,5) on R0 ✓ (no overlap with J0)
+    J2=0: [0,1) on R1 ✓ (different resource)
+    J3=0: [0,2) on R1 ││ J2 [0,1) overlaps! ││
+    J3=1: [1,3) on R1 ✓
+    J4=0: [0,1) on R0 ││ J0 [0,2) overlaps! ││
+    J4=5: [5,6) on R0 ✓
+
+  Final Schedule:
+  Resource 0: │J0│J0│J1│J1│J1│J4│
+  Resource 1: │J2│J3│J3│  │  │  │
+              0  1  2  3  4  5  6
+
+  Result: J0=[0,2) J1=[2,5) J2=[0,1) J3=[1,3) J4=[5,6)
+```
+
 ---
 
 ## Example 10: CSP Concepts Summary
@@ -885,6 +1006,40 @@ func main() {
 	fmt.Println("  • Scheduling: resource + time constraints")
 	fmt.Println("  • Cryptarithmetic: digit uniqueness + equation")
 }
+```
+
+**Textual Figure:**
+
+```
+  CSP Solution Techniques Hierarchy
+  ═══════════════════════════════════════════════════════════════
+
+                ┌──────────────────────┐
+                │  1. BACKTRACKING       │
+                │  (base technique)      │
+                └──────────┬───────────┘
+                           │
+              ┌───────────┼───────────┐
+              │                         │
+  ┌───────────┴───────┐   ┌───────┴───────────┐
+  │ 2. FORWARD CHECKING   │   │ 3. ARC CONSISTENCY    │
+  │ (prune on assign)    │   │ (AC-3 propagation)    │
+  └────────────────────┘   └────────────────────┘
+
+  Enhanced with heuristics:
+  ┌────────────────────┬────────────────────┐
+  │ MRV (variable order) │ LCV (value order)    │
+  │ Pick var with fewest │ Try val that rules   │
+  │ remaining values     │ out fewest for       │
+  │ → fail-fast          │ neighbors → succeed  │
+  └────────────────────┴────────────────────┘
+
+  Classic CSP Problems:             Technique Used:
+    N-Queens       ────────────→  Backtracking + col/diag check
+    Sudoku         ────────────→  Forward checking + MRV
+    Graph Coloring ────────────→  AC-3 + backtracking
+    Scheduling     ────────────→  Backtracking + overlap check
+    Cryptarithmetic────────────→  Backtracking + arithmetic test
 ```
 
 ---

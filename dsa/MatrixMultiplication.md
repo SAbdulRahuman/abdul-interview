@@ -51,6 +51,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Standard Matrix Multiplication: A(2×3) × B(3×2) │
+├─────────────────────────────────────────────────┤
+│  A:        B:        C = A×B:                   │
+│  ┌1 2 3┐  ┌ 7  8┐   ┌ 58  64┐                  │
+│  │4 5 6┘  │ 9 10│   │139 154┘                  │
+│           │11 12┘                               │
+│                                                 │
+│  C[0][0] = 1×7 + 2×9 + 3×11 = 7+18+33 = 58    │
+│  C[0][1] = 1×8 + 2×10 + 3×12 = 8+20+36 = 64   │
+│  C[1][0] = 4×7 + 5×9 + 6×11 = 28+45+66 = 139  │
+│  C[1][1] = 4×8 + 5×10 + 6×12 = 32+50+72 = 154 │
+│                                                 │
+│  O(m×n×p): m rows of A, n=shared, p cols of B  │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Matrix Exponentiation (Generic)
@@ -108,6 +127,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Matrix Exponentiation for Fibonacci            │
+├─────────────────────────────────────────────────┤
+│  [F(n+1)]   [1 1]^n   [1]                       │
+│  [F(n)  ] = [1 0]   × [0]                       │
+│                                                 │
+│  Binary exponentiation of matrix:               │
+│  M^10 = M^8 × M^2  (10 = 1010₂)               │
+│                                                 │
+│  Step: exp=10 (1010)                            │
+│    bit 1: result ×= M,  M = M²                  │
+│    bit 0: skip,         M = M⁴                  │
+│    bit 1: result ×= M⁴, M = M⁸                  │
+│    bit 0: skip                                  │
+│                                                 │
+│  O(k³ log n) — k=2 for Fibonacci               │
+│  Computes F(10⁶) mod 10⁹+7 in milliseconds     │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Count Paths in Graph (Adjacency Matrix Power)
@@ -163,6 +204,28 @@ func main() {
 		fmt.Printf("  Paths of length %d from 0→3: %d\n", k, result[0][3])
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Graph Path Counting: Aᵏ                        │
+├─────────────────────────────────────────────────┤
+│  Graph:  0 ── 1 ── 3                            │
+│          │ ╲ │ ╱                                 │
+│          └── 2 ─┘                                 │
+│                                                 │
+│  Adj matrix A:      A²[0][3] = paths len 2     │
+│  ┌0 1 1 0┐           0→1→3 or 0→2→3           │
+│  │1 0 1 1│           = 2 paths                   │
+│  │1 1 0 1│                                       │
+│  │0 1 1 0┘          A³[0][3] = paths len 3      │
+│                      0→1→2→3, 0→2→1→3,         │
+│                      0→1→0→2(???), etc         │
+│                      = 5 paths                   │
+│                                                 │
+│  Aᵏ[i][j] = # paths of exactly length k          │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -237,6 +300,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Linear Recurrence via Matrix Exponentiation    │
+├─────────────────────────────────────────────────┤
+│  f(n) = c₁f(n-1) + c₂f(n-2) + ... + cₖf(n-k)  │
+│                                                 │
+│  Transition matrix M (k×k):                     │
+│  ┌c₁ c₂ c₃ ... cₖ┐                              │
+│  │1  0  0  ... 0 │                              │
+│  │0  1  0  ... 0 │  shift row                   │
+│  │:           : │                              │
+│  │0  0  ... 1  0 ┘                              │
+│                                                 │
+│  Tribonacci: f(n)=f(n-1)+f(n-2)+f(n-3)         │
+│  M = ┌1 1 1┐   Initial = [0, 0, 1]              │
+│      │1 0 0│   M^(n-2) × [1,0,0]^T              │
+│      │0 1 0┘                                     │
+│                                                 │
+│  O(k³ log n) instead of O(n)                    │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Matrix Chain Multiplication (DP)
@@ -300,6 +386,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Matrix Chain Multiplication DP                 │
+├─────────────────────────────────────────────────┤
+│  dims = [10, 30, 5, 60]                         │
+│  M1(10×30)  M2(30×5)  M3(5×60)                │
+│                                                 │
+│  Option A: (M1 × M2) × M3                       │
+│    M1×M2: 10×30×5 = 1500                       │
+│    × M3:  10×5×60 = 3000                       │
+│    Total: 4500  ★ optimal                       │
+│                                                 │
+│  Option B: M1 × (M2 × M3)                       │
+│    M2×M3: 30×5×60 = 9000                       │
+│    M1×:   10×30×60= 18000                      │
+│    Total: 27000  ← 6× worse!                    │
+│                                                 │
+│  DP: O(n³) for optimal parenthesization         │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Spiral Matrix Traversal (LeetCode 54)
@@ -346,6 +454,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Spiral Matrix Traversal                        │
+├─────────────────────────────────────────────────┤
+│  ┌───┬───┬───┐                                   │
+│  │ 1→│2→│3 │  → right across top               │
+│  ├───┬───┬───┤                                   │
+│  │ 4 │ 5 │ 6↓│  ↓ down right side               │
+│  ├───┬───┬───┤                                   │
+│  │ 7 │←8←│9 │  ← left across bottom             │
+│  └───┴───┴───┘                                   │
+│  ↑ 4 up left side                               │
+│  → 5 center                                     │
+│                                                 │
+│  Order: [1,2,3,6,9,8,7,4,5]                    │
+│  Use 4 boundaries: top,bottom,left,right        │
+│  Shrink inward after each sweep                 │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Rotate Matrix 90° (LeetCode 48)
@@ -389,6 +518,27 @@ func main() {
 	rotate(m2)
 	printMatrix("Rotated 90° CW", m2)
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Rotate Matrix 90° Clockwise                    │
+├─────────────────────────────────────────────────┤
+│  Step 1: Transpose (swap across diagonal)       │
+│  ┌1 2 3┐      ┌1 4 7┐                           │
+│  │4 5 6│  →   │2 5 8│                           │
+│  │7 8 9┘      │3 6 9┘                           │
+│                                                 │
+│  Step 2: Reverse each row                       │
+│  ┌1 4 7┐      ┌7 4 1┐                           │
+│  │2 5 8│  →   │8 5 2│                           │
+│  │3 6 9┘      │9 6 3┘                           │
+│                                                 │
+│  In-place: O(n²) time, O(1) space               │
+│  90° CCW: transpose + reverse columns           │
+│  180°: reverse rows then reverse columns        │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -453,6 +603,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Set Matrix Zeroes: O(1) Space                  │
+├─────────────────────────────────────────────────┤
+│  Before:        After:                          │
+│  ┌1 1 1┐       ┌1 0 1┐                          │
+│  │1 0 1│  →    │0 0 0│                          │
+│  │1 1 1┘       │1 0 1┘                          │
+│                                                 │
+│  Strategy: use first row/col as markers         │
+│                                                 │
+│  1. Record if first row/col have zeros          │
+│  2. Scan: if cell=0, mark row[i][0]=0,col[0][j]=0│
+│  3. Zero cells per markers (skip first row/col) │
+│  4. Handle first row/col last                   │
+│                                                 │
+│  O(mn) time, O(1) extra space                   │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Toeplitz Matrix Check (LeetCode 766)
@@ -486,6 +657,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Toeplitz Matrix Check                          │
+├─────────────────────────────────────────────────┤
+│  A Toeplitz matrix: constant along diagonals    │
+│                                                 │
+│  ┌───┬───┬───┬───┐                                │
+│  │ 1 │ 2 │ 3 │ 4 │  diag₀: [1,1,1]              │
+│  ├───┼───┼───┼───┤  diag₁: [2,2,2]              │
+│  │ 5 │ 1 │ 2 │ 3 │  diag₂: [3,3]                │
+│  ├───┼───┼───┼───┤  diag₋₁:[5,5]                │
+│  │ 9 │ 5 │ 1 │ 2 │  diag₋₂:[9]                  │
+│  └───┴───┴───┴───┘  ✓ Toeplitz!                 │
+│                                                 │
+│  Check: m[i][j] == m[i-1][j-1] for all i,j>0   │
+│  O(mn) time, O(1) space                         │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Matrix Operations Patterns
@@ -516,6 +707,24 @@ func main() {
 		fmt.Printf("  %-24s %-40s %s\n", p.technique, p.use, p.complexity)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Matrix Operations Toolkit                      │
+├─────────────────────────────────────────────────┤
+│  Multiply A×B     → O(mnp)    three nested loops│
+│  Matrix exponent   → O(k³logn) binary square    │
+│  Chain order DP    → O(n³)    optimal parens    │
+│  Spiral traversal  → O(mn)    4 boundaries      │
+│  Rotate 90°        → O(n²)    transpose+reverse  │
+│  Set zeroes        → O(mn)    marker row/col    │
+│  Transpose         → O(n²)    swap (i,j)↔(j,i)  │
+│  Path counting     → O(n³logk) adj matrix power │
+│  Toeplitz check    → O(mn)    diagonal constant  │
+│  Strassen          → O(n^2.8)  D&C huge matrices│
+└─────────────────────────────────────────────────┘
 ```
 
 ---

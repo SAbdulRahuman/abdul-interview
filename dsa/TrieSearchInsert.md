@@ -72,6 +72,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert "apple", then Search/StartsWith, then Insert "app":
+
+   After Insert("apple"):        After Insert("app"):
+   (root)                        (root)
+    └─ a                         └─ a
+        └─ p                        └─ p
+            └─ p                        └─ p ★   → "app"
+                └─ l                        └─ l
+                    └─ e ★ → "apple"            └─ e ★ → "apple"
+
+   Operations using findNode() helper:
+   ┌──────────────────┬───────────────────┬──────────┬────────┐
+   │ Operation        │ Path              │ isEnd?   │ Result │
+   ├──────────────────┼───────────────────┼──────────┼────────┤
+   │ Search("apple")  │ a─p─p─l─e         │ true     │ true   │
+   │ Search("app")    │ a─p─p             │ false    │ false  │
+   │ StartsWith("app")│ a─p─p             │ (unused) │ true   │
+   │ Search("app")    │ a─p─p (after ins) │ true     │ true   │
+   └──────────────────┴───────────────────┴──────────┴────────┘
+   Search = findNode + check isEnd
+   StartsWith = findNode != nil (ignores isEnd)
+```
+
 ---
 
 ## Example 2: Replace Words with Trie
@@ -145,6 +171,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Dictionary roots: ["cat", "bat", "rat"]
+Sentence: "the cattle was rattled by the battery"
+
+   Root Trie:
+   (root)
+    ├─ b ─ a ─ t ★   → "bat"
+    ├─ c ─ a ─ t ★   → "cat"
+    └─ r ─ a ─ t ★   → "rat"
+
+   ShortestRoot replacement (stops at first isEnd):
+   ┌────────────┬─────────────────┬──────────┐
+   │ Word       │ Trie traversal  │ Result   │
+   ├────────────┼─────────────────┼──────────┤
+   │ "the"      │ t→(no 'h' path) │ "the"    │
+   │ "cattle"   │ c─a─t★ STOP     │ "cat"    │
+   │ "was"      │ w→(no path)     │ "was"    │
+   │ "rattled"  │ r─a─t★ STOP     │ "rat"    │
+   │ "by"       │ b→a→(no 'y')   │ "by"     │
+   │ "battery"  │ b─a─t★ STOP     │ "bat"    │
+   └────────────┴─────────────────┴──────────┘
+   Output: "the cat was rat by the bat"
+```
+
 ---
 
 ## Example 3: Search Suggestions System
@@ -202,6 +254,34 @@ func main() {
 		fmt.Printf("After '%s': %v\n", searchWord[:i+1], suggestions)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Products (sorted): ["mobile","monitor","moneypot","mouse","mousepad"]
+SearchWord: "mouse"
+
+   Trie with top-3 words stored at each node:
+   (root)
+    └─ m  words: [mobile, monitor, moneypot]
+        └─ o  words: [mobile, monitor, moneypot]
+            ├─ b ─ i ─ l ─ e ★  → "mobile"
+            ├─ n
+            │   ├─ e ─ y ─ p ─ o ─ t ★  → "moneypot"
+            │   └─ i ─ t ─ o ─ r ★      → "monitor"
+            └─ u  words: [mouse, mousepad]
+                └─ s
+                    └─ e ★  words: [mouse, mousepad]
+                        ├─ (end) → "mouse"
+                        └─ p ─ a ─ d ★ → "mousepad"
+
+   Query results (follow trie path for each prefix):
+   After 'm':     [mobile, monitor, moneypot]
+   After 'mo':    [mobile, monitor, moneypot]
+   After 'mou':   [mouse, mousepad]
+   After 'mous':  [mouse, mousepad]
+   After 'mouse': [mouse, mousepad]
 ```
 
 ---
@@ -284,6 +364,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "apple" x2, "app" x1
+
+   (root)
+    └─ a (pCnt=3)
+        └─ p (pCnt=3)
+            └─ p (pCnt=3, wCnt=1) ★  → "app"
+                └─ l (pCnt=2)
+                    └─ e (pCnt=2, wCnt=2) ★  → "apple" x2
+
+   After Erase("apple"): decrement counts along path
+   (root)
+    └─ a (pCnt=2)
+        └─ p (pCnt=2)
+            └─ p (pCnt=2, wCnt=1) ★  → "app"
+                └─ l (pCnt=1)
+                    └─ e (pCnt=1, wCnt=1) ★  → "apple" x1
+
+   CountWordsEqualTo("apple")   = wCnt at 'e' = 1
+   CountWordsStartingWith("app")= pCnt at 'p' = 2  (app + apple)
+```
+
 ---
 
 ## Example 5: Longest Word in Dictionary
@@ -340,6 +444,30 @@ func main() {
 	words2 := []string{"a", "banana", "app", "appl", "ap", "apply", "apple"}
 	fmt.Println(longestWord(words2)) // "apple"
 }
+```
+
+**Textual Figure:**
+
+```
+Words (sorted): ["a", "ap", "app", "appl", "apple", "apply", "banana"]
+
+   (root) isEnd=true (base)
+    ├─ a ★ → "a"                   buildable ✓
+    │   └─ p ★ → "ap"              buildable ✓ (a→ap)
+    │       └─ p ★ → "app"          buildable ✓ (ap→app)
+    │           └─ l ★ → "appl"     buildable ✓ (app→appl)
+    │               ├─ e ★ → "apple" buildable ✓ (appl→apple) ← BEST
+    │               └─ y ★ → "apply" buildable ✓ (appl→apply)
+    └─ b
+        └─ a
+            └─ n
+                └─ a
+                    └─ n
+                        └─ a ★ → "banana" NOT buildable ✗
+                             (no "b", "ba" etc. as valid words)
+
+   "apple" wins: length 5, every prefix is a valid word.
+   "banana" loses: "b" is not in the word list.
 ```
 
 ---
@@ -401,6 +529,31 @@ func main() {
 	ms.Insert("apple", 5) // update
 	fmt.Println(ms.Sum("ap")) // 7 (5+2)
 }
+```
+
+**Textual Figure:**
+
+```
+MapSum operations:
+
+   After Insert("apple", 3):     After Insert("app", 2):
+   (root)                        (root)
+    └─ a (val=3)                  └─ a (val=5)
+        └─ p (val=3)                 └─ p (val=5)   ← Sum("ap")=5
+            └─ p (val=3)                 └─ p (val=5, end=2)
+                └─ l (val=3)                 └─ l (val=3)
+                    └─ e (val=3) ★               └─ e (val=3) ★
+
+   After Insert("apple", 5):  (update: delta = 5-3 = +2)
+   (root)
+    └─ a (val=7)              ← 3+2+2 = 7
+        └─ p (val=7)          ← Sum("ap") = 7
+            └─ p (val=7, end=2)
+                └─ l (val=5)
+                    └─ e (val=5) ★  → "apple"=5
+
+   Sum("ap") = val at node 'p' = 7 (apple:5 + app:2)
+   Delta propagation ensures O(L) updates.
 ```
 
 ---
@@ -465,6 +618,30 @@ func main() {
 	}
 	// 'd' → "cd" ends, 'f' → "f" ends, 'l' → "kl" ends
 }
+```
+
+**Textual Figure:**
+
+```
+Words inserted REVERSED: "cd"→"dc", "f"→"f", "kl"→"lk"
+
+   Reverse Trie:
+   (root)
+    ├─ d
+    │   └─ c ★    → matches suffix "cd"
+    ├─ f ★        → matches suffix "f"
+    └─ l
+        └─ k ★    → matches suffix "kl"
+
+   Stream: a, b, c, d, e, f, g, h, i, j, k, l
+   ┌───────┬─────────────────────────────┬─────────┐
+   │ Char  │ Check reversed stream     │ Match?  │
+   ├───────┼─────────────────────────────┼─────────┤
+   │ 'd'   │ d→c → isEnd=true ("cd")  │ ✓ "cd"  │
+   │ 'f'   │ f → isEnd=true ("f")     │ ✓ "f"   │
+   │ 'l'   │ l→k → isEnd=true ("kl")  │ ✓ "kl"  │
+   └───────┴─────────────────────────────┴─────────┘
+   Reverse insertion turns suffix matching into prefix matching!
 ```
 
 ---
@@ -542,6 +719,31 @@ func main() {
 	fmt.Println(palindromePairs(words))
 	// [[0,1],[1,0],[3,2],[2,4]]
 }
+```
+
+**Textual Figure:**
+
+```
+Words: ["abcd", "dcba", "lls", "s", "sssll"]
+
+   Reversed-word Trie (insert each word reversed):
+   (root)
+    ├─ d ─ c ─ b ─ a ★ idx=0  → rev("abcd")="dcba"
+    ├─ a ─ b ─ c ─ d ★ idx=1  → rev("dcba")="abcd"
+    ├─ s
+    │   ├─ l ─ l ★     idx=2  → rev("lls")="sll"
+    │   └─ (end) ★    idx=3  → rev("s")="s"
+    └─ l ─ l ─ s ─ s ─ s ★ idx=4 → rev("sssll")="llsss"
+
+   Finding palindrome pairs:
+   [0,1]: "abcd"+"dcba" = "abcddcba" ✓ palindrome
+   [1,0]: "dcba"+"abcd" = "dcbaabcd" ✓ palindrome
+   [3,2]: "s"+"lls"     = "slls"     ✓ palindrome
+   [2,4]: "lls"+"sssll" = "llssssll" ✓ palindrome
+
+   Key: for word[i], walk trie of reversed words.
+   If reversed word ends AND remaining suffix is
+   palindrome → valid pair found.
 ```
 
 ---
@@ -637,6 +839,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert with frequencies:
+   (root)
+    └─ g
+        └─ o
+            ├─ o
+            │   ├─ g ─ l ─ e ★  freq=100  → "google"
+            │   └─ d ★          freq=60   → "good"
+            ├─ l ─ a ─ n ─ g ★  freq=80   → "golang"
+            ├─ a ─ t ★          freq=30   → "goat"
+            └─ (★)               freq=50   → "go"
+
+   TopK("go", 3):
+   1. Navigate to prefix node: root─g─o
+   2. DFS collect all words + frequencies
+   3. Sort by freq descending:
+      google(100), golang(80), good(60), go(50), goat(30)
+   4. Return top 3: [google, golang, good]
+```
+
 ---
 
 ## Example 10: Trie Operations Comparison
@@ -666,6 +890,33 @@ func main() {
 		fmt.Printf("  %24s Time: %s (%s)\n\n", "", op.time, op.notes)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Trie Operations Overview — All O(L) time:
+
+   Example Trie: ["app", "apple", "apt"]
+   (root)
+    └─ a
+        └─ p
+            ├─ p ★ ─ l ─ e ★
+            └─ t ★
+
+   ┌─────────────────┬───────────────────────────┬──────┐
+   │ Operation       │ Traversal path            │ Time │
+   ├─────────────────┼───────────────────────────┼──────┤
+   │ Insert          │ Walk/create, mark isEnd   │ O(L) │
+   │ Search          │ Walk path, check isEnd    │ O(L) │
+   │ StartsWith      │ Walk path, node != nil    │ O(L) │
+   │ Delete          │ Unmark isEnd, prune empty │ O(L) │
+   │ CountPrefix     │ Walk, read prefixCount    │ O(L) │
+   │ AutoComplete    │ Walk + DFS collect        │O(L+K)│
+   │ ShortestRoot    │ Walk, stop at first isEnd │ O(L) │
+   │ Sum by prefix   │ Walk, read accumulated val│ O(L) │
+   └─────────────────┴───────────────────────────┴──────┘
+   All operations are O(L) — independent of # stored words.
 ```
 
 ---

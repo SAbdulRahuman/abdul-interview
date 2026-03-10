@@ -71,6 +71,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Grade School Multiplication: 1234 × 5678
+
+  Each digit-pair multiplied (4 × 4 = 16 digit muls):
+  ┌────────────────────────────────────┐
+  │          1  2  3  4                │
+  │        × 5  6  7  8                │
+  │      ────────────                  │
+  │  8×:     8 16 24 32   (1234×8)     │
+  │  7×:    7 14 21 28    (1234×7×10)  │
+  │  6×:   6 12 18 24     (1234×6×100) │
+  │  5×:  5 10 15 20      (1234×5×1000)│
+  │      ────────────                  │
+  │      7  0  0  6  6  5  2          │
+  └────────────────────────────────────┘
+
+  n digits × n digits = n² single-digit muls
+  Complexity: O(n²)
+```
+
 ---
 
 ## Example 2: Karatsuba for Integers
@@ -125,6 +147,36 @@ func main() {
 
 	fmt.Println("\nKaratsuba: O(n^1.585) — 3 muls per level")
 }
+```
+
+**Textual Figure:**
+
+```
+  Karatsuba: 1234 × 5678
+
+  Split: x = 12·10² + 34,  y = 56·10² + 78
+         a=12  b=34       c=56  d=78
+
+  3 sub-multiplications (instead of 4):
+  ┌────────────────────────────────────────────┐
+  │  ac   = 12 × 56         = 672            │
+  │  bd   = 34 × 78         = 2652           │
+  │  (a+b)(c+d) = 46 × 134 = 6164           │
+  │  ad+bc = 6164 - 672 - 2652 = 2840       │
+  └────────────────────────────────────────────┘
+
+  Combine: ac·10⁴ + (ad+bc)·10² + bd
+           672·10000 + 2840·100 + 2652
+         = 6720000 + 284000 + 2652 = 7006652 ✓
+
+  Recursion tree (a=3 branches per level):
+           n
+        /  |  \
+      n/2 n/2 n/2      3 sub-multiplications
+     /|\ /|\ /|\
+     .........          9 sub-multiplications
+
+  T(n) = 3T(n/2) + O(n) → O(n^log₂ 3) ≈ O(n^1.585)
 ```
 
 ---
@@ -250,6 +302,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Big Number Karatsuba (String-Based)
+
+  For numbers too large for int64:
+  999999999999 × 888888888888
+
+  Recursion trace (simplified):
+  ┌──────────────────────────────────────────────┐
+  │  x = "999999999999"   (12 digits)           │
+  │  y = "888888888888"   (12 digits)           │
+  │                                             │
+  │  Split at m=6:                              │
+  │    a = "999999"  b = "999999"               │
+  │    c = "888888"  d = "888888"               │
+  │                                             │
+  │  3 recursive calls on 6-digit numbers:      │
+  │    ac = karatsuba("999999","888888")         │
+  │    bd = karatsuba("999999","888888")         │
+  │    (a+b)(c+d) = karatsuba("1999998",...)    │
+  │                                             │
+  │  All string arithmetic: addBig, subBig       │
+  │  Shift = concatenate "0" strings             │
+  └──────────────────────────────────────────────┘
+
+  Recursion depth = log₂(12) ≈ 4 levels
+  Handles arbitrarily large numbers!
+```
+
 ---
 
 ## Example 4: Karatsuba for Polynomials
@@ -351,6 +433,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Polynomial Karatsuba: (1+2x+3x²) × (4+5x)
+
+  Split polynomials at half-degree:
+  ┌────────────────────────────────────────────┐
+  │  a = aLow + aHigh·x^half                   │
+  │  aLow = [1, 2]     aHigh = [3, 0]          │
+  │  bLow = [4, 5]     bHigh = [0, 0]          │
+  └────────────────────────────────────────────┘
+
+  3 sub-multiplications:
+    p1 = aLow × bLow    = [4, 13, 10]
+    p2 = aHigh × bHigh  = [0]
+    p3 = (aLow+aHigh) × (bLow+bHigh)
+       = [4, 7] × [4, 5] = [16, 48, 35]
+
+  middle = p3 - p1 - p2 = [12, 35, 25]
+
+  Combine: p1 + middle·x^half + p2·x^(2·half)
+  Result:  4 + 13x + 22x² + 15x³ ✓
+
+  Same trick: 3 poly-muls instead of 4
+```
+
 ---
 
 ## Example 5: Visualizing Karatsuba's Trick
@@ -395,6 +503,33 @@ func main() {
 	fmt.Println("\nSaved 1 multiplication (25% fewer)!")
 	fmt.Println("Recursively: O(n^1.585) vs O(n²)")
 }
+```
+
+**Textual Figure:**
+
+```
+  Karatsuba's Trick: 12 × 34
+
+  Split: x=12 → a=1, b=2    y=34 → c=3, d=4
+
+  Naive (4 multiplications):        Karatsuba (3 multiplications):
+  ┌──────────────────────┐      ┌───────────────────────┐
+  │ ac = 1×3 = 3          │      │ p1 = ac = 1×3 = 3       │
+  │ ad = 1×4 = 4          │      │ p2 = bd = 2×4 = 8       │
+  │ bc = 2×3 = 6          │      │ p3 = (1+2)(3+4) = 21   │
+  │ bd = 2×4 = 8          │      │ ad+bc = 21-3-8 = 10    │
+  └──────────────────────┘      └───────────────────────┘
+  4 muls                         3 muls  ★
+
+  Both yield: 3×100 + 10×10 + 8 = 300+100+8 = 408
+  Verify: 12 × 34 = 408 ✓
+
+  ┌────────────────────────────────────────────┐
+  │  Saved: 1 mul per level = 25% fewer        │
+  │  Recursive savings:                        │
+  │    Naive: 4^k muls at depth k → O(n²)      │
+  │    Kara:  3^k muls at depth k → O(n^1.585) │
+  └────────────────────────────────────────────┘
 ```
 
 ---
@@ -443,6 +578,35 @@ func main() {
 	fmt.Println("• Overhead grows: only worth it for very large numbers")
 	fmt.Println("• In practice: grade school → Karatsuba → Toom-3 → FFT")
 }
+```
+
+**Textual Figure:**
+
+```
+  Toom-Cook Generalization (Karatsuba = Toom-2)
+
+  Method           Parts  Muls  Naive muls  Exponent
+  ────────────────────────────────────────────────
+  Karatsuba(Toom-2)  2      3       4        log₂ 3 ≈ 1.585
+  Toom-3             3      5       9        log₃ 5 ≈ 1.465
+  Toom-4             4      7      16        log₄ 7 ≈ 1.404
+  Toom-k             k    2k-1     k²       → approaches 1
+  FFT (limit)        —      —       —        O(n log n log log n)
+
+  Recursion tree comparison:
+  Karatsuba:  3 branches/level   Toom-3:  5 branches/level
+       n                              n
+     / | \                        / | | | \
+   n/2 n/2 n/2                  n/3 .... n/3
+  O(n^1.585)                   O(n^1.465)
+
+  Practical crossover thresholds:
+  ┌─────────────┬────────────────────────┐
+  │ < 20 digits │ Grade school O(n²)       │
+  │ 20-1000     │ Karatsuba O(n^1.585)     │
+  │ 1000-10000  │ Toom-3 O(n^1.465)        │
+  │ > 10000     │ FFT O(n log n log log n) │
+  └─────────────┴────────────────────────┘
 ```
 
 ---
@@ -502,6 +666,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Counting Operations: Karatsuba vs Naive
+
+  12 × 34 (2-digit):
+  ┌───────────────────────────────────────────┐
+  │  Karatsuba: 3 muls, 4 adds               │
+  │  Naive:     4 muls (2×2)                  │
+  └───────────────────────────────────────────┘
+
+  1234 × 5678 (4-digit):
+  ┌───────────────────────────────────────────┐
+  │  Karatsuba: 9 muls, 12 adds               │
+  │  Naive:     16 muls (4×4)                  │
+  └───────────────────────────────────────────┘
+
+  Recursion tree for 4-digit multiply:
+          1234 × 5678         ← 3 muls of 2-digit
+         /     |     \
+    12×56  34×78  46×134    ← each: 3 muls of 1-digit
+   /|\     /|\     /|\
+  1d 1d..1d 1d..1d 1d       = 9 single-digit muls
+
+  Growth: 3^(log₂ n) = n^(log₂ 3) ≈ n^1.585
+```
+
 ---
 
 ## Example 8: Application — Large Number Squaring
@@ -557,6 +748,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Karatsuba Squaring: x² = (a·B^m + b)²
+
+  Expansion: a²·B^(2m) + 2ab·B^m + b²
+
+  ┌────────────────────────────────────────────┐
+  │  Trick: 2ab = (a+b)² - a² - b²          │
+  │  Only 3 squarings needed!              │
+  └────────────────────────────────────────────┘
+
+  Example: 1234²
+    a=12, b=34, m=2
+    a²  = karatsubaSquare(12)  = 144
+    b²  = karatsubaSquare(34)  = 1156
+    (a+b)² = karatsubaSquare(46) = 2116
+    2ab = 2116 - 144 - 1156 = 816
+
+    Result = 144·10000 + 816·100 + 1156
+           = 1440000 + 81600 + 1156 = 1522756
+    Verify: 1234² = 1522756 ✓
+
+  Recursion: same T(n) = 3T(n/2) + O(n) = O(n^1.585)
+```
+
 ---
 
 ## Example 9: Complex Number Multiplication (3 muls instead of 4)
@@ -605,6 +822,32 @@ func main() {
 	fmt.Println("\nSame trick: 3 real muls instead of 4!")
 	fmt.Println("Also known as Gauss's complex multiplication trick")
 }
+```
+
+**Textual Figure:**
+
+```
+  Complex Multiplication: (3+4i)(1+2i)
+
+  Naive (4 real multiplications):
+  ┌──────────────────────────────────────────┐
+  │  Re = ac - bd = 3×1 - 4×2 = 3-8 = -5    │
+  │  Im = ad + bc = 3×2 + 4×1 = 6+4 = 10    │
+  │  Muls: ac, bd, ad, bc = 4                │
+  └──────────────────────────────────────────┘
+
+  Karatsuba/Gauss (3 real multiplications):
+  ┌──────────────────────────────────────────┐
+  │  p1 = ac = 3×1 = 3                       │
+  │  p2 = bd = 4×2 = 8                       │
+  │  p3 = (a+b)(c+d) = 7×3 = 21             │
+  │  Re = p1 - p2     = 3-8    = -5          │
+  │  Im = p3 - p1 - p2 = 21-3-8 = 10        │
+  │  Muls: 3 only! ★                          │
+  └──────────────────────────────────────────┘
+
+  Result: (3+4i)(1+2i) = -5 + 10i ✓
+  Same Karatsuba pattern: ad+bc = (a+b)(c+d) - ac - bd
 ```
 
 ---
@@ -657,6 +900,29 @@ func main() {
 	}
 	for _, t := range tips { fmt.Println("  •", t) }
 }
+```
+
+**Textual Figure:**
+
+```
+  Karatsuba Pattern Applied Everywhere
+
+  The Core Trick:
+  ┌───────────────────────────────────────────────┐
+  │  Need: ac, bd, ad+bc  (4 products)         │
+  │  Compute: ac, bd, (a+b)(c+d)  (3 products) │
+  │  Derive: ad+bc = (a+b)(c+d) - ac - bd      │
+  └───────────────────────────────────────────────┘
+
+  Where it appears:
+  ┌────────────────────┬────────────┬───────────────┐
+  │  Context           │  Muls saved  │  Complexity     │
+  ├────────────────────┼────────────┼───────────────┤
+  │  Integers           │  4 → 3       │  O(n^1.585)    │
+  │  Polynomials         │  4 → 3       │  O(n^1.585)    │
+  │  Complex numbers     │  4 → 3       │  constant      │
+  │  Matrices (Strassen) │  8 → 7       │  O(n^2.807)    │
+  └────────────────────┴────────────┴───────────────┘
 ```
 
 ---

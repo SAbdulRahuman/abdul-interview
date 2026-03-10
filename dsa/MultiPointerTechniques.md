@@ -57,6 +57,40 @@ func main() {
 }
 ```
 
+**Textual Figure — Dutch National Flag (3 Pointers):**
+
+```
+  nums = [2, 0, 2, 1, 1, 0]
+
+  Three pointers: low=0, mid=0, high=5
+
+  ┌───┬───┬───┬───┬───┬───┐
+  │ 2 │ 0 │ 2 │ 1 │ 1 │ 0 │  initial
+  └───┴───┴───┴───┴───┴───┘
+   L,M                   H
+
+  mid=0: nums[0]=2 → swap(mid,high), high--
+  [0, 0, 2, 1, 1, 2]    L,M           H
+
+  mid=0: nums[0]=0 → swap(low,mid), low++, mid++
+  [0, 0, 2, 1, 1, 2]       L,M        H
+
+  mid=1: nums[1]=0 → swap(low,mid), low++, mid++
+  [0, 0, 2, 1, 1, 2]          L,M     H
+
+  mid=2: nums[2]=2 → swap(mid,high), high--
+  [0, 0, 1, 1, 2, 2]          L,M  H
+
+  mid=2: nums[2]=1 → mid++
+  [0, 0, 1, 1, 2, 2]          L   M,H
+
+  mid=3: nums[3]=1 → mid++
+  mid > high → DONE!
+
+  Result: [0, 0, 1, 1, 2, 2]
+    ├─ 0s ─┤├─ 1s ─┤├─ 2s ─┤
+```
+
 ---
 
 ## Example 2: Three Way Partition
@@ -94,6 +128,34 @@ func main() {
 	fmt.Printf("After:  %v\n", arr)
 	fmt.Println("[< 4 | == 4 | > 4]")
 }
+```
+
+**Textual Figure — Three Way Partition:**
+
+```
+  arr = [4, 9, 4, 2, 7, 4, 1, 8, 4, 3]   pivot = 4
+
+  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 4 │ 9 │ 4 │ 2 │ 7 │ 4 │ 1 │ 8 │ 4 │ 3 │
+  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+  L,M                                          H
+
+  Three pointers partition into:
+  [< pivot]  [== pivot]  [> pivot]
+
+  Trace (key steps):
+  mid=0: arr[0]=4==pivot → mid++
+  mid=1: arr[1]=9>pivot  → swap(mid,high), high--
+  mid=1: arr[1]=3<pivot  → swap(low,mid), low++, mid++
+  ...continue until mid > high...
+
+  Result: [3, 2, 1, 4, 4, 4, 4, 7, 8, 9]
+           ├─ <4 ─┤  ├── ==4 ──┤  ├─ >4 ─┤
+
+  Same logic as Dutch National Flag:
+  low → boundary of "less than"
+  mid → scanner
+  high → boundary of "greater than"
 ```
 
 ---
@@ -160,6 +222,34 @@ func main() {
 }
 ```
 
+**Textual Figure — K-Way Merge with Pointers:**
+
+```
+  3 sorted arrays, one pointer per array:
+
+  Array 0: [1, 4, 7, 10]     ptr→ 1
+  Array 1: [2, 5, 6,  8]     ptr→ 2
+  Array 2: [3, 9, 11, 12]    ptr→ 3
+                  │
+            Min-Heap: [1, 2, 3]
+
+  Step 1: pop 1 (arr0), push 4   heap: [2, 3, 4]
+  Step 2: pop 2 (arr1), push 5   heap: [3, 4, 5]
+  Step 3: pop 3 (arr2), push 9   heap: [4, 5, 9]
+  Step 4: pop 4 (arr0), push 7   heap: [5, 7, 9]
+  Step 5: pop 5 (arr1), push 6   heap: [6, 7, 9]
+  Step 6: pop 6 (arr1), push 8   heap: [7, 8, 9]
+  ...and so on...
+
+  Result: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+  ┌─────────────────────────────────────┐
+  │ One pointer per array + min-heap  │
+  │ Always extract global minimum     │
+  │ O(N log k) total                  │
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Trapping Rain Water — 2 Pointers (LC 42)
@@ -206,6 +296,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Trapping Rain Water (Two Pointers):**
+
+```
+  height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
+
+       3 │                       █
+       2 │          █ ░ ░ ░ ░ █ █ ░ █
+       1 │    █ ░ █ █ ░ █ █ █ █ █ █
+       0 │ █  █ █ █ █ █ █ █ █ █ █ █
+         └─────────────────────────
+           0  1  2  3  4  5  6  7  8  9 10 11
+           L→                           ←R
+  (░ = trapped water)
+
+  Two pointers converge from both ends:
+  Track leftMax and rightMax
+
+  L=0 R=11: h[L]=0 < h[R]=1 → process left
+            leftMax=0, water += 0
+  L=1 R=11: h[L]=1 < h[R]=1 → process left
+            leftMax=1, water += 0
+  L=2 R=11: h[L]=0 < h[R]=1 → process left
+            water += leftMax(1) - h[2](0) = 1
+  ...continue converging...
+
+  Total water trapped = 6
+
+  Key: min(leftMax, rightMax) - height[i]
+```
+
 ---
 
 ## Example 5: Intersection of Three Sorted Arrays (LC 1213)
@@ -247,6 +367,30 @@ func main() {
 	fmt.Printf("a=%v\nb=%v\nc=%v\n", a, b, c)
 	fmt.Printf("Intersection: %v\n", intersection3(a, b, c))
 }
+```
+
+**Textual Figure — Intersection of Three Sorted Arrays:**
+
+```
+  a = [1, 2, 3, 4, 5]   ptr i=0
+  b = [1, 2, 5, 7, 9]   ptr j=0
+  c = [1, 3, 4, 5, 8]   ptr k=0
+
+  Step   i  j  k   a[i] b[j] c[k]  Action
+    1    0  0  0    1    1    1    All equal → add 1, i++j++k++
+    2    1  1  1    2    2    3    min=2, advance i,j
+    3    2  2  1    3    5    3    min=3, advance i,k
+    4    3  2  2    4    5    4    min=4, advance i,k
+    5    4  2  3    5    5    5    All equal → add 5, i++j++k++
+    6    i=5 → out of bounds → DONE
+
+  Result: [1, 5]
+
+  ┌──────────────────────────────────┐
+  │ Three pointers, one per array    │
+  │ All equal → add to result        │
+  │ Otherwise advance the smallest  │
+  └──────────────────────────────────┘
 ```
 
 ---
@@ -321,6 +465,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Smallest Range Covering K Lists:**
+
+```
+  List 0: [4, 10, 15, 24, 26]   ptr→ 4
+  List 1: [0,  9, 12, 20]       ptr→ 0
+  List 2: [5, 18, 22, 30]       ptr→ 5
+
+  Min-heap tracks current minimum, variable tracks max.
+
+  Step   Heap(min)   Max   Range         Best
+    init  [0,4,5]     5    [0,5]=5       [0,5]
+    1     pop 0(L1)  → push 9   max=9
+          [4,5,9]     9    [4,9]=5       [0,5]
+    2     pop 4(L0)  → push 10  max=10
+          [5,9,10]   10    [5,10]=5      [0,5]
+    3     pop 5(L2)  → push 18  max=18
+          [9,10,18]  18    [9,18]=9      [0,5]
+    4     pop 9(L1)  → push 12  max=18
+          [10,12,18] 18    [10,18]=8     [0,5]
+    5     pop 10(L0) → push 15  max=18
+          [12,15,18] 18    [12,18]=6     [0,5]
+    ...continues...
+
+  Eventually finds [20,24] with range=4 ← best
+  Result: [20, 24]
+```
+
 ---
 
 ## Example 7: Move Zeroes — Read/Write Pointers (LC 283)
@@ -371,6 +542,41 @@ func main() {
 }
 ```
 
+**Textual Figure — Move Zeroes (Read/Write Pointers):**
+
+```
+  nums = [0, 1, 0, 3, 12]
+
+  write=0 (W), read scans (R):
+
+  ┌───┬───┬───┬───┬────┐
+  │ 0 │ 1 │ 0 │ 3 │ 12 │  R=0: nums[0]=0 → skip
+  └───┴───┴───┴───┴────┘
+   W,R
+
+  ┌───┬───┬───┬───┬────┐
+  │ 1 │ 0 │ 0 │ 3 │ 12 │  R=1: nums[1]=1 → swap(W,R), W++
+  └───┴───┴───┴───┴────┘
+      W       R
+
+  ┌───┬───┬───┬───┬────┐
+  │ 1 │ 0 │ 0 │ 3 │ 12 │  R=2: nums[2]=0 → skip
+  └───┴───┴───┴───┴────┘
+      W           R
+
+  ┌───┬───┬───┬───┬────┐
+  │ 1 │ 3 │ 0 │ 0 │ 12 │  R=3: nums[3]=3 → swap(W,R), W++
+  └───┴───┴───┴───┴────┘
+          W            R
+
+  ┌───┬───┬────┬───┬───┐
+  │ 1 │ 3 │ 12 │ 0 │ 0 │  R=4: nums[4]=12 → swap(W,R), W++
+  └───┴───┴────┴───┴───┘
+              W             R
+
+  Result: [1, 3, 12, 0, 0]
+```
+
 ---
 
 ## Example 8: Partition Labels (LC 763)
@@ -414,6 +620,35 @@ func main() {
 		fmt.Printf("%q → %v\n", s, partitionLabels(s))
 	}
 }
+```
+
+**Textual Figure — Partition Labels (Greedy Multi-Pointer):**
+
+```
+  s = "ababcbacadefegdehijhklij"
+
+  Last occurrence of each char:
+  a:8  b:5  c:7  d:14  e:15  f:11  g:13  h:19  i:22  j:23  k:20  l:21
+
+  Scan with start and end pointers:
+
+  i=0: 'a' last=8    end=8     ├─────────────────┤
+  i=1: 'b' last=5    end=8     │ababcbaca         │
+  i=2: 'a' last=8    end=8     │                   │
+  i=5: 'b' last=5    end=8     │                   │
+  i=7: 'c' last=7    end=8     │                   │
+  i=8: 'a' last=8    i==end!   ├─── size=9 ──────┤
+
+  i=9: 'd' last=14   end=14    ├─────────────────┤
+  i=10:'e' last=15   end=15    │defegde           │
+  i=11:'f' last=11   end=15    │                   │
+  i=15:'e' last=15   i==end!   ├─── size=7 ──────┤
+
+  i=16:'h' last=19   end=19    ├─────────────────┤
+  i=22:'i' last=22   end=23    │hijhklij          │
+  i=23:'j' last=23   i==end!   ├─── size=8 ──────┤
+
+  Result: [9, 7, 8]
 ```
 
 ---
@@ -468,6 +703,34 @@ func main() {
 	b := []int{4, 2, 5, 7}
 	fmt.Printf("By parity II: %v → %v\n", []int{4, 2, 5, 7}, sortArrayByParityII(b))
 }
+```
+
+**Textual Figure — Sort Array by Parity (Two-Pointer Partition):**
+
+```
+  nums = [3, 1, 2, 4]
+
+  Left pointer: even from left
+  Right pointer: odd from right
+
+  ┌───┬───┬───┬───┐
+  │ 3 │ 1 │ 2 │ 4 │   L=0(odd) R=3(even)
+  └───┴───┴───┴───┘
+    L→          ←R
+
+  L=0: odd, R=3: even → swap!
+  ┌───┬───┬───┬───┐
+  │ 4 │ 1 │ 2 │ 3 │   L++, R--
+  └───┴───┴───┴───┘
+       L→  ←R
+
+  L=1: odd, R=2: even → swap!
+  ┌───┬───┬───┬───┐
+  │ 4 │ 2 │ 1 │ 3 │   L++, R--
+  └───┴───┴───┴───┘
+       R  L          L > R → DONE
+
+  Result: [4, 2, 1, 3]  (evens left, odds right)
 ```
 
 ---

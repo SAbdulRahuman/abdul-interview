@@ -63,6 +63,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Brian Kernighan’s: n & (n-1) clears lowest bit  │
+├────────────────────────────────────────────────┤
+│  n = 15 = 00001111  (4 set bits)                  │
+│                                                  │
+│  Iter 1: n=00001111, n-1=00001110                │
+│     n & (n-1) = 00001110  count=1                │
+│                       ↑ cleared                   │
+│  Iter 2: n=00001110, n-1=00001101                │
+│     n & (n-1) = 00001100  count=2                │
+│                       ↑ cleared                   │
+│  Iter 3: n=00001100, n-1=00001011                │
+│     n & (n-1) = 00001000  count=3                │
+│                    ↑ cleared                      │
+│  Iter 4: n=00001000, n-1=00000111                │
+│     n & (n-1) = 00000000  count=4  done!          │
+│                                                  │
+│  Only k iterations for k set bits (vs 32 naive)  │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Counting Bits for All Numbers (LeetCode 338)
@@ -94,6 +117,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Counting Bits DP: bits[i] = bits[i&(i-1)] + 1   │
+├────────────────────────────────────────────────┤
+│   i  binary  i&(i-1)  bits[i&(i-1)]  bits[i]      │
+│   0  00000     -           -           0          │
+│   1  00001     0           0         0+1=1        │
+│   2  00010     0           0         0+1=1        │
+│   3  00011     2           1         1+1=2        │
+│   4  00100     0           0         0+1=1        │
+│   5  00101     4           1         1+1=2        │
+│   6  00110     4           1         1+1=2        │
+│   7  00111     6           2         2+1=3        │
+│                                                  │
+│  i&(i-1) removes last set bit                    │
+│  → bits[i] = bits[that] + 1                      │
+│  Builds entire popcount table in O(n)             │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Check Power of Two
@@ -117,6 +161,28 @@ func main() {
 	fmt.Println("If n is power of 2, it has exactly 1 set bit")
 	fmt.Println("  n & (n-1) removes it → result is 0")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Two Check: n & (n-1) == 0              │
+├────────────────────────────────────────────────┤
+│  Power of 2 has exactly ONE set bit:              │
+│                                                  │
+│  n=8:  001000                                    │
+│  n-1:  000111  (flips all bits from rightmost 1) │
+│       ──────  AND                                │
+│        000000  = 0  ✓ power of 2                 │
+│                                                  │
+│  n=6:  000110                                    │
+│  n-1:  000101                                    │
+│       ──────  AND                                │
+│        000100  ≠ 0  ✗ NOT power of 2             │
+│                                                  │
+│  Powers: 1(1) 2(10) 4(100) 8(1000) 16(10000)    │
+│  Each has exactly 1 set bit                      │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -143,6 +209,26 @@ func main() {
 	fmt.Println()
 	fmt.Println("Power of 4: single set bit at even position (0, 2, 4, ...)")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Power of Four: pow2 + bit at even position      │
+├────────────────────────────────────────────────┤
+│  0x55555555 = 01010101010101010101010101010101    │
+│  Even positions: 0, 2, 4, 6, 8, 10...            │
+│                                                  │
+│  4⁰ =   1 = 00000001  (pos 0, even ✓)           │
+│  4¹ =   4 = 00000100  (pos 2, even ✓)           │
+│  4² =  16 = 00010000  (pos 4, even ✓)           │
+│  4³ =  64 = 01000000  (pos 6, even ✓)           │
+│                                                  │
+│  Not pow4: 8 = 00001000 (pos 3, odd ✗)           │
+│    8 & 0x55555555 = 0  → fails even-pos check    │
+│                                                  │
+│  Three checks: n>0, n&(n-1)==0, n&0x55!=0        │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -174,6 +260,27 @@ func main() {
 		fmt.Printf("n=%08b → set bits at positions: %v\n", n, positions)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Iterate Over Set Bits using Kernighan's          │
+├────────────────────────────────────────────────┤
+│  n = 10110100                                    │
+│                                                  │
+│  Step 1: lsb = n & (-n) = 00000100 (pos 2)       │
+│          n &= n-1 → n = 10110000                 │
+│  Step 2: lsb = n & (-n) = 00010000 (pos 4)       │
+│          n &= n-1 → n = 10100000                 │
+│  Step 3: lsb = n & (-n) = 00100000 (pos 5)       │
+│          n &= n-1 → n = 10000000                 │
+│  Step 4: lsb = n & (-n) = 10000000 (pos 7)       │
+│          n &= n-1 → n = 00000000  done!           │
+│                                                  │
+│  Set bits at positions: [2, 4, 5, 7]              │
+│  n&(-n) isolates LSB, n&(n-1) clears it          │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -223,6 +330,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Steps to Reduce to Zero: n = 14                 │
+├────────────────────────────────────────────────┤
+│  14 = 1110                                       │
+│                                                  │
+│  Step 1: 1110 even → ÷2 → 0111 (7)   step=1      │
+│  Step 2: 0111 odd  → -1  → 0110 (6)   step=2      │
+│  Step 3: 0110 even → ÷2 → 0011 (3)   step=3      │
+│  Step 4: 0011 odd  → -1  → 0010 (2)   step=4      │
+│  Step 5: 0010 even → ÷2 → 0001 (1)   step=5      │
+│  Step 6: 0001 odd  → -1  → 0000 (0)   step=6      │
+│                                                  │
+│  Total: 6 steps                                  │
+│  Steps = (bit length - 1) + (set bits)            │
+│       = (4 - 1) + 3 = 6  ✓                       │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Binary Number with Alternating Bits (LeetCode 693)
@@ -255,6 +382,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Alternating Bits Check                          │
+├────────────────────────────────────────────────┤
+│  n = 5 = 101 (alternating ✓):                     │
+│    n     = 101                                   │
+│    n>>1  = 010                                   │
+│    XOR   = 111  (all 1s)                         │
+│    x & (x+1) = 111 & 1000 = 0  ✓                │
+│                                                  │
+│  n = 7 = 111 (NOT alternating ✗):                │
+│    n     = 111                                   │
+│    n>>1  = 011                                   │
+│    XOR   = 100  (not all 1s)                     │
+│    x & (x+1) = 100 & 101 = 100 ≠ 0  ✗           │
+│                                                  │
+│  Trick: XOR(n, n>>1) should be all 1s            │
+│  Then check all-1s: x & (x+1) == 0               │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Minimum Bit Flips (LeetCode 2220)
@@ -283,6 +432,26 @@ func main() {
 			t[0], t[1], t[0]^t[1])
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Minimum Bit Flips: start=10, goal=7             │
+├────────────────────────────────────────────────┤
+│  start = 10 = 1010                               │
+│  goal  =  7 = 0111                               │
+│              ────  XOR                            │
+│  XOR        = 1101  (differing bits)             │
+│               ↑↑ ↑  three 1s                      │
+│                                                  │
+│  Count set bits in XOR (Kernighan’s):            │
+│    1101 & 1100 = 1100  count=1                   │
+│    1100 & 1011 = 1000  count=2                   │
+│    1000 & 0111 = 0000  count=3                   │
+│                                                  │
+│  Result: 3 bit flips needed                      │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -319,6 +488,26 @@ func main() {
 			k, countPairsWithKBitXOR(nums, k))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  XOR Pair Bit Count: nums = [1, 4, 2, 7]         │
+├────────────────────────────────────────────────┤
+│  XOR each pair, count set bits:                  │
+│                                                  │
+│  1^4 = 001^100 = 101  popcount=2                 │
+│  1^2 = 001^010 = 011  popcount=2                 │
+│  1^7 = 001^111 = 110  popcount=2                 │
+│  4^2 = 100^010 = 110  popcount=2                 │
+│  4^7 = 100^111 = 011  popcount=2                 │
+│  2^7 = 010^111 = 101  popcount=2                 │
+│                                                  │
+│  k=1: 0 pairs,  k=2: 6 pairs,  k=3: 0 pairs     │
+│                                                  │
+│  Kernighan counts bits in each XOR result        │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -368,6 +557,27 @@ func main() {
 	fmt.Println("Kernighan wins when few bits are set")
 	fmt.Println("Stdlib wins overall (uses CPU POPCNT instruction)")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Performance Comparison                          │
+├──────────────┬────────────────┬─────────────────┤
+│  Method        │  Iterations     │  Best for         │
+├──────────────┼────────────────┼─────────────────┤
+│  Naive         │  Always 32/64   │  Simple code      │
+│  Kernighan     │  k (set bits)   │  Few set bits     │
+│  POPCNT (HW)   │  1 instruction  │  Production       │
+└──────────────┴────────────────┴─────────────────┘
+│                                                  │
+│  n with k=3 set bits:                             │
+│  Naive:     32 iterations (check every bit)       │
+│  Kernighan:  3 iterations (only set bits)         │
+│  POPCNT:     1 instruction (hardware)             │
+│                                                  │
+│  Kernighan wins for sparse bits in interviews     │
+└────────────────────────────────────────────────┘
 ```
 
 ---

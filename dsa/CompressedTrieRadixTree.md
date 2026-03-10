@@ -170,6 +170,48 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "romane", "romanus", "romulus", "rubens", "rubber", "rubicon"
+
+Step 1: Insert "romane"         Step 2: Insert "romanus"
+   (root)                          (root)
+    └─ romane ★                     └─ roman
+                                        ├─ e ★       → romane
+                                        └─ us ★      → romanus
+
+Step 3: Insert "romulus" (split at "rom")
+   (root)
+    └─ rom
+        ├─ an
+        │   ├─ e ★               → romane
+        │   └─ us ★              → romanus
+        └─ ulus ★                → romulus
+
+Steps 4-6: Insert "rubens", "rubber", "rubicon" (split at "r")
+
+   Final Compressed Trie:
+   ┌────────────────────────────────────────────┐
+   │  (root)                                    │
+   │   └─ r                                     │
+   │       ├─ om                                │
+   │       │   ├─ an                            │
+   │       │   │   ├─ e ★      → "romane"       │
+   │       │   │   └─ us ★     → "romanus"      │
+   │       │   └─ ulus ★       → "romulus"       │
+   │       └─ ub                                │
+   │           ├─ ber ★        → "rubber"        │
+   │           ├─ ens ★        → "rubens"        │
+   │           └─ icon ★       → "rubicon"       │
+   └────────────────────────────────────────────┘
+   ★ = isEnd (word boundary)
+
+   Search "rom":    root ─r→ ─om→ (isEnd=false) → NOT FOUND
+   Search "romane": root ─r→ ─om→ ─an→ ─e→ (isEnd=true) → FOUND
+   Search "rub":    root ─r→ ─ub→ (isEnd=false) → NOT FOUND
+```
+
 ---
 
 ## Example 2: Radix Tree with Prefix Queries
@@ -293,6 +335,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "test", "testing", "tested", "tester", "team", "tea"
+
+   Compressed Trie (Radix Tree):
+   ┌──────────────────────────────────────┐
+   │  (root)                             │
+   │   └─ te                             │
+   │       ├─ st ★          → "test"     │
+   │       │   ├─ e                      │
+   │       │   │   ├─ d ★   → "tested"   │
+   │       │   │   └─ r ★   → "tester"   │
+   │       │   └─ ing ★     → "testing"  │
+   │       └─ a ★           → "tea"      │
+   │           └─ m ★       → "team"     │
+   └──────────────────────────────────────┘
+
+   Prefix query "test":
+     root ─te→ ─st→ (★) collect subtree
+     Results: [test, tested, tester, testing]
+
+   Prefix query "te":
+     root ─te→ collect entire subtree
+     Results: [test, tested, tester, testing, tea, team]
+
+   Prefix query "tea":
+     root ─te→ ─a→ (★) collect subtree
+     Results: [tea, team]
+```
+
 ---
 
 ## Example 3: Space Comparison
@@ -333,6 +406,42 @@ func main() {
 	fmt.Printf("Standard trie: one node per char prefix = O(%d)\n", totalChars)
 	fmt.Printf("Compressed trie: O(n) = O(%d) nodes\n", len(words))
 }
+```
+
+**Textual Figure:**
+
+```
+Words: "romane", "romanus", "romulus", "rubens", "rubber", "rubicon"
+
+  Standard Trie (25 nodes):          Compressed Trie (11 nodes):
+  (root)                             (root)
+   └─ r                               └─ r
+       ├─ o                                ├─ om
+       │   └─ m                            │   ├─ an
+       │       ├─ a                        │   │   ├─ e ★
+       │       │   └─ n                    │   │   └─ us ★
+       │       │       ├─ e ★              │   └─ ulus ★
+       │       │       └─ u                └─ ub
+       │       │           └─ s ★              ├─ ber ★
+       │       └─ u                            ├─ ens ★
+       │           └─ l                        └─ icon ★
+       │               └─ u
+       │                   └─ s ★
+       └─ u                          Nodes: ≤ 2n-1 = 11
+           └─ b                      vs Standard: 25 nodes
+               ├─ e                  Savings: ~56%
+               │   └─ n
+               │       └─ s ★
+               ├─ b
+               │   └─ e
+               │       └─ r ★
+               └─ i
+                   └─ c
+                       └─ o
+                           └─ n ★
+
+  Each char = 1 node             Edge labels = multi-char strings
+  Many single-child nodes        No single-child internal nodes
 ```
 
 ---
@@ -384,6 +493,38 @@ func main() {
 	fmt.Printf("  getBit('cat', 22) = %d\n", getBit("cat", 22))
 	fmt.Printf("  getBit('car', 22) = %d\n", getBit("car", 22))
 }
+```
+
+**Textual Figure:**
+
+```
+Patricia Tree — Binary Radix Tree
+
+Keys as binary (8 bits per char):
+  'c' = 01100011   'a' = 01100001   't' = 01110100
+  'c' = 01100011   'a' = 01100001   'r' = 01110010
+  'd' = 01100100   'o' = 01101111   'g' = 01100111
+
+  "cat" → 01100011 01100001 01110100
+  "car" → 01100011 01100001 01110010
+  "dog" → 01100100 01101111 01100111
+                ↑ bit 5                  ↑ bit 22
+
+Patricia Tree (only stores distinguishing bits):
+  ┌──────────────────────────────────────────┐
+  │         (root) test bit 5               │
+  │          ┌──0──┴──1──┐                  │
+  │          │           │                  │
+  │    test bit 22     "dog"                │
+  │     ┌─0──┴──1─┐                         │
+  │     │         │                         │
+  │   "car"     "cat"                       │
+  └──────────────────────────────────────────┘
+
+  Bit 5:  'c'=0, 'd'=1 → separates cat/car from dog
+  Bit 22: 'r'=0, 't'=1 → separates car from cat
+
+  Skips all identical bit positions → compressed!
 ```
 
 ---
@@ -468,6 +609,31 @@ func main() {
 		fmt.Printf("%-20s → handler=%s, params=%v\n", path, handler, params)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Routes: /users, /users/:id, /users/:id/posts, /posts/:id
+
+   URL Router Radix Tree:
+   ┌───────────────────────────────────────────────┐
+   │  (root)                                       │
+   │   ├─ "users" ──→ handler: listUsers           │
+   │   │   └─ ":" (param: id) ──→ handler: getUser │
+   │   │       └─ "posts" ──→ handler: getUserPosts│
+   │   └─ "posts"                                  │
+   │       └─ ":" (param: id) ──→ handler: getPost │
+   └───────────────────────────────────────────────┘
+
+   Route matching:
+   /users          → root─users→ listUsers, params={}
+   /users/42       → root─users─:id→ getUser, params={id:42}
+   /users/42/posts → root─users─:id─posts→ getUserPosts, params={id:42}
+   /posts/7        → root─posts─:id→ getPost, params={id:7}
+
+   Each path segment is one edge in the trie.
+   ":" nodes capture URL parameters dynamically.
 ```
 
 ---
@@ -586,6 +752,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Insert: "test", "testing", "tested"
+
+   Before Delete:                  After Delete("testing"):
+   (root)                          (root)
+    └─ test ★                       └─ test ★
+        ├─ e                            └─ ed ★    → "tested"
+        │   └─ d ★  → "tested"
+        └─ ing ★   → "testing"
+
+   Delete "testing" step-by-step:
+   1. Traverse: root ─test→ ─ing→ (isEnd=true)
+   2. Set isEnd=false for "ing" node
+   3. "ing" node: isEnd=false, no children → DELETE node
+   4. Parent "test" node: check children
+      ─ Only child left: "e" → "d"
+      ─ "e" node has 1 child, isEnd=false → MERGE
+      ─ Merge "e" + "d" → "ed" ★
+
+   Search results:
+   "test"    → root ─test→ isEnd=true  → FOUND
+   "testing" → root ─test→ no 'i' child → NOT FOUND
+   "tested"  → root ─test→ ─ed→ isEnd=true → FOUND
+```
+
 ---
 
 ## Example 7: Suffix Tree (Compressed Trie of Suffixes)
@@ -682,6 +875,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Suffix Tree for "banana$" (compressed trie of all suffixes):
+
+Suffixes: banana$, anana$, nana$, ana$, na$, a$, $
+
+   (root)
+    ├─ banana$ ★                          (suffix starting at 0)
+    ├─ a
+    │   ├─ na                              ┌─ na$ ★    (pos 4)
+    │   │   └─ na$ ★                      │
+    │   └─ $ ★                             └─ anana$ ★ (pos 1)
+    ├─ na
+    │   ├─ na$ ★                           (pos 2)
+    │   └─ $ ★                              (pos 4... wait)
+    └─ $ ★                                  (pos 6)
+
+   Substring search:
+   "ana": root ─a→ ─na→ match! collect leaves → [1, 3]
+   "ban": root ─banana$→ partial match "ban" ✓ → [0]
+   "nan": root ─na→ ─na$→ partial match "nan" ✓ → [2]
+
+   Key: suffix tree enables O(P) substring search
+   where P = pattern length (after O(n) construction).
+```
+
 ---
 
 ## Example 8: Compressed Trie for IP Addresses
@@ -757,6 +977,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+IP Address Trie (octet-based edges):
+
+   (root)
+    ├─ "192"
+    │   └─ "168"
+    │       ├─ "1"
+    │       │   ├─ "1" ★  data: "server-1"  → 192.168.1.1
+    │       │   └─ "2" ★  data: "server-2"  → 192.168.1.2
+    │       └─ "2"
+    │           └─ "1" ★  data: "server-3"  → 192.168.2.1
+    └─ "10"
+        └─ "0"
+            └─ "0"
+                └─ "1" ★  data: "gateway"   → 10.0.0.1
+
+   FindSubnet("192.168.1"):
+     root ─192→ ─168→ ─ 1→ collect all:
+     → ["192.168.1.1: server-1", "192.168.1.2: server-2"]
+
+   FindSubnet("192"):
+     root ─192→ collect entire subtree:
+     → [all three 192.168.x.x entries]
+
+   Each octet = one trie edge (not per-character).
+```
+
 ---
 
 ## Example 9: Adaptive Radix Tree Concept
@@ -796,6 +1045,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Adaptive Radix Tree (ART) — Node Type Transitions:
+
+   ┌──────────────────────────────────────────────────┐
+   │  Node4 (128B)     ─1-4 children              │
+   │  ┌──────────────────────────┐               │
+   │  │ keys: [a][b][c][d]       │               │
+   │  │ ptrs: [↓][↓][↓][↓]       │               │
+   │  └──────────────────────────┘               │
+   │         │ 5th child → upgrade                │
+   │         ▼                                     │
+   │  Node16 (384B)    ─5-16 children             │
+   │         │ 17th child → upgrade               │
+   │         ▼                                     │
+   │  Node48 (656B)    ─17-48 children             │
+   │  ┌──────────────────────────┐               │
+   │  │ 256-byte index array     │               │
+   │  │ maps key → child slot    │               │
+   │  └──────────────────────────┘               │
+   │         │ 49th child → upgrade               │
+   │         ▼                                     │
+   │  Node256 (2048B)  ─49-256 children            │
+   │  ┌──────────────────────────┐               │
+   │  │ Direct 256-ptr array     │               │
+   │  │ O(1) lookup by byte      │               │
+   │  └──────────────────────────┘               │
+   └──────────────────────────────────────────────────┘
+
+   Node size adapts to actual fan-out → cache-friendly.
+```
+
 ---
 
 ## Example 10: Standard vs Compressed Trie Operations
@@ -832,6 +1114,44 @@ func main() {
 	fmt.Println("  • IP address routing (CIDR lookups)")
 	fmt.Println("  • Suffix trees (compressed trie of all suffixes)")
 }
+```
+
+**Textual Figure:**
+
+```
+Standard vs Compressed Trie — Operation Comparison:
+
+   Standard Trie Insert "test":      Compressed Trie Insert "test":
+   (root)                            (root)
+    └─ t                              └─ "test" ★
+        └─ e                         (single node, edge label = "test")
+            └─ s
+                └─ t ★
+   (4 nodes created)                (1 node created)
+
+   Insert "testing":                Insert "testing":
+   (root)                           (root)
+    └─ t                             └─ "test" ★
+        └─ e                             └─ "ing" ★
+            └─ s                     (no split needed, "test" is prefix)
+                └─ t ★
+                    └─ i
+                        └─ n
+                            └─ g ★
+   (3 more nodes)               (1 more node)
+
+   Delete "testing":               Delete "testing":
+   Prune empty nodes i→n→g         Remove "ing" node
+   from bottom up.                  No merge needed (parent has isEnd).
+
+   ┌──────────────┬────────────────┬────────────────┐
+   │              │ Standard       │ Compressed       │
+   ├──────────────┼────────────────┼────────────────┤
+   │ Insert       │ O(L) per char  │ O(L) + split     │
+   │ Search       │ O(L) per char  │ O(L) str compare │
+   │ Delete       │ Prune empty    │ Merge singles    │
+   │ Nodes        │ O(total chars) │ O(n words)       │
+   └──────────────┴────────────────┴────────────────┘
 ```
 
 ---

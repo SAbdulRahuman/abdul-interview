@@ -96,6 +96,43 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+LRU Cache (capacity = 3): HashMap + Doubly Linked List
+
+  Structure:
+  ┌──────────────────────────────────────────────────────┐
+  │  HashMap: key → node pointer (O(1) lookup)           │
+  │  DLL:    HEAD ↔ [MRU] ↔ ... ↔ [LRU] ↔ TAIL          │
+  └──────────────────────────────────────────────────────┘
+
+  Step-by-step:
+
+  Put(1,10):  HEAD ↔ [1:10] ↔ TAIL
+              map: {1:●}
+
+  Put(2,20):  HEAD ↔ [2:20] ↔ [1:10] ↔ TAIL
+              map: {1:●, 2:●}
+
+  Put(3,30):  HEAD ↔ [3:30] ↔ [2:20] ↔ [1:10] ↔ TAIL
+              map: {1:●, 2:●, 3:●}
+
+  Get(1)=10:  HEAD ↔ [1:10] ↔ [3:30] ↔ [2:20] ↔ TAIL   ← move 1 to front
+              map: {1:●, 2:●, 3:●}
+
+  Put(4,40):  HEAD ↔ [4:40] ↔ [1:10] ↔ [3:30] ↔ TAIL   ← evict LRU key=2
+              map: {1:●, 3:●, 4:●}       ✗ key 2 removed
+
+  Get(2)=-1   (evicted)
+  Get(3)=30:  HEAD ↔ [3:30] ↔ [4:40] ↔ [1:10] ↔ TAIL   ← move 3 to front
+  Get(4)=40:  HEAD ↔ [4:40] ↔ [3:30] ↔ [1:10] ↔ TAIL   ← move 4 to front
+
+  ┌───────────────────────────────────┐
+  │ Get: map lookup O(1) + move O(1) │
+  │ Put: map insert O(1) + evict O(1)│
+  └───────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: LFU Cache (HashMap + Frequency Linked Lists)
@@ -201,6 +238,45 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+LFU Cache (capacity = 2): HashMap + Frequency Linked Lists
+
+  Structure:
+  ┌──────────────────────────────────────────────────────────┐
+  │  cache:   key → node pointer                             │
+  │  freqMap: freq → doubly linked list of nodes (LRU order) │
+  │  minFreq: tracks current minimum frequency               │
+  └──────────────────────────────────────────────────────────┘
+
+  Step-by-step:
+
+  Put(1,10):  cache: {1:●}   minFreq=1
+              freqMap: { 1: HEAD ↔ [1:10,f=1] ↔ TAIL }
+
+  Put(2,20):  cache: {1:●, 2:●}   minFreq=1
+              freqMap: { 1: HEAD ↔ [2:20,f=1] ↔ [1:10,f=1] ↔ TAIL }
+
+  Get(1)=10:  cache: {1:●, 2:●}   minFreq=1
+              freqMap: { 1: HEAD ↔ [2:20,f=1] ↔ TAIL
+                         2: HEAD ↔ [1:10,f=2] ↔ TAIL }
+              (key 1 moved from freq 1 → freq 2)
+
+  Put(3,30):  Evict LRU from minFreq=1 → evict key 2
+              cache: {1:●, 3:●}   minFreq=1
+              freqMap: { 1: HEAD ↔ [3:30,f=1] ↔ TAIL
+                         2: HEAD ↔ [1:10,f=2] ↔ TAIL }
+
+  Get(2)=-1   (evicted)
+  Get(3)=30:  freq 1→2 for key 3
+              freqMap: { 2: HEAD ↔ [3:30,f=2] ↔ [1:10,f=2] ↔ TAIL }
+
+  ┌────────────────────────────────────────────────┐
+  │ Eviction: remove LRU node from minFreq list    │
+  │ All operations O(1) via dual HashMap + DLL     │
+  └────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Insert Delete GetRandom O(1) (HashMap + Array)
@@ -263,6 +339,42 @@ func main() {
 
 	fmt.Println("\nKey trick: swap-with-last for O(1) removal from array")
 }
+```
+
+**Textual Figure:**
+```
+Insert Delete GetRandom O(1): HashMap + Array
+
+  Structure:
+  ┌───────────────────────────────────────────────┐
+  │  arr: [values...]        ← random index O(1)  │
+  │  idx: val → index in arr ← lookup O(1)        │
+  └───────────────────────────────────────────────┘
+
+  Insert(1):  arr: [1]        idx: {1:0}
+  Insert(2):  arr: [1,2]      idx: {1:0, 2:1}
+  Insert(3):  arr: [1,2,3]    idx: {1:0, 2:1, 3:2}
+
+  Remove(2) — swap-with-last trick:
+    Step 1: Find index of 2 → idx[2] = 1
+    Step 2: Swap arr[1] with arr[2] (last)
+
+            Before:  arr: [1, 2, 3]    idx: {1:0, 2:1, 3:2}
+                          ─────↑─────
+                              remove
+
+            Swap:    arr: [1, 3, 3]    idx: {1:0, 3:1}
+                              ↑ last moved here
+
+    Step 3: Pop last element
+            After:   arr: [1, 3]       idx: {1:0, 3:1}
+
+  GetRandom(): return arr[rand(0..len-1)]  → O(1)
+
+  ┌────────────────────────────────────────────────────┐
+  │ Key insight: swap-with-last avoids O(n) array shift│
+  │ All three operations: O(1) time                    │
+  └────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -333,6 +445,47 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Find Median from Data Stream: Two Heaps (MaxHeap + MinHeap)
+
+  Structure:
+  ┌─────────────────────────────────────────────────┐
+  │  lo (MaxHeap): left half     hi (MinHeap): right│
+  │  top = max of left           top = min of right │
+  │  Invariant: lo.top ≤ hi.top                     │
+  │  Size: |lo| == |hi| or |lo| == |hi|+1           │
+  └─────────────────────────────────────────────────┘
+
+  Add   lo (MaxHeap)    hi (MinHeap)    Median
+  ───   ─────────────   ─────────────   ──────
+   5    [5]             []              5.0
+  15    [5]             [15]            10.0
+   1    [5,1]           [15]            5.0
+   3    [5,3,1]         [15]            5.0
+        → rebalance →
+        [3,1]           [5,15]          4.0
+   8    [5,3,1]         [8,15]          5.0
+   7    [5,3,1]         [7,8,15]        6.0
+        → rebalance →
+        [7,5,3,1]       [8,15]          7.0
+   9    [7,5,3,1]       [8,9,15]        7.0
+        → final →
+        [7,5,3,1]       [8,9,15]        7.0
+
+         lo (max-heap)    hi (min-heap)
+            ┌───┐            ┌───┐
+     top →  │ 7 │            │ 8 │  ← top
+            ├───┤            ├───┤
+            │ 5 │            │ 9 │
+            ├───┤            ├───┤
+            │ 3 │            │15 │
+            ├───┤            └───┘
+            │ 1 │
+            └───┘
+     Median = 7.0 (odd count → lo.top)
+```
+
 ---
 
 ## Example 5: Time-Based Key-Value Store (HashMap + Binary Search)
@@ -387,6 +540,44 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Time-Based Key-Value Store: HashMap + Binary Search
+
+  Structure:
+  ┌──────────────────────────────────────────────────────┐
+  │  store: map[string][]TimeEntry                       │
+  │  Each key → sorted list of (timestamp, value) pairs  │
+  └──────────────────────────────────────────────────────┘
+
+  Set("foo","bar",1):   store["foo"] = [(1,"bar")]
+  Set("foo","bar2",4):  store["foo"] = [(1,"bar"), (4,"bar2")]
+
+  store["foo"]:
+    ┌──────────┬───────────┐
+    │ ts=1     │ ts=4      │
+    │ val=bar  │ val=bar2  │
+    └──────────┴───────────┘
+      ↑                 ↑
+      sorted by timestamp
+
+  Get("foo", 1) → binary search: largest ts ≤ 1 → "bar"
+  Get("foo", 3) → binary search: largest ts ≤ 3 → "bar"  (ts=1)
+  Get("foo", 4) → binary search: largest ts ≤ 4 → "bar2" (ts=4)
+  Get("foo", 5) → binary search: largest ts ≤ 5 → "bar2" (ts=4)
+
+  Binary search on timeline:
+  ──┬────────────────┬──────────────▶ time
+    1                4
+    "bar"            "bar2"
+     ◄── query 1,3 ──►◄── query 4,5 ──►
+
+  ┌────────────────────────────────────┐
+  │ Set: O(1) — append to sorted list │
+  │ Get: O(log n) — binary search     │
+  └────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Max Frequency Stack (HashMap + Stack per Frequency)
@@ -437,6 +628,39 @@ func main() {
 
 	fmt.Println("\nfreq map + group stacks = O(1) push/pop")
 }
+```
+
+**Textual Figure:**
+```
+Max Frequency Stack: HashMap + Stack per Frequency
+
+  Structure:
+  ┌───────────────────────────────────────────────┐
+  │ freq:   val → count                              │
+  │ groups: freq → stack of values                    │
+  │ maxFreq: current maximum frequency                 │
+  └───────────────────────────────────────────────┘
+
+  Push sequence: [5, 7, 5, 7, 4, 5]
+
+  Push  freq map         groups                     maxFreq
+  ────  ──────────────  ────────────────────────  ───────
+  5     {5:1}             1:[5]                      1
+  7     {5:1,7:1}         1:[5,7]                    1
+  5     {5:2,7:1}         1:[5,7] 2:[5]              2
+  7     {5:2,7:2}         1:[5,7] 2:[5,7]            2
+  4     {5:2,7:2,4:1}     1:[5,7,4] 2:[5,7]          2
+  5     {5:3,7:2,4:1}     1:[5,7,4] 2:[5,7] 3:[5]    3
+
+  Group stacks state:
+    freq=3: │ 5 │  ← maxFreq, pop here first
+    freq=2: │ 5 │ 7 │
+    freq=1: │ 5 │ 7 │ 4 │
+
+  Pop() = 5  (from freq=3, maxFreq: 3→2)
+  Pop() = 7  (from freq=2, maxFreq stays 2)
+  Pop() = 5  (from freq=2, maxFreq: 2→1)
+  Pop() = 4  (from freq=1, maxFreq stays 1)
 ```
 
 ---
@@ -554,6 +778,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+All O(1) Data Structure: Bucket DLL + HashMap
+
+  Structure:
+  ┌────────────────────────────────────────────────────┐
+  │ keyMap: string → *Bucket                            │
+  │ Bucket DLL: sorted by count, each has a set of keys │
+  │ HEAD ↔ [count=min] ↔ ... ↔ [count=max] ↔ TAIL       │
+  └────────────────────────────────────────────────────┘
+
+  Step-by-step:
+
+  Inc(a), Inc(a), Inc(b):
+    keyMap: {a: bucket(2), b: bucket(1)}
+    HEAD ↔ [count=1, keys={b}] ↔ [count=2, keys={a}] ↔ TAIL
+    Min="b" (count=1)    Max="a" (count=2)
+
+  Inc(b), Inc(b):
+    keyMap: {a: bucket(2), b: bucket(3)}
+    HEAD ↔ [count=2, keys={a}] ↔ [count=3, keys={b}] ↔ TAIL
+    Min="a" (count=2)    Max="b" (count=3)
+
+  Bucket DLL visualization:
+    HEAD ↔ ┌───────────┐ ↔ ┌───────────┐ ↔ TAIL
+            │ count = 2 │   │ count = 3 │
+            │ keys={a}  │   │ keys={b}  │
+            └───────────┘   └───────────┘
+            ↑ getMinKey      ↑ getMaxKey
+
+  ┌──────────────────────────────────────────┐
+  │ Inc/Dec: O(1) — move key between buckets │
+  │ GetMin/Max: O(1) — head.next / tail.prev │
+  └──────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Design Twitter (HashMap + Merge k Sorted)
@@ -644,6 +904,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Design Twitter: HashMap + Merge k Sorted Lists
+
+  Structure:
+  ┌───────────────────────────────────────────────────┐
+  │ tweets:  userId → [(tweetId, time), ...]            │
+  │ follows: userId → set of followeeIds                │
+  │ timer:   global auto-incrementing timestamp          │
+  └───────────────────────────────────────────────────┘
+
+  PostTweet(1,101)  tweets[1]: [(101,t=1)]
+  PostTweet(2,201)  tweets[2]: [(201,t=2)]
+  Follow(1,2)       follows[1]: {2}
+  PostTweet(2,202)  tweets[2]: [(201,t=2),(202,t=3)]
+  PostTweet(1,102)  tweets[1]: [(101,t=1),(102,t=4)]
+
+  GetNewsFeed(1):  merge tweets from {user 1, user 2}
+    User 1: [(101,t=1), (102,t=4)]
+    User 2: [(201,t=2), (202,t=3)]
+
+    Max-Heap merge (by time desc):
+    ┌───────────────────────────────┐
+    │ Pop t=4: tweet 102 (user 1) │
+    │ Pop t=3: tweet 202 (user 2) │
+    │ Pop t=2: tweet 201 (user 2) │
+    │ Pop t=1: tweet 101 (user 1) │
+    └───────────────────────────────┘
+    Result: [102, 202, 201, 101]
+
+  Unfollow(1,2) → follows[1]: {}
+  GetNewsFeed(1): only user 1's tweets → [102, 101]
+```
+
 ---
 
 ## Example 9: Snapshot Array (HashMap per Index)
@@ -706,6 +1000,40 @@ func main() {
 
 	fmt.Println("\nOnly stores changes → memory efficient")
 }
+```
+
+**Textual Figure:**
+```
+Snapshot Array: Per-Index History + Binary Search
+
+  Structure:
+  ┌────────────────────────────────────────────────────────┐
+  │ data[i] = sorted list of (snapId, value) entries    │
+  │ Only records changes → memory efficient              │
+  └────────────────────────────────────────────────────────┘
+
+  Operations trace (length=3):
+
+  Set(0, 5):       data[0] = [(snap=0, val=5)]
+  Snap() → snap 0
+  Set(0, 6):       data[0] = [(snap=0, val=5), (snap=1, val=6)]
+  Snap() → snap 1
+  Set(0, 7):       data[0] = [(snap=0, val=5), (snap=1, val=6), (snap=2, val=7)]
+
+  data[0] history:
+    ┌────────────┬────────────┬────────────┐
+    │ snap=0     │ snap=1     │ snap=2     │
+    │ val=5      │ val=6      │ val=7      │
+    └────────────┴────────────┴────────────┘
+
+  Get(0, snap0) → binary search: largest snap ≤ 0 → val=5
+  Get(0, snap1) → binary search: largest snap ≤ 1 → val=6
+  data[1], data[2] remain [(snap=0, val=0)] (unchanged)
+
+  ┌────────────────────────────────────────────────┐
+  │ Set: O(1) append    Get: O(log S) binary search│
+  │ Snap: O(1)          S = number of snapshots     │
+  └────────────────────────────────────────────────┘
 ```
 
 ---
@@ -784,6 +1112,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Design HashMap: Open Addressing with Linear Probing
+
+  Structure:
+  ┌───────────────────────────────────────────┐
+  │ table[SIZE] of Entry{key, val, used, deleted} │
+  │ hash(key) = key % SIZE                        │
+  └───────────────────────────────────────────┘
+
+  Put(1,100):   hash(1)=1     table[1] = {1, 100, used}
+  Put(2,200):   hash(2)=2     table[2] = {2, 200, used}
+
+  table (SIZE=1024, showing slots 0-5):
+    idx:  │  0  │  1       │  2       │  3  │  4  │  5  │
+    ─────┼────┼─────────┼─────────┼────┼────┼────┤
+    val:  │    │ key=1    │ key=2    │    │    │    │
+          │    │ val=100  │ val=200  │    │    │    │
+
+  Remove(1): table[1].deleted = true  (tombstone)
+    idx:  │  0  │  1       │  2       │  3  │
+    ─────┼────┼─────────┼─────────┼────┤
+    val:  │    │ ✗ DEL   │ key=2    │    │
+
+  Put(1025,999): hash(1025)=1 → slot 1 is deleted → reuse!
+    idx:  │  0  │  1         │  2       │  3  │
+    ─────┼────┼───────────┼─────────┼────┤
+    val:  │    │ key=1025   │ key=2    │    │
+          │    │ val=999    │ val=200  │    │
+
+  Linear probing on collision:
+    hash(k) → slot occupied? → try slot+1 → slot+2 → ...
+```
+
 ---
 
 ## Example 11: Design Patterns Summary
@@ -821,6 +1183,35 @@ func main() {
 	fmt.Println("3. Map provides O(1) lookup; List/Tree provides ordering")
 	fmt.Println("4. Keep both structures synchronized")
 }
+```
+
+**Textual Figure:**
+```
+Composite Data Structure Design: Pattern Summary
+
+  ┌────────────────┬──────────────────────────┬──────────────────────────┐
+  │ Problem        │ Components               │ Key Trick                │
+  ├────────────────┼──────────────────────────┼──────────────────────────┤
+  │ LRU Cache      │ HashMap + DLL            │ Move-to-front on access  │
+  │ LFU Cache      │ HashMap + freq DLLs      │ Maintain minFreq         │
+  │ RandomizedSet  │ HashMap + Array           │ Swap-with-last removal   │
+  │ Median Finder  │ MaxHeap + MinHeap         │ Balance heap sizes       │
+  │ TimeMap        │ HashMap + sorted list     │ Binary search by time    │
+  │ FreqStack      │ freq map + group stacks   │ Pop from maxFreq group   │
+  │ All O(1)       │ key map + bucket DLL      │ Buckets sorted by count  │
+  │ Twitter Feed   │ follow graph + heap merge │ Merge k sorted lists     │
+  │ Snapshot Array │ per-index history + bsrch │ Store only changes       │
+  │ HashMap        │ Array + probing/chaining  │ Hash + collision resolve │
+  └────────────────┴──────────────────────────┴──────────────────────────┘
+
+  Design Approach:
+    1. List required ops + time constraints
+           │
+    2. No single DS works? → Combine!
+           │
+    3. Map = O(1) lookup  ─┬─  List/Tree = ordering
+                           │
+    4. Keep BOTH in sync on every insert/delete
 ```
 
 ---

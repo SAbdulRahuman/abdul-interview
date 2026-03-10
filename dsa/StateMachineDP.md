@@ -37,6 +37,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stock I: prices = [7, 1, 5, 3, 6, 4]
+
+State machine: NOT_HOLDING ──buy──→ HOLDING ──sell──→ SOLD
+
+Day:       0    1    2    3    4    5
+Price:     7    1    5    3    6    4
+         ┌────┬────┬────┬────┬────┬────┐
+minP:    │  7 │  1 │  1 │  1 │  1 │  1 │
+         ├────┼────┼────┼────┼────┼────┤
+maxP:    │  0 │  0 │  4 │  4 │ [5]│  5 │
+         └────┴────┴────┴────┴────┴────┘
+
+Trace:
+  day 0: minP=7, profit=7-7=0
+  day 1: minP=min(7,1)=1, profit=1-1=0
+  day 2: minP=1, profit=5-1=4
+  day 4: minP=1, profit=6-1=5 ← max!
+
+  Buy at price 1 (day 1), sell at price 6 (day 4) = 5
+```
+
 ---
 
 ## Example 2: Buy and Sell Stock II (Unlimited Transactions)
@@ -69,6 +93,31 @@ func main() {
 	fmt.Println(maxProfit([]int{7, 1, 5, 3, 6, 4})) // 7
 	fmt.Println(maxProfit([]int{1, 2, 3, 4, 5}))     // 4
 }
+```
+
+**Textual Figure:**
+
+```
+Stock II (Unlimited): prices = [7, 1, 5, 3, 6, 4]
+
+State machine:   ┌───────────buy───────────┐
+                 │                          │
+              ┌──┴───────┐  sell  ┌─────────┴─┐
+              │ HOLDING   │─────→│ NOT_HOLDING │
+              └──┬───────┘       └───┬─────────┘
+                │   ↑                │   ↑
+                └───┘ hold           └───┘ wait
+
+Day:       0     1     2     3     4     5
+Price:     7     1     5     3     6     4
+         ┌─────┬─────┬─────┬─────┬─────┬─────┐
+hold:    │  -7 │  -1 │  -1 │   1 │   1 │   3 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┤
+notHold: │   0 │   0 │   4 │   4 │   7 │  [7]│
+         └─────┴─────┴─────┴─────┴─────┴─────┘
+
+  Answer: notHold[5] = 7
+  Strategy: buy@1, sell@5(+4), buy@3, sell@6(+3) = 7
 ```
 
 ---
@@ -107,6 +156,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stock with Cooldown: prices = [1, 2, 3, 0, 2]
+
+State machine:
+  ┌─────┐ sell   ┌─────┐ wait   ┌─────┐
+  │HOLD │─────→│SOLD │─────→│REST │
+  └─┬───┘        └─────┘        └─┬───┘
+    │ ↑ hold              buy ┌───┘ │ ↑
+    └─┘           ┌────────┘       └─┘ rest
+                  └──────────────┘
+
+Day:       0     1     2     3     4
+Price:     1     2     3     0     2
+         ┌─────┬─────┬─────┬─────┬─────┐
+hold:    │  -1 │  -1 │  -1 │   1 │   1 │
+         ├─────┼─────┼─────┼─────┼─────┤
+sold:    │   0 │   1 │   2 │  -1 │  [3]│
+         ├─────┼─────┼─────┼─────┼─────┤
+rest:    │   0 │   0 │   1 │   2 │   2 │
+         └─────┴─────┴─────┴─────┴─────┘
+
+  Answer: max(sold[4], rest[4]) = max(3, 2) = 3
+```
+
 ---
 
 ## Example 4: Buy and Sell Stock with Transaction Fee (LeetCode 714)
@@ -137,6 +212,33 @@ func main() {
 	fmt.Println(maxProfit([]int{1, 3, 2, 8, 4, 9}, 2)) // 8
 	fmt.Println(maxProfit([]int{1, 3, 7, 5, 10, 3}, 3)) // 6
 }
+```
+
+**Textual Figure:**
+
+```
+Stock with Fee: prices = [1, 3, 2, 8, 4, 9], fee = 2
+
+State machine:
+  ┌─────┐  sell-fee   ┌─────┐
+  │HOLD │─────────→│CASH │
+  └─┬───┘           └─┬───┘
+    │ ↑               │ ↑
+    └─┘ hold     buy  │ │ wait
+       ┌────────────┘ └─┐
+       └──────────────┘
+
+Day:       0     1     2     3     4     5
+Price:     1     3     2     8     4     9
+         ┌─────┬─────┬─────┬─────┬─────┬─────┐
+hold:    │  -1 │  -1 │  -1 │  -1 │  -1 │   1 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┤
+cash:    │   0 │   0 │   0 │   5 │   5 │  [8]│
+         └─────┴─────┴─────┴─────┴─────┴─────┘
+
+  day 3: sell: hold+price-fee = -1+8-2 = 5 > cash(0) → cash=5
+  day 5: sell: hold+price-fee = 1+9-2 = 8 > cash(5)  → cash=8
+  Answer: 8  (buy@1, sell@8 profit 5; buy@4, sell@9 profit 3)
 ```
 
 ---
@@ -172,6 +274,33 @@ func main() {
 	fmt.Println(maxProfit([]int{3, 3, 5, 0, 0, 3, 1, 4})) // 6
 	fmt.Println(maxProfit([]int{1, 2, 3, 4, 5}))           // 4
 }
+```
+
+**Textual Figure:**
+
+```
+Stock III (At Most 2 Transactions): prices = [3,3,5,0,0,3,1,4]
+
+4 states tracked simultaneously:
+
+Day:       0     1     2     3     4     5     6     7
+Price:     3     3     5     0     0     3     1     4
+         ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐
+buy1:    │  -3 │  -3 │  -3 │   0 │   0 │   0 │   0 │   0 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
+sell1:   │   0 │   0 │   2 │   2 │   2 │   3 │   3 │   4 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
+buy2:    │  -3 │  -3 │  -1 │   2 │   2 │   2 │   2 │   3 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┼─────┼─────┤
+sell2:   │   0 │   0 │   2 │   2 │   2 │   5 │   5 │  [6]│
+         └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘
+
+  State flow:
+  buy1 ──sell──→ sell1 ──buy──→ buy2 ──sell──→ sell2
+
+  Answer: sell2 = 6
+  Txn1: buy@0, sell@5(+5) → profit 5; wait...
+  Txn2: buy@0, sell@4(+3)... best= buy@0,sell@5 + buy@1,sell@4 = 6
 ```
 
 ---
@@ -216,6 +345,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stock IV (At Most K Transactions): k=2, prices=[3,2,6,5,0,3]
+
+DP arrays: buy[j], sell[j] for j = 1..k
+
+Day:       0     1     2     3     4     5
+Price:     3     2     6     5     0     3
+         ┌─────┬─────┬─────┬─────┬─────┬─────┐
+buy[1]:  │  -3 │  -2 │  -2 │  -2 │   0 │   0 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┤
+sell[1]: │   0 │   0 │   4 │   4 │   4 │   4 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┤
+buy[2]:  │  -3 │  -2 │   2 │   2 │   4 │   4 │
+         ├─────┼─────┼─────┼─────┼─────┼─────┤
+sell[2]: │   0 │   0 │   4 │   4 │   4 │  [7]│
+         └─────┴─────┴─────┴─────┴─────┴─────┘
+
+  Answer: sell[2] = 7
+  Txn1: buy@2, sell@6 (+4)
+  Txn2: buy@0, sell@3 (+3)
+  Total: 4 + 3 = 7
+```
+
 ---
 
 ## Example 7: Paint House (LeetCode 256)
@@ -249,6 +403,33 @@ func main() {
 	costs := [][]int{{17, 2, 17}, {16, 16, 5}, {14, 3, 19}}
 	fmt.Println("Min paint cost:", minCost(costs)) // 10
 }
+```
+
+**Textual Figure:**
+
+```
+Paint House: costs = [[17,2,17],[16,16,5],[14,3,19]]
+Colors: R(0), G(1), B(2)
+
+State machine (no two adjacent same color):
+  ┌───┐       ┌───┐       ┌───┐
+  │ R │──────→│ G │       │ R │──────→│ B │
+  └───┘       └───┘       └───┘       └───┘
+  ┌───┐       ┌───┐       ┌───┐
+  │ G │──────→│ R │       │ G │──────→│ B │
+  └───┘       └───┘       └───┘       └───┘
+
+House:    0      1      2
+        ┌─────┬─────┬─────┐
+  R(0): │  17 │  18 │  17 │  house2: 14+min(dp[G],dp[B])=14+3=17
+        ├─────┼─────┼─────┤
+  G(1): │   2 │  33 │ [10]│  house2: 3+min(dp[R],dp[B])=3+7=10
+        ├─────┼─────┼─────┤
+  B(2): │  17 │   7 │  37 │  house2: 19+min(dp[R],dp[G])=19+18
+        └─────┴─────┴─────┘
+
+  Answer: min(17, 10, 37) = 10
+  Path: house0=Green(2), house1=Blue(5), house2=Green(3) = 10
 ```
 
 ---
@@ -307,6 +488,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Paint House II (K Colors): costs = [[1,5,3],[2,9,4]]
+
+House 0: dp = [1, 5, 3]
+  min1 = 1 (idx=0), min2 = 3
+
+House 1:
+  color 0: costs[1][0]+min2 = 2+3 = 5   (can't use min1, same idx)
+  color 1: costs[1][1]+min1 = 9+1 = 10
+  color 2: costs[1][2]+min1 = 4+1 = 5
+  dp = [5, 10, 5]
+
+  Answer: min(5, 10, 5) = 5
+
+  O(nk) trick:
+  ┌────────────────────────────────────────┐
+  │ For each house:                             │
+  │   Find min1, min2 of previous dp              │
+  │   For color j:                                │
+  │     if j == minIdx: use min2                   │
+  │     else:           use min1                   │
+  │   → O(k) per house instead of O(k²)           │
+  └────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Decode Ways Variant (State Machine)
@@ -348,6 +556,33 @@ func main() {
 	fmt.Println(numDecodings("06"))   // 0
 	fmt.Println(numDecodings("11106")) // 2
 }
+```
+
+**Textual Figure:**
+
+```
+Decode Ways (State Machine): s = "11106"
+
+State: prev2 = dp[i-2], prev1 = dp[i-1]
+
+i:     0    1    2    3    4
+char:  '1'  '1'  '1'  '0'  '6'
+     ┌────┬────┬────┬────┬────┐
+dp:  │  1 │  2 │  3 │  2 │ [2]│
+     └────┴────┴────┴────┴────┘
+pre: (1,1)
+
+Trace (using rolling prev2, prev1):
+  i=1: '1'≠'0' → curr+=prev1(1)=1
+       '11' ∈ 10..26 → curr+=prev2(1)=2 → curr=2
+  i=2: '1'≠'0' → curr+=prev1(2)=2
+       '11' ∈ 10..26 → curr+=prev2(1)=1 → curr=3
+  i=3: '0'=='0' → skip single
+       '10' ∈ 10..26 → curr+=prev2(2)=2 → curr=2
+  i=4: '6'≠'0' → curr+=prev1(2)=2
+       '06'=6 < 10 → skip              → curr=2
+
+  Answer: 2  ("1-1-10-6" and "11-10-6")
 ```
 
 ---
@@ -394,6 +629,38 @@ func main() {
 	fmt.Println("3. Write recurrence for each state")
 	fmt.Println("4. Often O(1) space using variables for each state")
 }
+```
+
+**Textual Figure:**
+
+```
+State Machine DP — Pattern Overview:
+
+1. Stock I:       START ──buy──→ HOLD ──sell──→ END
+
+2. Stock II:      ┌─hold─┐  ┌─wait─┐
+                  HOLD ──sell──→ CASH
+                  HOLD ────buy─── CASH
+
+3. Cooldown:      HOLD ─sell→ SOLD ─wait→ REST ─buy→ HOLD
+                   ↑hold┘                    ↑rest┘
+
+4. With Fee:      HOLD ─sell(-fee)→ CASH ─buy→ HOLD
+
+5. K Trades:      buy[1]─sell→sell[1]─buy→buy[2]─sell→sell[2]─...
+
+6. Paint House:   C0──┐       For each house, pick color
+                  C1──┼──→  min(other colors from prev)
+                  C2──┘
+
+  General recipe:
+  ┌──────────────────────────────────────┐
+  │ 1. Draw state diagram              │
+  │ 2. Write transition for each edge  │
+  │ 3. Initialize starting state        │
+  │ 4. Iterate input, update all states │
+  │ 5. Answer = optimal final state     │
+  └──────────────────────────────────────┘
 ```
 
 ---

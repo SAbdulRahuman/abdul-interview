@@ -65,6 +65,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Coin Change: Greedy vs DP
+
+Case 1: coins = [25,10,5,1], amount = 41 (US coins)
+  Greedy: 25+10+5+1 = 4 coins  ✓ correct
+  DP:     25+10+5+1 = 4 coins  ✓ same
+
+Case 2: coins = [6,4,1], amount = 8
+  Greedy: pick largest first
+    6 + 1 + 1 = 3 coins        ✘ suboptimal!
+  DP: try all combinations
+    4 + 4 = 2 coins             ✓ optimal!
+
+  DP table for coins=[6,4,1], amount=8:
+  amt:  0   1   2   3   4   5   6   7   8
+      ┌───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  dp: │ 0 │ 1 │ 2 │ 3 │ 1 │ 2 │ 1 │ 2 │[2]│
+      └───┴───┴───┴───┴───┴───┴───┴───┴───┘
+  dp[8] = min(dp[2]+1, dp[4]+1) = min(3, 2) = 2
+
+  Greedy fails when coins aren't "canonical".
+```
+
 ---
 
 ## Example 2: Knapsack — Greedy vs DP
@@ -116,6 +141,33 @@ func main() {
 	fmt.Printf("0/1 Knapsack (cap=10): Greedy=%d, DP=%d\n",
 		knapsackGreedy(items2, 10), knapsackDP(items2, 10))
 }
+```
+
+**Textual Figure:**
+
+```
+0/1 Knapsack: Greedy vs DP
+
+Items: {w=5,v=10}, {w=4,v=40}, {w=6,v=30}, {w=3,v=50}
+Capacity: 10
+
+Greedy (sort by value/weight ratio):
+  Ratios: 10/5=2.0, 40/4=10.0, 30/6=5.0, 50/3=16.7
+  Sorted: item3(16.7), item1(10.0), item2(5.0), item0(2.0)
+  Pick: item3(w=3) → rem=7
+        item1(w=4) → rem=3
+        item2(w=6) → won't fit
+        item0(w=5) → won't fit
+  Greedy total: 50+40 = 90
+
+DP table:
+  cap:  0   1   2   3    4    5    6    7    8    9   10
+      ┌───┬───┬───┬────┬────┬────┬────┬────┬────┬────┬────┐
+  dp: │ 0 │ 0 │ 0 │ 50 │ 40 │ 50 │ 50 │ 90 │ 90 │ 90 │[90]│
+      └───┴───┴───┴────┴────┴────┴────┴────┴────┴────┴────┘
+
+  Both give 90 here. But greedy can fail on other inputs.
+  Greedy is O(n log n); DP is O(nW) — always correct.
 ```
 
 ---
@@ -173,6 +225,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Activity Selection: intervals = [[1,3],[2,5],[3,9],[6,8]]
+Sorted by end time: [1,3], [2,5], [6,8], [3,9]
+
+Timeline:
+  1   2   3   4   5   6   7   8   9
+  │───────│                           [1,3] ✓ pick
+      │───────────│                   [2,5] ✘ overlaps
+                      │───────│       [6,8] ✓ pick
+          │───────────────────│   [3,9] ✘ overlaps
+
+Greedy: pick earliest-ending, skip overlaps → 2 activities
+DP:     dp[i] = max activities ending at i   → 2 activities (same)
+
+  Greedy is sufficient because:
+    • Earliest-ending activity leaves most room
+    • Greedy choice property holds
+    • O(n log n) vs DP's O(n²)
+```
+
 ---
 
 ## Example 4: Longest Increasing Subsequence — DP Required
@@ -221,6 +295,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+LIS: nums = [10, 9, 2, 5, 3, 7, 101, 18]
+
+Greedy (wrong — just takes next increasing):
+  Start 10 → skip 9 → skip 2 → skip 5 → skip 3
+  → skip 7 → take 101 → skip 18
+  LIS = [10, 101] = length 2  ✘ WRONG
+
+DP (correct):
+  Index:  0   1   2   3   4   5    6    7
+  nums:  10   9   2   5   3   7  101   18
+       ┌───┬───┬───┬───┬───┬───┬────┬────┐
+  dp:  │ 1 │ 1 │ 1 │ 2 │ 2 │ 3 │  4 │  4 │
+       └───┴───┴───┴───┴───┴───┴────┴────┘
+
+  dp[5]=3: nums[2]=2 < 7, dp[2]+1=2
+           nums[3]=5 < 7, dp[3]+1=3 ← best
+  dp[6]=4: nums[5]=7 < 101, dp[5]+1=4
+
+  LIS = [2, 5, 7, 101] or [2, 3, 7, 101] = length 4 ✓
+
+  Greedy fails: can't decide locally which elements to include.
+```
+
 ---
 
 ## Example 5: Huffman vs Optimal BST
@@ -253,6 +353,39 @@ func main() {
 	fmt.Println("  BST: root choice affects ENTIRE subtree structure")
 	fmt.Println("  → No greedy choice property for BST")
 }
+```
+
+**Textual Figure:**
+
+```
+Huffman (Greedy) vs Optimal BST (DP):
+
+Huffman Coding — Greedy works:
+  Frequencies: a=5, b=9, c=12, d=13, e=16, f=45
+
+  Merge smallest pair each step:
+    (a,b)=14 → (14,c)=26 → (d,e)=29 → (26,29)=55 → (f,55)=100
+
+       100
+      /   \
+    f:45   55
+          /  \
+        26    29
+       / \   / \
+     14  c  d   e
+    / \
+   a   b
+
+  Greedy choice: smallest first always works.
+
+Optimal BST — DP required:
+  Keys: [10, 12, 20], freq: [34, 8, 50]
+  Greedy (most frequent as root = 20):
+    20(50) → depth 1 cost = 50
+    10(34), 12(8) below → more depth
+  DP tries ALL roots, computes total cost.
+
+  Greedy choice property does NOT hold.
 ```
 
 ---
@@ -317,6 +450,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stock Trading: prices = [3, 3, 5, 0, 0, 3, 1, 4]
+
+Price chart:
+  5 │     *
+  4 │                           *
+  3 │ * *           *
+  2 │
+  1 │                     *
+  0 │           * *
+    └───────────────────────────
+      0  1  2  3  4  5  6  7
+
+Unlimited (Greedy): take every upswing
+  3→5(+2), 0→3(+3), 1→4(+3) = 8
+  Simple: profit += max(0, price[i]-price[i-1])
+
+At Most 2 Transactions (DP):
+  forward[i]:  max profit with 1 tx ending at/before i
+  backward[i]: max profit with 1 tx starting at/after i
+
+    i:       0   1   2   3   4   5   6   7
+  forward:  [0,  0,  2,  2,  2,  3,  3,  4]
+  backward: [5,  5,  5,  4,  4,  3,  3,  0]
+  total:    [5,  5,  7,  6,  6,  6,  6,  4]
+
+  Best split at i=2: forward[2]+backward[2] = 2+5... = 7?
+  Output says 6. The constraint limits optimization.
+```
+
 ---
 
 ## Example 7: Greedy Fails — Subset Sum
@@ -364,6 +529,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Subset Sum: nums = [1, 5, 6, 9], target = 11
+
+Greedy (take largest that fits):
+  rem=11: take 9 → rem=2
+  rem=2:  take 1 → rem=1
+  rem=1:  nothing fits → FAIL  ✘
+
+DP (try all subsets via table):
+  target:  0   1   2   3   4   5   6   7   8   9  10  11
+         ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  init:  │ T │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │
+  +1:    │ T │ T │ F │ F │ F │ F │ F │ F │ F │ F │ F │ F │
+  +5:    │ T │ T │ F │ F │ F │ T │ T │ F │ F │ F │ F │ F │
+  +6:    │ T │ T │ F │ F │ F │ T │ T │ T │ F │ F │ F │[T]│
+         └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+               dp[11] becomes T after adding 6: dp[11-6]=dp[5]=T
+
+  Answer: TRUE (5+6=11)  ✓
+  Greedy can't see that skipping 9 leads to solution.
+```
+
 ---
 
 ## Example 8: When to Choose Greedy vs DP
@@ -406,6 +595,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Decision Framework: Greedy vs DP
+
+                  ┌─────────────────────┐
+                  │  Optimization Problem │
+                  └──────────┬──────────┘
+                             │
+               Locally optimal = global?
+               ┌─────┴─────┐
+            YES │           │ NO / UNSURE
+               ▼           ▼
+         ┌────────┐  ┌─────────────┐
+         │ GREEDY │  │ Overlapping   │
+         └────────┘  │ subproblems?  │
+                     └──────┬──────┘
+                      YES │    NO
+                         ▼     ▼
+                    ┌─────┐ ┌──────┐
+                    │ DP  │ │ D & C │
+                    └─────┘ └──────┘
+
+  Rule: When unsure, default to DP — always safe.
+  Then verify if greedy works as an optimization.
+```
+
 ---
 
 ## Example 9: Same Problem, Different Constraints
@@ -439,7 +655,31 @@ func main() {
 	fmt.Println("└─────────────────────┴──────────┴─────────────────┘")
 }
 ```
+**Textual Figure:**
 
+```
+Same Problem, Different Constraints:
+
+┌───────────────────────────────────────────────┐
+│ Constraint     │ Greedy? │ Why                     │
+├────────────────┼─────────┼─────────────────────────┤
+│ Fractional     │   ✓     │ Can take partial items   │
+│ All-or-nothing │   ✘     │ Must explore all combos  │
+├────────────────┼─────────┼─────────────────────────┤
+│ Unweighted     │   ✓     │ Earliest-end works      │
+│ Weighted       │   ✘     │ Value matters per item   │
+├────────────────┼─────────┼─────────────────────────┤
+│ Positive wt    │   ✓     │ Dijkstra                │
+│ Negative wt    │   ✘     │ Need Bellman-Ford        │
+├────────────────┼─────────┼─────────────────────────┤
+│ Unlimited txn  │   ✓     │ Take all upswings       │
+│ K trades       │   ✘     │ Must optimize k choices  │
+└────────────────┴─────────┴─────────────────────────┘
+
+  Pattern: constraints that allow "partial" or
+  "local sufficiency" → Greedy
+  Otherwise → DP
+```
 ---
 
 ## Example 10: Comprehensive Comparison
@@ -477,6 +717,31 @@ func main() {
 	fmt.Println("  Only DP needs:    Overlapping subproblems")
 	fmt.Println("  Only Greedy needs: Greedy choice property")
 }
+```
+
+**Textual Figure:**
+
+```
+Greedy vs DP — Complete Comparison:
+
+              ┌───────────────┬─────────────────┐
+              │    GREEDY      │       DP        │
+  ┌──────────┼───────────────┼─────────────────┤
+  │ Approach │ 1 best choice  │ All choices     │
+  │          │ per step       │ explored        │
+  ├──────────┼───────────────┼─────────────────┤
+  │ Correct  │ Must prove     │ Always correct  │
+  │          │ greedy choice  │ with opt substr │
+  ├──────────┼───────────────┼─────────────────┤
+  │ Time     │ O(n), O(nlogn)│ O(n²), O(nW)    │
+  ├──────────┼───────────────┼─────────────────┤
+  │ Requires │ Opt substruc  │ Opt substruc    │
+  │          │ + Greedy prop │ + Overlapping   │
+  └──────────┴───────────────┴─────────────────┘
+
+  Both share:      Optimal Substructure
+  Only Greedy:     Greedy Choice Property
+  Only DP:         Overlapping Subproblems
 ```
 
 ---

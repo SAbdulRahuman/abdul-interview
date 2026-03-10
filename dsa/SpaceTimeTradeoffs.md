@@ -71,6 +71,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Prefix Sum: O(n) Space → O(1) Query
+
+  Array:    [3, 1, 4, 1, 5, 9, 2, 6]
+  Prefix:   [0, 3, 4, 8, 9,14,23,25,31]
+             │  │  │  │  │  │  │  │  │
+             0  1  2  3  4  5  6  7  8  (index)
+
+  Query sum(2,5): prefix[6] - prefix[2] = 23 - 4 = 19
+
+  Brute force:                Prefix sum:
+  ┌────────────────────┐  ┌────────────────────┐
+  │ Space: O(1)          │  │ Space: O(n)          │
+  │ Query: O(n) per call │  │ Query: O(1) per call │
+  │ Build: none          │  │ Build: O(n) one-time │
+  └────────────────────┘  └────────────────────┘
+
+  Tradeoff: spend O(n) memory to get O(1) queries
+  Worth it when queries >> 1
+```
+
 ---
 
 ## Example 2: Memoization vs Recomputation
@@ -141,6 +163,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Memoization vs Recomputation: Fibonacci
+
+  Naive fib(5) call tree — O(2^n) redundant calls:
+
+               fib(5)
+              ╱      ╲
+          fib(4)     fib(3)
+          ╱    ╲      ╱    ╲
+       fib(3) fib(2) fib(2) fib(1)
+       ╱   ╲    ╱  ╲    ╱  ╲
+    fib(2) f(1) f(1) f(0) f(1) f(0)
+    ╱   ╲
+  f(1)  f(0)     ← fib(2) computed 3 times!
+
+  With memoization — O(n) calls:
+
+    fib(5) → fib(4) → fib(3) → fib(2) → fib(1)
+              └─ fib(3) [cached ✓]
+    └─ fib(3) [cached ✓]
+
+  ┌──────────────┬───────────┬───────────┐
+  │ Method       │ Time      │ Space     │
+  ├──────────────┼───────────┼───────────┤
+  │ Naive        │ O(2^n)    │ O(n) stack│
+  │ Memoized     │ O(n)      │ O(n) memo │
+  │ Bottom-up DP │ O(n)      │ O(n) array│
+  │ Optimized    │ O(n)      │ O(1) vars │
+  └──────────────┴───────────┴───────────┘
+```
+
 ---
 
 ## Example 3: Lookup Table for Popcount
@@ -185,6 +239,39 @@ func main() {
 	fmt.Println("\nTable: 64KB space, O(1) per 16-bit chunk")
 	fmt.Println("Loop: O(1) space, O(popcount) per call")
 }
+```
+
+**Textual Figure:**
+```
+Popcount Lookup Table: 64KB Space → O(1) Time
+
+  Precomputed table (16-bit chunks):
+    popTable[0x0000] = 0
+    popTable[0x0001] = 1    (0000 0000 0000 0001)
+    popTable[0x0003] = 2    (0000 0000 0000 0011)
+    popTable[0x00FF] = 8    (0000 0000 1111 1111)
+    popTable[0xFFFF] = 16   (1111 1111 1111 1111)
+
+  64-bit popcount via 4 table lookups:
+    x = 0xDEADBEEF_00000000
+
+    ┌──────────┬──────────┬──────────┬──────────┐
+    │ chunk 3  │ chunk 2  │ chunk 1  │ chunk 0  │
+    │ bits48-63│ bits32-47│ bits16-31│ bits 0-15│
+    └────┬─────┴────┬─────┴────┬─────┴────┬─────┘
+         │           │           │           │
+         ▼           ▼           ▼           ▼
+     popTable[]   popTable[]  popTable[]  popTable[]
+         │           │           │           │
+         └────────── + ────────── + ──────────┘
+                       = total popcount
+
+  ┌──────────────┬─────────────┬───────────────┐
+  │ Method       │ Space       │ Time            │
+  ├──────────────┼─────────────┼───────────────┤
+  │ Table lookup │ 64KB        │ O(1) = 4 lookups│
+  │ Kernighan    │ O(1)        │ O(popcount)     │
+  └──────────────┴─────────────┴───────────────┘
 ```
 
 ---
@@ -240,6 +327,35 @@ func main() {
 	fmt.Printf("Bin search: %v (%d hits) — O(1) extra space*, O(log n) lookup\n", bsTime, bsHits)
 	fmt.Println("\n*sorted in-place uses no extra space")
 }
+```
+
+**Textual Figure:**
+```
+Hash Set vs Binary Search: Membership Testing
+
+  Data: [0, 2, 4, 6, 8, ..., 1999998]  (n=1,000,000)
+  Query: is target in data?
+
+  Hash Set approach:
+    Build: iterate all n elements → O(n) time, O(n) space
+    ┌────────────────────────────────┐
+    │ hashSet[target] → true/false │  O(1)
+    └────────────────────────────────┘
+
+  Binary Search approach:
+    Build: sort O(n log n), then search
+    ┌──────────────────────────────────────┐
+    │ [0, 2, 4, ..., target?, ..., 1999998] │
+    │         ↑ binary search O(log n)        │
+    └──────────────────────────────────────┘
+
+  ┌───────────────┬──────────────┬──────────────┐
+  │ Method        │ Extra Space  │ Lookup Time  │
+  ├───────────────┼──────────────┼──────────────┤
+  │ Hash Set      │ O(n)         │ O(1) avg     │
+  │ Binary Search │ O(1)*        │ O(log n)     │
+  └───────────────┴──────────────┴──────────────┘
+  * sorted in-place uses no extra space
 ```
 
 ---
@@ -309,6 +425,45 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Rolling Hash (Rabin-Karp) vs Naive String Matching
+
+  Text:    "abcabcabcabc"  (n=12)
+  Pattern: "abcabc"        (m=6)
+
+  Naive: slide pattern across text, compare all m chars
+    abcabcabcabc       abcabcabcabc
+    abcabc             ✗  (shift 1)
+    ✓ match at 0         abcabc
+                         ✗
+    ...O(n·m) worst case
+
+  Rolling hash: compute hash of window, slide in O(1)
+
+    Window:  [a b c a b c] a b c a b c    hash = H1
+    Pattern:  a b c a b c                 hash = P
+              H1 == P? → verify ✓ match at 0
+
+    Slide:   a [b c a b c a] b c a b c    hash = H2
+              Remove 'a', add 'a':
+              H2 = (H1 - val('a')·base^(m-1)) · base + val('a')
+              H2 ≠ P → skip
+
+    ...continue sliding...
+
+    Window:  a b c [a b c a b c] a b c    hash = H3
+              H3 == P? → verify ✓ match at 3
+
+  ┌───────────────┬──────────────┬──────────────┐
+  │ Method        │ Time         │ Space        │
+  ├───────────────┼──────────────┼──────────────┤
+  │ Naive         │ O(n·m) worst │ O(1)         │
+  │ Rabin-Karp    │ O(n+m) avg  │ O(m)         │
+  └───────────────┴──────────────┴──────────────┘
+  Matches at: [0, 3, 6]
+```
+
 ---
 
 ## Example 6: In-Place vs Extra Array for Merge Sort
@@ -365,6 +520,43 @@ func main() {
 	fmt.Println("Insertion sort is in-place but O(n²)")
 	fmt.Println("Go's sort.Slice uses introsort: O(n log n) time, O(log n) space")
 }
+```
+
+**Textual Figure:**
+```
+In-Place vs Extra Array Sorting
+
+  Input: [38, 27, 43, 3, 9, 82, 10]
+
+  Merge Sort (O(n) extra space):
+    [38,27,43,3,9,82,10]
+    ┌─────────────────────────┐
+    │ split:  [38,27,43,3] [9,82,10] │
+    │ split:  [38,27] [43,3]         │
+    │ merge:  [27,38] [3,43]         │ ← temp arrays
+    │ merge:  [3,27,38,43]           │ ← temp arrays
+    │ merge:  [3,9,10,27,38,43,82]   │ ← temp arrays
+    └─────────────────────────┘
+    Time: O(n log n)    Space: O(n)
+
+  Insertion Sort (O(1) extra space):
+    [38, 27, 43, 3, 9, 82, 10]
+     ───  ↑
+    [27, 38, 43, 3, 9, 82, 10]  insert 27
+    [27, 38, 43, 3, 9, 82, 10]  43 in place
+    [ 3, 27, 38, 43, 9, 82, 10]  insert 3 (shift 3 elements)
+    [ 3, 9, 27, 38, 43, 82, 10]  insert 9
+    [ 3, 9, 27, 38, 43, 82, 10]  82 in place
+    [ 3, 9, 10, 27, 38, 43, 82]  insert 10
+    Time: O(n²)         Space: O(1)
+
+  ┌────────────────┬─────────────┬──────────┐
+  │ Algorithm      │ Time        │ Space    │
+  ├────────────────┼─────────────┼──────────┤
+  │ Merge sort     │ O(n log n)  │ O(n)     │
+  │ Insertion sort │ O(n²)       │ O(1)     │
+  │ Introsort      │ O(n log n)  │ O(log n) │
+  └────────────────┴─────────────┴──────────┘
 ```
 
 ---
@@ -441,6 +633,46 @@ func main() {
 	fmt.Println("\nMatrix: dense graphs, O(1) edge check, O(V²) space")
 	fmt.Println("List: sparse graphs, O(deg) edge check, O(V+E) space")
 }
+```
+
+**Textual Figure:**
+```
+Adjacency Matrix vs Adjacency List
+
+  Graph (V=5, E=5, sparse):
+    0 ── 1 ── 2
+    │       │
+    3 ── 4 ─┘
+
+  Adjacency Matrix (V² = 25 cells):
+      0  1  2  3  4
+    ┌───┬──┬──┬──┬──┐
+  0 │ 0 │ 1│ 0│ 1│ 0│
+    ├───┼──┼──┼──┼──┤
+  1 │ 1 │ 0│ 1│ 0│ 0│
+    ├───┼──┼──┼──┼──┤
+  2 │ 0 │ 1│ 0│ 0│ 1│
+    ├───┼──┼──┼──┼──┤
+  3 │ 1 │ 0│ 0│ 0│ 1│
+    ├───┼──┼──┼──┼──┤
+  4 │ 0 │ 0│ 1│ 1│ 0│
+    └───┴──┴──┴──┴──┘
+    Space: O(V²) = 25    HasEdge: O(1)
+
+  Adjacency List:
+    0 → [1, 3]
+    1 → [0, 2]
+    2 → [1, 4]
+    3 → [0, 4]
+    4 → [2, 3]
+    Space: O(V+E) = 15   HasEdge: O(deg)
+
+  ┌─────────┬────────────┬────────────┬─────────────┐
+  │         │ Space      │ Edge check │ Best for    │
+  ├─────────┼────────────┼────────────┼─────────────┤
+  │ Matrix  │ O(V²)      │ O(1)       │ Dense graph │
+  │ List    │ O(V+E)     │ O(deg)     │ Sparse graph│
+  └─────────┴────────────┴────────────┴─────────────┘
 ```
 
 ---
@@ -536,6 +768,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Full Array Trie vs Map (Compressed) Trie
+
+  Words: ["app", "apple", "bat"]
+
+  Full Array Trie (26 pointers per node):
+    (root)
+    ├─ a [0:nil, 1:nil, ..., 15:●, ..., 25:nil]  ← 26 ptrs each!
+    │  └─ p [all nil except 15:●]
+    │     └─ p✓ [all nil except 11:●]
+    │        └─ l [all nil except 4:●]
+    │           └─ e✓
+    └─ b [all nil except 0:●]
+       └─ a [all nil except 19:●]
+          └─ t✓
+
+    7 nodes × 26 pointers = 182 pointers (mostly nil!)
+
+  Map Trie (only used pointers):
+    (root)
+    ├─ 'a' → ┌─'p'→┌─'p'✓→┌─'l'→┌─'e'✓
+    └─ 'b' → ┌─'a'→┌─'t'✓
+
+    7 nodes, only non-nil entries stored
+    Fewer pointers, but map overhead per node
+
+  ┌───────────┬───────────────┬───────────────┐
+  │ Trie Type │ Access Speed  │ Memory        │
+  ├───────────┼───────────────┼───────────────┤
+  │ Full [26] │ O(1) index    │ 26×8B per node│
+  │ Map-based │ O(1) avg hash │ ~8B per child │
+  └───────────┴───────────────┴───────────────┘
+```
+
 ---
 
 ## Example 9: Bit Manipulation for Space Savings
@@ -583,6 +850,36 @@ func main() {
 	fmt.Println("map[int]bool: ~50+ bytes per element")
 	fmt.Println("For n=64: BitSet=8B vs map≈3200B = 400x savings!")
 }
+```
+
+**Textual Figure:**
+```
+BitSet vs map[int]bool: Space Comparison
+
+  Set 1: {1, 3, 5, 7}    Set 2: {3, 5, 9, 11}
+
+  BitSet (uint64 = 8 bytes):
+    Bit position: 63 ... 11 10 9  8  7  6  5  4  3  2  1  0
+    Set 1:         0      0  0 0  0  1  0  1  0  1  0  1  0
+    Set 2:         0      1  0 1  0  0  0  1  0  1  0  0  0
+    Union (|):     0      1  0 1  0  1  0  1  0  1  0  1  0
+    Intersect(&):  0      0  0 0  0  0  0  1  0  1  0  0  0 = {3,5}
+
+  map[int]bool (per element):
+    ┌─────┬──────┬──────┬──────┐
+    │ key │ hash │ bool │ next │  × each element
+    └─────┴──────┴──────┴──────┘
+    ~50+ bytes per entry
+
+  Space comparison for 64 elements:
+    BitSet:  8 bytes (1 uint64)
+    Map:     ~3200 bytes (50B × 64)
+    Ratio:   400x savings!
+
+  Operations:
+    Union:     O(1) bitwise OR   vs  O(n) map merge
+    Intersect: O(1) bitwise AND  vs  O(n) map iterate
+    Contains:  O(1) bit check    vs  O(1) map lookup
 ```
 
 ---
@@ -662,7 +959,36 @@ func main() {
 	fmt.Println("• Stream when data doesn't fit in memory")
 }
 ```
+**Textual Figure:**
+```
+Space-Time Tradeoffs: Decision Guide
 
+  ┌───────────────────────────────────────────────┐
+  │                Space-Time Spectrum                │
+  │                                                   │
+  │  ◀── More Space             More Time ──▶         │
+  │  ◀── Less Time              Less Space ──▶        │
+  │                                                   │
+  │  Prefix Sum    Hash Set    In-Place Sort  Streaming│
+  │  Memo Table    Trie        Bit Manip      Compress │
+  │  B-Tree Index  Cache       2-ptr          RLE      │
+  └───────────────────────────────────────────────┘
+
+  Decision flowchart:
+    Queried > 1 time? ─── Yes → Precompute (prefix sum, table)
+         │ No
+         ▼
+    Memory tight? ─────── Yes → In-place / streaming / bits
+         │ No
+         ▼
+    Need O(1) lookup? ─── Yes → Hash set/map
+         │ No
+         ▼
+    Need ordering? ────── Yes → Sorted + binary search
+         │ No
+         ▼
+    Default: Hash for speed, sort for order
+```
 ---
 
 ## Key Takeaways

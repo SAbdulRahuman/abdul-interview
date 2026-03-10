@@ -52,6 +52,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stability: equal keys keep original relative order.
+
+  Input:  [(Alice,90), (Bob,85), (Charlie,90), (Dave,85)]
+            idx 0         idx 1       idx 2         idx 3
+
+  Sort by Grade (stable):
+  ┌─────────┬───────┬──────────────────────────────┐
+  │ Grade   │ Name  │ Reason                       │
+  ├─────────┼───────┼──────────────────────────────┤
+  │   85    │ Bob   │ Was idx 1 (before Dave idx 3)│
+  │   85    │ Dave  │ Was idx 3 (after Bob idx 1)  │
+  │   90    │ Alice │ Was idx 0 (before Charlie 2) │
+  │   90    │Charlie│ Was idx 2 (after Alice idx 0)│
+  └─────────┴───────┴──────────────────────────────┘
+
+  ✓ Equal grades → original order preserved.
+```
+
 ---
 
 ## Example 2: Unstable Sort Breaks Relative Order
@@ -102,6 +123,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Unstable vs Stable: items = [(3,A),(1,B),(3,C),(2,D),(1,E)]
+
+  Unstable (sort.Slice) — may reorder equals:
+  ┌───────┬───────┬─────────────────────┐
+  │ Key=1 │ E, B  │ ✗ E before B (was  │
+  │       │       │   B before E)       │
+  │ Key=2 │ D     │                     │
+  │ Key=3 │ C, A  │ ✗ C before A (was  │
+  │       │       │   A before C)       │
+  └───────┴───────┴─────────────────────┘
+
+  Stable (sort.SliceStable) — preserves order:
+  ┌───────┬───────┬─────────────────────┐
+  │ Key=1 │ B, E  │ ✓ B before E        │
+  │ Key=2 │ D     │                     │
+  │ Key=3 │ A, C  │ ✓ A before C        │
+  └───────┴───────┴─────────────────────┘
+```
+
 ---
 
 ## Example 3: Multi-Key Sorting with Stability
@@ -147,6 +190,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Multi-Key Sort: Dept (primary), Name (secondary)
+
+  Step 1 — Stable sort by Name (secondary key):
+  ┌─────────────┬───────────┬─────┐
+  │ Alice       │ Eng       │  30 │
+  │ Bob         │ Sales     │  25 │
+  │ Charlie     │ Eng       │  25 │
+  │ Dave        │ Sales     │  30 │
+  │ Eve         │ Eng       │  28 │
+  └─────────────┴───────────┴─────┘
+
+  Step 2 — Stable sort by Dept (primary key):
+  ┌─────────────┬───────────┬─────┐
+  │ Alice       │ Eng       │  30 │  ← names in
+  │ Charlie     │ Eng       │  25 │    alphabetical
+  │ Eve         │ Eng       │  28 │    order within
+  │ Bob         │ Sales     │  25 │    each dept
+  │ Dave        │ Sales     │  30 │    (stable!)
+  └─────────────┴───────────┴─────┘
+
+  Stability preserves Step 1's name order within same dept.
+```
+
 ---
 
 ## Example 4: Stable Insertion Sort Implementation
@@ -184,6 +253,31 @@ func main() {
 	}
 	// Key=3: "first" before "third" — stable!
 }
+```
+
+**Textual Figure:**
+
+```
+Stable Insertion Sort: [(3,"first"),(1,"second"),(3,"third"),(2,"fourth")]
+
+  i=1: key=(1,"second")
+  ┌─────────┬──────────┬──────────┬──────────┐
+  │(1,"sec")│(3,"fir") │(3,"thi") │(2,"fou") │
+  └─────────┴──────────┴──────────┴──────────┘
+           ↑ inserted before (3,"first") since 3 > 1
+
+  i=2: key=(3,"third") — arr[1].Key=3, NOT > 3 → stop
+  ┌─────────┬──────────┬──────────┬──────────┐
+  │(1,"sec")│(3,"fir") │(3,"thi") │(2,"fou") │
+  └─────────┴──────────┴──────────┴──────────┘
+           (3,"first") stays before (3,"third") ✓ STABLE
+
+  i=3: key=(2,"fourth")
+  ┌─────────┬──────────┬──────────┬──────────┐
+  │(1,"sec")│(2,"fou") │(3,"fir") │(3,"thi") │
+  └─────────┴──────────┴──────────┴──────────┘
+
+  Key: using > (not >=) in comparison → stable.
 ```
 
 ---
@@ -225,6 +319,32 @@ func main() {
 	// 5♥ and 5♣ may swap relative order — UNSTABLE
 	// The swap in selection sort can jump over equal elements
 }
+```
+
+**Textual Figure:**
+
+```
+Why Selection Sort is Unstable:
+  cards = [(5,♥), (3,♠), (5,♣), (3,♦)]
+
+  i=0: find min → (3,♠) at idx 1
+  Swap idx 0 ↔ idx 1:
+  ┌───────┬───────┬───────┬───────┐
+  │(3,♠)  │(5,♥)  │(5,♣)  │(3,♦)  │
+  └───────┴───────┴───────┴───────┘
+        ↑ swapped with (5,♥)
+
+  i=1: find min → (3,♦) at idx 3
+  Swap idx 1 ↔ idx 3:
+  ┌───────┬───────┬───────┬───────┐
+  │(3,♠)  │(3,♦)  │(5,♣)  │(5,♥)  │
+  └───────┴───────┴───────┴───────┘
+        ↑ swapped with (5,♥) which jumped to end!
+
+  Original: 5♥ before 5♣
+  After:    5♣ before 5♥  ← ORDER REVERSED! ✗ UNSTABLE
+
+  The long-range swap skips over equal elements.
 ```
 
 ---
@@ -270,6 +390,27 @@ func main() {
 	arr := []int{3, 1, 3, 2, 1}
 	fmt.Println("Stabilized sort:", makeStable(arr))
 }
+```
+
+**Textual Figure:**
+
+```
+Making Unstable Sort Stable (Index Trick):
+  arr = [3, 1, 3, 2, 1]
+
+  Step 1 — Attach original index:
+  ┌───────┬───────┬───────┬───────┬───────┐
+  │(3, 0)│(1, 1)│(3, 2)│(2, 3)│(1, 4)│
+  └───────┴───────┴───────┴───────┴───────┘
+
+  Step 2 — Sort with tie-breaking by OrigIdx:
+  Compare: if values equal, smaller index wins.
+  ┌───────┬───────┬───────┬───────┬───────┐
+  │(1, 1)│(1, 4)│(2, 3)│(3, 0)│(3, 2)│
+  └───────┴───────┴───────┴───────┴───────┘
+    idx1<idx4 ✓   idx0<idx2 ✓  → stable!
+
+  Result: [1, 1, 2, 3, 3]
 ```
 
 ---
@@ -323,6 +464,30 @@ func main() {
 	// Key=1: B before E — stable
 	// Key=3: A before C — stable
 }
+```
+
+**Textual Figure:**
+
+```
+Stable Merge Sort: [(3,A),(1,B),(3,C),(2,D),(1,E)]
+
+  Split:  [(3,A),(1,B),(3,C)]  |  [(2,D),(1,E)]
+  Split:  [(3,A),(1,B)] [(3,C)]   [(2,D)] [(1,E)]
+  Split:  [(3,A)] [(1,B)]
+
+  Merge [(3,A)] + [(1,B)]:  1<3 → [(1,B),(3,A)]
+  Merge [(1,B),(3,A)] + [(3,C)]:
+    (1,B) first, then (3,A) vs (3,C): A.Key<=C.Key → A first
+    → [(1,B),(3,A),(3,C)]   ← A before C (stable!)
+
+  Merge [(2,D)] + [(1,E)]:  1<2 → [(1,E),(2,D)]
+
+  Final merge:
+    (1,B) vs (1,E): B.Key<=E.Key → B first
+    → [(1,B),(1,E),(2,D),(3,A),(3,C)]
+
+  Key: use <= (not <) when left.Key == right.Key
+  → left element goes first → stability preserved.
 ```
 
 ---
@@ -379,6 +544,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Stable Counting Sort:
+  entries = [(90,Alice),(85,Bob),(90,Charlie),(85,Dave)]
+
+  Step 1 — Count:
+  count[85]=2, count[90]=2
+
+  Step 2 — Prefix sum:
+  count[85]=2, count[90]=4
+
+  Step 3 — Place in REVERSE order (right-to-left):
+  ┌────┬─────────────┬─────────────┬─────────────────┐
+  │ i  │ Entry       │ count[key] │ Place at        │
+  ├────┼─────────────┼─────────────┼─────────────────┤
+  │ 3  │ (85,Dave)   │ 2→1       │ output[1]       │
+  │ 2  │ (90,Charlie)│ 4→3       │ output[3]       │
+  │ 1  │ (85,Bob)    │ 1→0       │ output[0]       │
+  │ 0  │ (90,Alice)  │ 3→2       │ output[2]       │
+  └────┴─────────────┴─────────────┴─────────────────┘
+
+  Result: [Bob(85), Dave(85), Alice(90), Charlie(90)]
+  Reverse traversal + prefix sum = stable placement.
+```
+
 ---
 
 ## Example 9: Verifying Sort Stability
@@ -430,6 +621,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Verifying Stability:
+  data = [(3,tag0),(1,tag1),(3,tag2),(2,tag3),(1,tag4)]
+
+  After stable sort:
+  ┌─────┬─────┬────────────────────────────┐
+  │ Val │ Tag │ Check                      │
+  ├─────┼─────┼────────────────────────────┤
+  │  1  │  1  │                            │
+  │  1  │  4  │ tag1 < tag4 ✓ stable      │
+  │  2  │  3  │                            │
+  │  3  │  0  │                            │
+  │  3  │  2  │ tag0 < tag2 ✓ stable      │
+  └─────┴─────┴────────────────────────────┘
+
+  Verification rule:
+  For consecutive equal values: tag[i] < tag[i+1] → stable.
+  If any tag[i] > tag[i+1] for equal values → NOT stable.
+```
+
 ---
 
 ## Example 10: Stability Summary and Decision Guide
@@ -469,6 +682,30 @@ func main() {
 	fmt.Println("  sort.Slice()       — NOT stable (uses introsort)")
 	fmt.Println("  sort.SliceStable() — stable (uses merge sort variant)")
 }
+```
+
+**Textual Figure:**
+
+```
+Sorting Stability Decision Guide:
+
+  ┌─────────────────────────────────────────────┐
+  │ Stable                │ Unstable              │
+  ├───────────────────────┼─────────────────────┤
+  │ Bubble Sort    O(n²)  │ Selection Sort O(n²) │
+  │ Insertion Sort O(n²)  │ Quick Sort  O(nlogn) │
+  │ Merge Sort   O(nlogn) │ Heap Sort   O(nlogn) │
+  │ Counting Sort  O(n+k) │                     │
+  │ Radix Sort  O(d(n+k)) │                     │
+  │ Tim Sort     O(nlogn) │                     │
+  └───────────────────────┴─────────────────────┘
+
+  Need stability?  ───Yes───→  sort.SliceStable()
+         │
+         No → sort.Slice() (faster, less memory)
+
+  Multi-key: sort by least significant key first,
+  then more significant keys → stability cascades.
 ```
 
 ---

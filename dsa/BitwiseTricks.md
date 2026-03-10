@@ -50,6 +50,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Bit Tricks Collection: n = 42 (101010)          │
+├────────────────────────────────────────────────┤
+│  Odd/Even:  42 & 1 = 101010 & 1 = 0 → even       │
+│  ×2:        42 << 1 = 1010100 = 84                │
+│  ÷2:        42 >> 1 = 10101 = 21                  │
+│                                                  │
+│  ASCII Case Toggle (XOR 32):                     │
+│    'A' = 01000001                                │
+│       ^  00100000  (32)                          │
+│         ────────                                │
+│    'a' = 01100001          bit 5 flipped          │
+│                                                  │
+│  Same Sign: (-5 ^ -3) ≥ 0?                       │
+│    Both negative → XOR MSBs both 1 → 0 → ≥ 0 ✓   │
+│                                                  │
+│  Safe Average: (a & b) + ((a ^ b) >> 1)          │
+│    (100 & 200) + ((100 ^ 200) >> 1) = 150        │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Swap Bits at Positions
@@ -81,6 +104,26 @@ func main() {
 		}
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Swap Bits at Positions: n = 10110010            │
+├────────────────────────────────────────────────┤
+│  Bit: 7  6  5  4  3  2  1  0                     │
+│    n: 1  0  1  1  0  0  1  0                     │
+│                                                  │
+│  Swap bits 1 and 5 (they differ):                │
+│    mask = (1<<1) | (1<<5) = 00100010             │
+│    n XOR mask:                                    │
+│    10110010                                      │
+│  ^ 00100010                                      │
+│    ────────                                      │
+│    10010000   (bits 1,5 swapped)                 │
+│       ↑        ↑                                  │
+│      was 1   was 1  → now toggled to opposite    │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -135,6 +178,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  ASCII Case Manipulation via Bit 5               │
+├────────────────────────────────────────────────┤
+│  'A' = 0100 0001    'a' = 0110 0001              │
+│              ↑ bit 5 = 0        ↑ bit 5 = 1       │
+│                                                  │
+│  Toggle (XOR 32):   ch ^ 00100000                │
+│    'H'=01001000 ^ 00100000 = 01101000 = 'h'      │
+│                                                  │
+│  To Upper (AND NOT 32): ch &^ 00100000           │
+│    'h'=01101000 &^ 00100000 = 01001000 = 'H'     │
+│    (clears bit 5)                                │
+│                                                  │
+│  To Lower (OR 32):     ch | 00100000             │
+│    'H'=01001000 | 00100000 = 01101000 = 'h'      │
+│    (sets bit 5)                                  │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: Branchless Min/Max/Abs/Clamp
@@ -184,6 +248,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Branchless Min/Max/Abs via Sign Mask            │
+├────────────────────────────────────────────────┤
+│  branchlessAbs(n):                               │
+│    mask = n >> 63   (all 0s if ≥0, all 1s if <0) │
+│    result = (n ^ mask) - mask                    │
+│                                                  │
+│  n = 5: mask = 0000...0000                       │
+│    (5 ^ 0) - 0 = 5                              │
+│                                                  │
+│  n = -5: mask = 1111...1111                      │
+│    (-5 ^ 1111...1) = 4   (bitwise NOT of -5)    │
+│    4 - (-1) = 4 + 1 = 5  ✓                       │
+│                                                  │
+│  branchlessMin(a,b):                             │
+│    diff = a - b                                  │
+│    sign = diff >> 63  (0 if a≥b, -1 if a<b)     │
+│    b + (diff & sign)  = min                      │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Detect if Subtraction Overflows
@@ -210,6 +297,26 @@ func main() {
 		fmt.Printf("  %d - %d: overflow=%v\n", t[0], t[1], willSubOverflow(t[0], t[1]))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Detect Subtraction Overflow                     │
+├────────────────────────────────────────────────┤
+│  Overflow rule: signs of a,b differ AND          │
+│  result sign differs from a                      │
+│                                                  │
+│  a=MAX_INT32, b=-1:                              │
+│    a sign=+, b sign=- → differ ✓                 │
+│    diff = MAX+1 = wraps to MIN (negative)        │
+│    result sign ≠ a sign → OVERFLOW               │
+│                                                  │
+│  Formula: ((a ^ b) & (a ^ diff)) < 0             │
+│    a ^ b:    signs differ? MSB=1 if yes          │
+│    a ^ diff: result sign differs? MSB=1 if yes   │
+│    AND: both conditions met → MSB=1 → negative   │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -247,6 +354,25 @@ func main() {
 			next, next, bits.OnesCount(uint(next)))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Gosper's Hack: next number with same bit count │
+├────────────────────────────────────────────────┤
+│  n = 6 = 00000110  (2 set bits)                  │
+│                                                  │
+│  c = n & (-n) = 00000010  (LSB)                  │
+│  r = n + c    = 00001000  (carry into next bit)  │
+│  r ^ n        = 00001110                          │
+│  (r^n)/c      = 00000111                          │
+│  >>2          = 00000001                          │
+│  r | result   = 00001001  = 9  (2 set bits ✓)    │
+│                                                  │
+│  Sequence with 2 set bits:                       │
+│  6(0110) → 9(1001) → 10(1010) → 12(1100) ...    │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -288,6 +414,27 @@ func main() {
 		fmt.Println()
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Modulus Without % Operator                      │
+├────────────────────────────────────────────────┤
+│  When d is power of 2:  n % d = n & (d - 1)      │
+│                                                  │
+│  n = 23, d = 8:                                  │
+│    23 = 00010111                                 │
+│  d-1 =  00000111   (mask of lower 3 bits)        │
+│         ────────  AND                            │
+│         00000111   = 7  (23 % 8 = 7 ✓)          │
+│                                                  │
+│  n = 100, d = 16:                                │
+│    100 = 01100100                                │
+│  d-1 =  00001111                                 │
+│         ────────  AND                            │
+│         00000100   = 4  (100 % 16 = 4 ✓)        │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -343,6 +490,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Unique Characters via 26-bit Bitmask            │
+├────────────────────────────────────────────────┤
+│  s = "hello"                                     │
+│                                                  │
+│  Process each char:                              │
+│   'h': bit = 1<<7  seen=00..0010000000           │
+│   'e': bit = 1<<4  seen=00..0010010000           │
+│   'l': bit = 1<<11 seen=00..1010010000           │
+│   'l': bit = 1<<11 seen & bit ≠ 0 → DUPLICATE!  │
+│                                                  │
+│  Check: seen & (1 << (ch-'a'))                   │
+│  If nonzero → character already seen              │
+│  If zero → new character, set the bit             │
+│                                                  │
+│  "abcdef" → all unique ✓  (6 distinct)           │
+│  "hello"  → not unique ✗  (4 distinct)           │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Bit Tricks for Numbers
@@ -384,6 +553,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Round Up to Multiple of Power of 2              │
+├────────────────────────────────────────────────┤
+│  (n + 7) &^ 7  rounds n up to multiple of 8      │
+│                                                  │
+│  n = 9:                                          │
+│    9 + 7 = 16 = 00010000                         │
+│    &^ 7       = &^ 00000111                      │
+│              = 00010000 = 16  ✓                  │
+│                                                  │
+│  Floor log2 via right shift:                     │
+│    n=100:  1100100 → shift right until 1          │
+│    100 → 50 → 25 → 12 → 6 → 3 → 1  (6 shifts)   │
+│    floor(log2(100)) = 6  (2^6=64 ≤ 100 < 2^7)   │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Complete Bit Tricks Reference
@@ -420,6 +608,24 @@ func main() {
 		fmt.Printf("  %-25s %-30s → %s\n", t.trick, t.formula, t.example)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Complete Bit Tricks Quick Reference              │
+├──────────────┬────────────────┬─────────────────┤
+│  Trick         │  Bit Operation  │  Effect           │
+├──────────────┼────────────────┼─────────────────┤
+│  Toggle case   │  ch ^ 32       │  'A' ↔ 'a'        │
+│  Uppercase     │  ch &^ 32      │  clear bit 5      │
+│  Lowercase     │  ch | 32       │  set bit 5        │
+│  Abs no branch │  (n^m)-m       │  m = n >> 63      │
+│  Avg safe      │  (a&b)+(a^b)>>1│  no overflow      │
+│  Swap          │  a^=b;b^=a;a^=b│  no temp var      │
+│  Isolate LSB   │  n & (-n)      │  rightmost 1      │
+│  Mod pow2      │  n & (d-1)     │  n % d fast       │
+└──────────────┴────────────────┴─────────────────┘
 ```
 
 ---

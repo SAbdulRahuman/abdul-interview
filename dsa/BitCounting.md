@@ -73,6 +73,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Five Methods to Count Set Bits: n = 42         │
+├────────────────────────────────────────────────┤
+│  42 = 00101010  (3 set bits)                     │
+│                                                  │
+│  Method 1 — Naive (check each bit):              │
+│    00101010 & 1=0, >>1→ 00010101 & 1=1, >>1      │
+│    00001010 & 1=0, >>1→ 00000101 & 1=1, >>1      │
+│    00000010 & 1=0, >>1→ 00000001 & 1=1  count=3  │
+│                                                  │
+│  Method 2 — Kernighan (clear lowest bit):        │
+│    n=00101010, n&(n-1)=00101000  count=1          │
+│    n=00101000, n&(n-1)=00100000  count=2          │
+│    n=00100000, n&(n-1)=00000000  count=3  done!   │
+│    Only 3 iterations (vs 6 for naive)             │
+│                                                  │
+│  Methods 3-5: Lookup/Parallel/HW POPCNT = O(1)  │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Counting Bits 0 to N (LeetCode 338)
@@ -100,6 +122,28 @@ func main() {
 		fmt.Printf("  %2d = %04b → %d ones\n", i, i, c)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Counting Bits DP: ans[i] = ans[i>>1] + (i&1)  │
+├────────────────────────────────────────────────┤
+│   i  binary  i>>1  ans[i>>1]  i&1  ans[i]       │
+│   ─  ──────  ────  ─────────  ───  ──────       │
+│   0  0000     0      0        0     0           │
+│   1  0001     0      0        1     1           │
+│   2  0010     1      1        0     1           │
+│   3  0011     1      1        1     2           │
+│   4  0100     2      1        0     1           │
+│   5  0101     2      1        1     2           │
+│   6  0110     3      2        0     2           │
+│   7  0111     3      2        1     3           │
+│   8  1000     4      1        0     1           │
+│                                                  │
+│  Key: bits(i) = bits(i/2) + last_bit             │
+│  i>>1 removes last bit; i&1 checks if it was 1  │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -131,6 +175,26 @@ func main() {
 			n, bits.OnesCount64(uint64(n)), uint64(n))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Hamming Weight (Population Count)               │
+├────────────────────────────────────────────────┤
+│  Unsigned examples:                              │
+│    0   = 00000000 → weight = 0                  │
+│    11  = 00001011 → weight = 3                  │
+│    128 = 10000000 → weight = 1                  │
+│    255 = 11111111 → weight = 8                  │
+│                                                  │
+│  Signed (two's complement, 8-bit view):          │
+│    -1  = 11111111 → weight = 8 (all 1s)         │
+│    -2  = 11111110 → weight = 7                  │
+│    -128= 10000000 → weight = 1                  │
+│                                                  │
+│  Note: In 64-bit, -1 has 64 set bits             │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -183,6 +247,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Total Set Bits from 1 to N (per bit position)  │
+├────────────────────────────────────────────────┤
+│  n = 5, count 1s at each bit position:           │
+│                                                  │
+│  num  bit2 bit1 bit0                             │
+│   1    0    0    1                               │
+│   2    0    1    0                               │
+│   3    0    1    1                               │
+│   4    1    0    0                               │
+│   5    1    0    1                               │
+│  ──────────────────                             │
+│  sum:  2    2    3  → total = 7                  │
+│                                                  │
+│  Each bit position cycles: 0s then 1s            │
+│  bit 0: cycle=2 (0,1,0,1,0,1...)  → 3 ones      │
+│  bit 1: cycle=4 (0,0,1,1,0,0...)  → 2 ones      │
+│  bit 2: cycle=8 (0,0,0,0,1,1...)  → 2 ones      │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Sort by Number of Set Bits (LeetCode 1356)
@@ -214,6 +301,29 @@ func main() {
 		fmt.Printf("  %d → %04b (%d bits)\n", n, n, bits.OnesCount(uint(n)))
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Sort by Number of Set Bits                      │
+├────────────────────────────────────────────────┤
+│  Input: [0, 1, 2, 3, 4, 5, 6, 7, 8]             │
+│                                                  │
+│  Value  Binary  Set Bits  Group                  │
+│   0     0000      0       ───┐ 0 bits             │
+│   1     0001      1       ─┐ │                    │
+│   2     0010      1        ├─┘ 1 bit              │
+│   4     0100      1        │                      │
+│   8     1000      1       ─┘                      │
+│   3     0011      2       ─┐                      │
+│   5     0101      2        ├── 2 bits             │
+│   6     0110      2       ─┘                      │
+│   7     0111      3       ─── 3 bits              │
+│                                                  │
+│  Sorted: [0, 1, 2, 4, 8, 3, 5, 6, 7]            │
+│  Tie-break by value within same bit count        │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -251,6 +361,27 @@ func main() {
 		fmt.Println("...)")
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Binary Watch — bit counting for time             │
+├────────────────────────────────────────────────┤
+│  Hours (0-11):    4 LEDs   ┌─┬─┬─┬─┐              │
+│                           │8│4│2│1│              │
+│                           └─┴─┴─┴─┘              │
+│  Minutes (0-59):  6 LEDs   ┌─┬─┬─┬─┬─┬─┐         │
+│                           │32│16│ 8│ 4│ 2│ 1│         │
+│                           └─┴─┴─┴─┴─┴─┘         │
+│                                                  │
+│  turnedOn = 1:  OnesCount(h) + OnesCount(m) = 1  │
+│  Valid times: 1:00, 2:00, 4:00, 8:00,            │
+│              0:01, 0:02, 0:04, 0:08, 0:16, 0:32 │
+│                                                  │
+│  h=3 (0011), m=0 (000000): bits=2 (turnedOn=2)  │
+│  Shows 3:00                                      │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -295,6 +426,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Max Product of Word Lengths (no shared chars)   │
+├────────────────────────────────────────────────┤
+│  Each word → 26-bit mask (a=bit0, z=bit25)       │
+│                                                  │
+│  "abcw" → bits: w=22,c=2,b=1,a=0                │
+│    mask = 00..0100_0000_0000_0000_0000_0111      │
+│  "xtfn" → bits: x=23,t=19,n=13,f=5              │
+│    mask = 00..1000_1000_0010_0000_0010_0000      │
+│                                                  │
+│  "abcw" & "xtfn" = 0  (no shared bits)          │
+│  → product = 4 × 4 = 16  ✓                       │
+│                                                  │
+│  "abcw" & "baz"  ≠ 0  (share 'a','b')            │
+│  → skip (common letters)                         │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: Number Complement (LeetCode 476)
@@ -324,6 +475,27 @@ func main() {
 	fmt.Println()
 	fmt.Println("bits.Len tells us the bit length, then XOR with all-1s mask")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Number Complement via XOR with mask             │
+├────────────────────────────────────────────────┤
+│  n = 5 = 101                                     │
+│  bits.Len(5) = 3  → mask = (1<<3) - 1 = 111     │
+│                                                  │
+│    n    = 1 0 1                                  │
+│    mask = 1 1 1                                  │
+│           ─────  XOR                              │
+│  result = 0 1 0  = 2                             │
+│                                                  │
+│  n = 10 = 1010                                   │
+│  bits.Len(10) = 4  → mask = 1111                 │
+│    1010 ^ 1111 = 0101 = 5                        │
+│                                                  │
+│  XOR with all-1s mask flips all significant bits │
+└────────────────────────────────────────────────┘
 ```
 
 ---
@@ -365,6 +537,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Prime Number of Set Bits [6, 10]                │
+├────────────────────────────────────────────────┤
+│  primeSet bitmask for primes {2,3,5,7,11,13..}:  │
+│   bit:  0 1 2 3 4 5 6 7 ...                     │
+│   val:  0 0 1 1 0 1 0 1 ...                     │
+│                                                  │
+│   n   binary  setBits  prime?  count?             │
+│   6   0110      2       ✓        ✓                │
+│   7   0111      3       ✓        ✓                │
+│   8   1000      1       ✗                         │
+│   9   1001      2       ✓        ✓                │
+│  10   1010      2       ✓        ✓                │
+│                                                  │
+│  Check: primeSet & (1 << setBits) != 0           │
+│  Answer: 4 numbers have prime set bits            │
+└────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Bit Counting Pattern Summary
@@ -400,6 +593,22 @@ func main() {
 	fmt.Println("  • Word length products (letter bitmasks)")
 	fmt.Println("  • Total set bits in range [1..n]")
 }
+```
+
+**Textual Figure:**
+```
+┌────────────────────────────────────────────────┐
+│  Bit Counting Patterns Summary                   │
+├─────────────┬────────────────┬──────────────────┤
+│  Method      │  How            │  Complexity       │
+├─────────────┼────────────────┼──────────────────┤
+│  Loop&shift  │  n&1; n>>=1     │  O(w) always      │
+│  Kernighan   │  n&=n-1; c++   │  O(k) k=set bits  │
+│  Lookup      │  table[byte]   │  O(1) amortized   │
+│  DP (i>>1)   │  ans[i>>1]+i&1 │  O(n) for range   │
+│  DP (n&n-1)  │  ans[i&(i-1)]+1│  O(n) for range   │
+│  HW POPCNT   │  bits.OnesCount│  O(1)             │
+└─────────────┴────────────────┴──────────────────┘
 ```
 
 ---

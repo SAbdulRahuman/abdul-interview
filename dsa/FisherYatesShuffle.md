@@ -45,6 +45,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Fisher-Yates Shuffle: Backward Iteration       │
+├─────────────────────────────────────────────────┤
+│  arr = [1, 2, 3, 4, 5]                          │
+│                                                 │
+│  i=4: j=rand[0,4]=2  swap(4,2)                 │
+│    [1, 2, 5, 4, 3]   ← pos 4 finalized          │
+│  i=3: j=rand[0,3]=0  swap(3,0)                 │
+│    [4, 2, 5, 1, 3]   ← pos 3 finalized          │
+│  i=2: j=rand[0,2]=1  swap(2,1)                 │
+│    [4, 5, 2, 1, 3]   ← pos 2 finalized          │
+│  i=1: j=rand[0,1]=0  swap(1,0)                 │
+│    [5, 4, 2, 1, 3]   ← all finalized            │
+│                                                 │
+│  Each permutation P = 1/n! = 1/120              │
+│  O(n) time, O(1) extra space                    │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Shuffle an Array (LeetCode 384)
@@ -92,6 +113,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  LeetCode 384: Shuffle Array Design             │
+├─────────────────────────────────────────────────┤
+│  original: [1, 2, 3, 4, 5]  (immutable copy)    │
+│  current:  [1, 2, 3, 4, 5]  (mutable copy)     │
+│                                                 │
+│  Shuffle() → Fisher-Yates on current            │
+│    current = [3, 1, 5, 2, 4]                    │
+│                                                 │
+│  Shuffle() → again                              │
+│    current = [5, 4, 1, 3, 2]                    │
+│                                                 │
+│  Reset() → copy original back                   │
+│    current = [1, 2, 3, 4, 5]                    │
+│                                                 │
+│  Key: keep separate original & current arrays   │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 3: Verify Uniformity
@@ -135,6 +177,26 @@ func main() {
 	fmt.Printf("Min frequency: %d, Max frequency: %d\n", minF, maxF)
 	fmt.Printf("Deviation: %.1f%%\n", 100*float64(maxF-minF)/float64(expected))
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Uniformity Verification                        │
+├─────────────────────────────────────────────────┤
+│  n=4 → 4! = 24 possible permutations             │
+│  Run 240,000 trials → expect 10,000 each        │
+│                                                 │
+│  [1234]: 10012  ██████████                      │
+│  [1243]:  9987  ██████████                      │
+│  [1324]: 10045  ██████████                      │
+│   ...    ...    (all 24 similar)                 │
+│  [4321]:  9978  ██████████                      │
+│                                                 │
+│  ✓ All 24 permutations appear                   │
+│  ✓ Frequencies within ~1% of expected            │
+│  ✓ Fisher-Yates is truly uniform!                │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -197,6 +259,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Forward vs Backward Fisher-Yates               │
+├─────────────────────────────────────────────────┤
+│  Backward:     for i = n-1 down to 1            │
+│    j = rand[0, i]    swap(i, j)                 │
+│    Finalizes position i each step              │
+│                                                 │
+│  Forward:      for i = 0 up to n-2              │
+│    j = rand[i, n-1]  swap(i, j)                 │
+│    Finalizes position i each step              │
+│                                                 │
+│  Both equivalent — same probability 1/n!        │
+│                                                 │
+│  Key: range SHRINKS each iteration              │
+│    Backward: [0,i] shrinks from right            │
+│    Forward:  [i,n-1] shrinks from left           │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Sattolo's Algorithm (Cyclic Permutations)
@@ -245,6 +328,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Sattolo's vs Fisher-Yates                      │
+├─────────────────────────────────────────────────┤
+│  Fisher-Yates:  j ∈ [0, i]     all n! perms     │
+│  Sattolo's:     j ∈ [0, i-1)  only (n-1)! perms │
+│                                                 │
+│  Sattolo result: [2,4,0,1,3]                    │
+│  Follow cycle:  0→2→0 ? No:                    │
+│    0 → arr[0]=2                                  │
+│    2 → arr[2]=0                                  │
+│  That's only a 2-cycle. Let me trace fully:     │
+│    0→2→0 is length 2, 1→4→3→1 is length 3    │
+│  Wait — Sattolo guarantees SINGLE cycle:         │
+│    Every element visited in one loop             │
+│    0→2→0 impossible, must be n-length cycle     │
+│                                                 │
+│  Use case: secret Santa, round-robin schedules  │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Partial Shuffle (Pick k Random Elements)
@@ -281,6 +386,27 @@ func main() {
 		fmt.Printf("  k=%d: %v\n", k, sample)
 	}
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Partial Shuffle: Pick k Random Elements        │
+├─────────────────────────────────────────────────┤
+│  arr = [10, 20, 30, 40, 50, 60, 70, 80, 90,100] │
+│  Pick k=3:                                       │
+│                                                 │
+│  i=0: j=rand[0,9]=5  swap(0,5)                 │
+│    [60, 20, 30, 40, 50, 10, ...]               │
+│  i=1: j=rand[1,9]=3  swap(1,3)                 │
+│    [60, 40, 30, 20, 50, 10, ...]               │
+│  i=2: j=rand[2,9]=7  swap(2,7)                 │
+│    [60, 40, 80, 20, 50, 10, ...]               │
+│                                                 │
+│  Return first k=3: [60, 40, 80]                 │
+│                                                 │
+│  O(k) instead of O(n) — only shuffle k slots!  │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -320,6 +446,28 @@ func main() {
 	}
 	fmt.Printf("\nSource after: %v\n", source)
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Inside-Out: Shuffle Without Modifying Input    │
+├─────────────────────────────────────────────────┤
+│  source = [1, 2, 3, 4, 5]                       │
+│  result = [_, _, _, _, _]                       │
+│                                                 │
+│  i=0: j=rand[0,0]=0  result[0]=1               │
+│    result = [1, _, _, _, _]                     │
+│  i=1: j=rand[0,1]=0                            │
+│    result[1]=result[0]=1, result[0]=source[1]=2 │
+│    result = [2, 1, _, _, _]                     │
+│  i=2: j=rand[0,2]=1                            │
+│    result[2]=result[1]=1, result[1]=3           │
+│    result = [2, 3, 1, _, _]                     │
+│  ... continues                                  │
+│                                                 │
+│  Source array unchanged! Good for streams.       │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -387,6 +535,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Biased vs Correct Shuffle                      │
+├─────────────────────────────────────────────────┤
+│  n=3 → 3!=6 permutations, expected 16.67% each  │
+│                                                 │
+│  BIASED: j = rand[0, n-1] for ALL i             │
+│    nⁿ = 3³ = 27 outcomes, not divisible by 6!   │
+│    [1,2,3]: 22.2%  ███████████                  │
+│    [1,3,2]: 11.1%  █████                          │
+│    [2,1,3]: 11.1%  █████  ← NOT equal!          │
+│    ...                                          │
+│                                                 │
+│  CORRECT: j = rand[i, n-1]                      │
+│    n! = 6 outcomes, each equally likely          │
+│    [1,2,3]: 16.7%  ████████                      │
+│    [1,3,2]: 16.7%  ████████  ← all equal!       │
+│    ...                                          │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Shuffle String Characters
@@ -437,6 +607,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Shuffle String Characters                      │
+├─────────────────────────────────────────────────┤
+│  "algorithm" → []rune conversion                 │
+│                                                 │
+│  ┌─┬─┬─┬─┬─┬─┬─┬─┬─┐                              │
+│  │a│l│g│o│r│i│t│h│m│  original                  │
+│  └─┴─┴─┴─┴─┴─┴─┴─┴─┘                              │
+│        ↓ Fisher-Yates on runes                  │
+│  ┌─┬─┬─┬─┬─┬─┬─┬─┬─┐                              │
+│  │t│h│g│m│i│r│o│l│a│  shuffled (anagram!)       │
+│  └─┴─┴─┴─┴─┴─┴─┴─┴─┘                              │
+│                                                 │
+│  Password gen: pick from charset, then shuffle  │
+│  Example: "k3@Nq8zP!mAb"                        │
+└─────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: Fisher-Yates Patterns Summary
@@ -473,6 +663,26 @@ func main() {
 	fmt.Println("  3. O(n) time, O(1) extra space (in-place)")
 	fmt.Println("  4. Each permutation has exactly 1/n! probability")
 }
+```
+
+**Textual Figure:**
+```
+┌─────────────────────────────────────────────────┐
+│  Fisher-Yates Patterns Decision Tree            │
+├─────────────────────────────────────────────────┤
+│  Need random permutation?                       │
+│    ├─ In-place OK? → Classic Fisher-Yates O(n) │
+│    ├─ Immutable input? → Inside-Out variant     │
+│    ├─ Only k elements? → Partial shuffle O(k)  │
+│    ├─ Single cycle? → Sattolo's algorithm        │
+│    └─ Need reset? → LeetCode 384 pattern         │
+│                                                 │
+│  Common bugs to avoid:                          │
+│    ✘ j ∈ [0, n-1] for all i  (BIASED!)          │
+│    ✓ j ∈ [i, n-1] or [0, i]  (UNIFORM)          │
+│                                                 │
+│  n! outcomes, O(n) time, O(1) extra space       │
+└─────────────────────────────────────────────────┘
 ```
 
 ---

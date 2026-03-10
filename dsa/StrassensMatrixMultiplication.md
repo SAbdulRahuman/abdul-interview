@@ -58,6 +58,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Naive Matrix Multiplication: A(2×2) × B(2×2)
+
+  ┌───┬───┐   ┌───┬───┐   ┌────┬────┐
+  │ 1 │ 2 │ × │ 5 │ 6 │ = │ 19 │ 22 │
+  ├───┼───┤   ├───┼───┤   ├────┼────┤
+  │ 3 │ 4 │   │ 7 │ 8 │   │ 43 │ 50 │
+  └───┴───┘   └───┴───┘   └────┴────┘
+
+  C[0][0] = 1×5 + 2×7 = 5+14 = 19
+  C[0][1] = 1×6 + 2×8 = 6+16 = 22
+  C[1][0] = 3×5 + 4×7 = 15+28 = 43
+  C[1][1] = 3×6 + 4×8 = 18+32 = 50
+
+  For n×n: 3 nested loops → n³ multiplications
+  Complexity: O(n³)
+```
+
 ---
 
 ## Example 2: Strassen's Algorithm (2×2)
@@ -102,6 +122,34 @@ func main() {
 	fmt.Println("Strassen A×B:", C)
 	fmt.Println("\nUsed 7 multiplications instead of 8!")
 }
+```
+
+**Textual Figure:**
+
+```
+  Strassen's 2×2: 7 multiplications instead of 8
+
+  A = ┌ a  b ┐   B = ┌ e  f ┐
+      └ c  d ┘       └ g  h ┘
+
+  7 clever products:
+  ┌──────────────────────────────────┐
+  │  M1 = (a+d)(e+h) = (1+4)(5+8) = 65 │
+  │  M2 = (c+d)(e)   = (3+4)(5)   = 35 │
+  │  M3 = (a)(f-h)   = (1)(6-8)   = -2 │
+  │  M4 = (d)(g-e)   = (4)(7-5)   =  8 │
+  │  M5 = (a+b)(h)   = (1+2)(8)   = 24 │
+  │  M6 = (c-a)(e+f) = (3-1)(5+6) = 22 │
+  │  M7 = (b-d)(g+h) = (2-4)(7+8) =-30 │
+  └──────────────────────────────────┘
+
+  Combine:
+  C[0][0] = M1+M4-M5+M7 = 65+8-24-30 = 19 ✓
+  C[0][1] = M3+M5       = -2+24      = 22 ✓
+  C[1][0] = M2+M4       = 35+8       = 43 ✓
+  C[1][1] = M1-M2+M3+M6 = 65-35-2+22 = 50 ✓
+
+  Saved: 1 mul (8→7), added ~10 add/sub
 ```
 
 ---
@@ -228,6 +276,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  General Strassen's Algorithm (n×n recursive)
+
+  Split n×n matrices into 2×2 blocks of (n/2)×(n/2):
+  ┌────┬────┐     ┌────┬────┐
+  │ A11│ A12│     │ B11│ B12│
+  ├────┼────┤  ×  ├────┼────┤
+  │ A21│ A22│     │ B21│ B22│
+  └────┴────┘     └────┴────┘
+
+  Recursion tree (7 branches per level):
+          n×n                          work = O(n²)
+        / | ... \  (7 children)
+     n/2×n/2 ... n/2×n/2              work = 7×O(n²/4)
+      /|..\       /|..\
+   n/4×n/4     n/4×n/4               work = 49×O(n²/16)
+      ...           ...
+    1×1 base cases                    = n^log₂ 7 leaves
+
+  T(n) = 7·T(n/2) + O(n²)
+  Master: a=7, b=2, k=2, log₂ 7≈2.807 > 2
+  → Case 1: O(n^2.807)
+
+  vs. naive: 8·T(n/2)+O(n²) → O(n³)
+```
+
 ---
 
 ## Example 4: Matrix Power using D&C (Binary Exponentiation)
@@ -280,6 +356,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Matrix Exponentiation for Fibonacci: F(n)
+
+  ┌───┬───┐ n-1    ┌─────────┬─────────┐
+  │ 1 │ 1 │     =  │ F(n)    │ F(n-1)  │
+  ├───┼───┤        ├─────────┼─────────┤
+  │ 1 │ 0 │        │ F(n-1)  │ F(n-2)  │
+  └───┴───┘        └─────────┴─────────┘
+
+  Binary exponentiation for M^n:
+  matPow(M, 10):
+    10 = 1010₂
+
+    Step  n    Action           result
+    ─────────────────────────────────────
+    1     10   bit=0, square    base=M²
+    2     5    bit=1, mul+sq    result×=M², base=M⁴
+    3     2    bit=0, square    base=M⁸
+    4     1    bit=1, mul       result×=M⁸
+
+  Only log₂(n) matrix multiplications!
+  F(15) via matPow: 4 mat-muls vs 14 additions
+
+  T(n) = O(log n) × O(k³) = O(k³ log n)
+  For 2×2: O(8 log n) = O(log n)
+```
+
 ---
 
 ## Example 5: Counting Multiplications — Strassen vs Naive
@@ -323,6 +428,32 @@ func main() {
 	fmt.Println("\nStrassen crossover: typically n=32-128 in practice")
 	fmt.Println("Below crossover, naive is faster due to lower overhead")
 }
+```
+
+**Textual Figure:**
+
+```
+  Scalar Multiplications: Strassen vs Naive
+
+  n      Naive (8^k)   Strassen (7^k)  n³       Ratio
+  ────────────────────────────────────────────────
+   2         8            7            8       0.875
+   4        64           49           64       0.766
+   8       512          343          512       0.670
+  16      4096         2401         4096       0.586
+  32     32768        16807        32768       0.513
+  64    262144       117649       262144       0.449
+
+  Recursion tree branching:
+  Naive:     8 children/node    Strassen:  7 children/node
+      n                              n
+  /|..8..|\                      /|..7..|\
+  n/2 ... n/2                    n/2 ... n/2
+  8^(log n) leaves               7^(log n) leaves
+  = n^3                           = n^2.807
+
+  Crossover: Strassen wins for n ≥ 32-128
+  (overhead from 18 add/sub per level)
 ```
 
 ---
@@ -440,6 +571,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Strassen Hybrid: Switch to Naive at Small Sizes
+
+  Recursion tree with crossover at n=4:
+           8×8 matrix
+         / | ... | \  (7 Strassen sub-muls)
+       4×4  4×4  ... 4×4
+         │     │       │
+      [naive] [naive] [naive]   ← switch to O(n³)
+
+  ┌────────────────────────────────────────────┐
+  │  Why crossover?                            │
+  │                                            │
+  │  Strassen per level: 7 muls + 18 add/sub  │
+  │  Naive at base:      n³ = 64  (for n=4)    │
+  │                                            │
+  │  Below crossover, overhead of additions   │
+  │  outweighs savings from fewer muls        │
+  │                                            │
+  │  Typical crossover:  n = 32 to 128         │
+  │  (depends on hardware cache behavior)       │
+  └────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Matrix Chain Multiplication (D&C approach)
@@ -501,6 +658,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Matrix Chain: A1(10×30) × A2(30×5) × A3(5×60)
+
+  Two possible parenthesizations:
+  ┌──────────────────────────────────────────────┐
+  │  Option 1: (A1·A2)·A3                        │
+  │    A1·A2: 10×30×5  = 1,500 muls → 10×5    │
+  │    ×A3:  10×5×60  = 3,000 muls             │
+  │    Total:           4,500 muls  ★ optimal │
+  ├──────────────────────────────────────────────┤
+  │  Option 2: A1·(A2·A3)                        │
+  │    A2·A3: 30×5×60 = 9,000 muls → 30×60   │
+  │    A1×:  10×30×60 = 18,000 muls            │
+  │    Total:          27,000 muls  ✘ 6× worse│
+  └──────────────────────────────────────────────┘
+
+  D&C recurrence for optimal split:
+  For matrices i..j, try every split point k:
+    cost(i,j) = min over k { cost(i,k) + cost(k+1,j)
+                             + dims[i]·dims[k+1]·dims[j+1] }
+  Overlap → DP is better: O(n³) vs exponential D&C
+```
+
 ---
 
 ## Example 8: Strassen's Products — The 7 Formulas
@@ -550,6 +732,35 @@ func main() {
 	fmt.Printf("C[1][0] = %d = %d\n", m2+m4, c*e+d*g)
 	fmt.Printf("C[1][1] = %d = %d\n", m1-m2+m3+m6, c*f+d*h)
 }
+```
+
+**Textual Figure:**
+
+```
+  Strassen's 7 Products: Complete Formula Map
+
+  A = ┌ 1  2 ┐   B = ┌ 5  6 ┐
+      └ 3  4 ┘       └ 7  8 ┘
+
+  Products:                      Values:
+  ┌────┬────────────────────┬───────┐
+  │ M1 │ (a+d)×(e+h)       │ 5×13=65│
+  │ M2 │ (c+d)×e           │ 7× 5=35│
+  │ M3 │ a×(f-h)           │ 1×-2=-2│
+  │ M4 │ d×(g-e)           │ 4× 2= 8│
+  │ M5 │ (a+b)×h           │ 3× 8=24│
+  │ M6 │ (c-a)×(e+f)       │ 2×11=22│
+  │ M7 │ (b-d)×(g+h)       │-2×15=-30│
+  └────┴────────────────────┴───────┘
+
+  Combining into result matrix C:
+  ┌─────────────────────────────┬────────┬─────┐
+  │ C[0][0] = M1+M4-M5+M7       │ 19     │ ae+bg│
+  │ C[0][1] = M3+M5              │ 22     │ af+bh│
+  │ C[1][0] = M2+M4              │ 43     │ ce+dg│
+  │ C[1][1] = M1-M2+M3+M6       │ 50     │ cf+dh│
+  └─────────────────────────────┴────────┴─────┘
+  7 muls + 18 add/sub vs naive 8 muls + 4 add
 ```
 
 ---
@@ -638,6 +849,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Rectangular Matrix Handling via Padding
+
+  Original: A(3×2) × B(2×4)
+  ┌─┬─┐     ┌─┬─┬─┬─┐
+  │1│2│     │7│8│9│10│
+  │3│4│  ×  │B│B│B│B │
+  │5│6│     └─┴─┴─┴─┘
+  └─┴─┘
+
+  Step 1: Find max dimension = 4
+  Step 2: Next power of 2 = 4
+  Step 3: Pad both to 4×4 with zeros:
+
+  ┌─┬─┬─┬─┐     ┌─┬─┬─┬──┐      ┌──┬──┬──┬──┐
+  │1│2│0│0│     │7│8│9│10 │      │29│32│35│38│
+  │3│4│0│0│  ×  │B│B│B│B  │  =   │65│72│79│86│
+  │5│6│0│0│     │0│0│0│0  │      │..│..│..│..│
+  │0│0│0│0│     │0│0│0│0  │      │0 │0 │0 │0 │
+  └─┴─┴─┴─┘     └─┴─┴─┴──┘      └──┴──┴──┴──┘
+
+  Step 4: Extract top-left 3×4 from result
+  Padding overhead: extra zeros, but enables power-of-2 recursion
+```
+
 ---
 
 ## Example 10: Complexity Comparison & When to Use
@@ -690,6 +928,34 @@ func main() {
 	}
 	for _, t := range tips { fmt.Println("  •", t) }
 }
+```
+
+**Textual Figure:**
+
+```
+  Matrix Multiplication Algorithms: Complexity Comparison
+
+  ┌───────────────────────┬──────────┬───────────┐
+  │ Algorithm             │ Exponent  │ Year      │
+  ├───────────────────────┼──────────┼───────────┤
+  │ Naive                 │  3.000    │ classical │
+  │ Strassen              │  2.807    │ 1969      │
+  │ Pan                   │  2.796    │ 1980      │
+  │ Coppersmith-Winograd   │  2.376    │ 1990      │
+  │ Williams              │  2.3729   │ 2012      │
+  │ Lower bound (conjecture)│  2.000   │ open      │
+  └───────────────────────┴──────────┴───────────┘
+
+  When to use Strassen:
+  ────────────────────────────────────────
+  n < 32-64    → Naive (lower overhead)
+  n = 64-1000  → Strassen ★
+  Any n        → Avoid for floating-point (numerical instability)
+  Sparse       → Use sparse algorithms instead
+
+  For n=1024:
+    n³      = 1,073,741,824 ops
+    n^2.807 ≈   591,000,000 ops  (≈45% savings)
 ```
 
 ---
