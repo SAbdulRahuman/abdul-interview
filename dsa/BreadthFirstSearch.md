@@ -80,6 +80,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1            Level 0
+      / \
+     2   3          Level 1
+    /     \
+   4       5        Level 2
+
+  BFS cousin check (same depth, different parents):
+  ┌───────┬─────────────┬────────────┬───────────┐
+  │ Level │ Nodes       │ Found x=4  │ Found y=5 │
+  ├───────┼─────────────┼────────────┼───────────┤
+  │   0   │ [1]         │ -          │ -         │
+  │   1   │ [2, 3]      │ -          │ -         │
+  │   2   │ [4, 5]      │ parent=2   │ parent=3  │
+  └───────┴─────────────┴────────────┴───────────┘
+  Both found at level 2, parent(4)=2 ≠ parent(5)=3
+  → Cousins! return true
+```
+
 ---
 
 ## Example 2: BFS — Complete Binary Tree Check (LeetCode 958)
@@ -140,6 +160,25 @@ func main() {
     }
     fmt.Println(isCompleteTree(root2)) // false
 }
+```
+
+**Textual Figure:**
+```
+  Complete (true):        Not Complete (false):
+     1                       1
+    / \                     / \
+   2   3                   2   3
+  / \  /                  / \   \
+ 4  5 6                  4  5    7
+
+  BFS enqueue with nil detection:
+  Complete tree queue:  [1, 2, 3, 4, 5, 6, nil, nil...]
+   → no non-nil after nil → ✓ complete
+
+  Incomplete tree queue: [1, 2, 3, 4, 5, nil, 7...]
+                                          ↑     ↑
+                                        nil  non-nil after nil!
+   → foundNil=true, then see 7 → ✗ not complete
 ```
 
 ---
@@ -218,6 +257,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1
+      / \
+     3   2 ← leaf
+    /
+   5
+  / \
+ 6   7  ← leaves
+
+  Parent map turns tree into undirected graph:
+  BFS from target=3:
+  ┌──────┬────────────────┬───────────────────┐
+  │ Dist │ Queue          │ Check leaf?       │
+  ├──────┼────────────────┼───────────────────┤
+  │  0   │ [3]            │ 3 has children    │
+  │  1   │ [5, 1(parent)] │ 5 has children    │
+  │      │                │ 1 has children    │
+  │  2   │ [6, 7, 2]      │ 6 is leaf! ★      │
+  └──────┴────────────────┴───────────────────┘
+  Closest leaf to 3: node 6 (distance 2)
+```
+
 ---
 
 ## Example 4: BFS — Even-Odd Tree (LeetCode 1609)
@@ -282,6 +344,26 @@ func main() {
     }
     fmt.Println(isEvenOddTree(root)) // true
 }
+```
+
+**Textual Figure:**
+```
+        1            Level 0 (even): odd vals, increasing
+       / \
+      10   4         Level 1 (odd):  even vals, decreasing
+     /  \
+    3    7           Level 2 (even): odd vals, increasing
+
+  Level-by-level validation:
+  ┌───────┬──────────┬──────────────────────────┐
+  │ Level │ Values   │ Rule                     │
+  ├───────┼──────────┼──────────────────────────┤
+  │ 0(E)  │ [1]      │ 1 is odd ✓              │
+  │ 1(O)  │ [10, 4]  │ even ✓, 10>4 decr ✓    │
+  │ 2(E)  │ [3, 7]   │ odd ✓,  3<7 incr ✓    │
+  └───────┴──────────┴──────────────────────────┘
+
+  All rules satisfied → true
 ```
 
 ---
@@ -362,6 +444,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       3
+      / \
+     5   1
+    / \ / \
+   6  2 0  8
+     / \
+    7   4
+
+  BFS from target=5, find all nodes at distance k=2:
+  ┌──────┬───────────────────────────────────┐
+  │ Dist │ Queue (via children+parent)   │
+  ├──────┼───────────────────────────────────┤
+  │  0   │ [5]                              │
+  │  1   │ [6, 2, 3(parent)]                │
+  │  2   │ [7, 4, 1]  ← dist==k, return! ★ │
+  └──────┴───────────────────────────────────┘
+
+  Nodes at distance 2 from node 5: [7, 4, 1]
+  (7,4 are grandchildren; 1 is via parent 3)
+```
+
 ---
 
 ## Example 6: BFS — Deepest Leaves Sum (LeetCode 1302)
@@ -413,6 +518,29 @@ func main() {
     }
     fmt.Println(deepestLeavesSum(root)) // 15 (7+8)
 }
+```
+
+**Textual Figure:**
+```
+         1           Level 0: sum=1
+        / \
+       2   3         Level 1: sum=5
+      / \   \
+     4   5   6       Level 2: sum=15
+    /         \
+   7           8     Level 3: sum=15 ← deepest
+
+  BFS resets sum each level; last level wins:
+  ┌───────┬───────────┬────────┐
+  │ Level │ Nodes     │ Sum    │
+  ├───────┼───────────┼────────┤
+  │   0   │ [1]       │   1    │
+  │   1   │ [2,3]     │   5    │
+  │   2   │ [4,5,6]   │  15    │
+  │   3   │ [7,8]     │  15 ★  │
+  └───────┴───────────┴────────┘
+
+  Deepest leaves sum: 7 + 8 = 15
 ```
 
 ---
@@ -490,6 +618,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Before:                After (add val=1 at depth=2):
+       4                       4
+      / \                    /   \
+     2   6                  1     1
+    / \  /                 /       \
+   3  1 5                 2         6
+                         / \       /
+                        3   1     5
+
+  At depth d-1=1, for each node:
+  ┌────────────────────────────────────────┐
+  │ node=4:                                │
+  │   newLeft  = TreeNode{1, node.Left, _}  │
+  │   newRight = TreeNode{1, _, node.Right}  │
+  │   node.Left  = newLeft                  │
+  │   node.Right = newRight                 │
+  └────────────────────────────────────────┘
+  New nodes (1) inserted between depth 1 and existing children.
+```
+
 ---
 
 ## Example 8: BFS — Check If Tree is Complete (Numbered Approach)
@@ -548,6 +698,25 @@ func main() {
     }
     fmt.Println(isCompleteTree(root2)) // false (gap at index 4)
 }
+```
+
+**Textual Figure:**
+```
+  Complete (true):         Not Complete (false):
+     1   idx:0                1   idx:0
+    / \                      / \
+   2   3  idx:1,2           2   3  idx:1,2
+  / \  /                   /     \
+ 4  5 6  idx:3,4,5        4       7  idx:3, _, _, 6
+
+  Numbered index check:
+  ┌─────────────────────────────────────────┐
+  │ Complete: count=6, maxIdx=5              │
+  │   maxIdx == count-1 → 5==5 ✓ complete   │
+  │                                         │
+  │ Incomplete: count=4, maxIdx=6            │
+  │   maxIdx == count-1 → 6≠3 ✗ gap!        │
+  └─────────────────────────────────────────┘
 ```
 
 ---
@@ -634,6 +803,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1
+      / \
+     2   3
+        / \
+       4   5
+
+  Serialize (BFS level-order):
+  Queue: [1] → [2,3] → [nil,nil,4,5] → ...
+  Output: "1,2,3,null,null,4,5"
+                ↑         ↑
+           node 2's     node 3's
+           children     children
+
+  Deserialize:
+  ┌──────┬──────────────────────────────┐
+  │ i    │ Action                       │
+  ├──────┼──────────────────────────────┤
+  │  0   │ root = Node(1)               │
+  │ 1,2  │ 1.Left=Node(2), 1.Right=3    │
+  │ 3,4  │ 2.Left=null,    2.Right=null │
+  │ 5,6  │ 3.Left=Node(4), 3.Right=5    │
+  └──────┴──────────────────────────────┘
+```
+
 ---
 
 ## Example 10: BFS — Find Bottom Left Value (LeetCode 513)
@@ -700,6 +895,32 @@ func main() {
     fmt.Println(findBottomLeftValue(root))   // 7
     fmt.Println(findBottomLeftStandard(root)) // 7
 }
+```
+
+**Textual Figure:**
+```
+       1
+      / \
+     2   3
+    /   / \
+   4   5   6
+      /
+     7   ← bottom-left value
+
+  Right-to-left BFS trick:
+  ┌──────┬───────────────────────────────┐
+  │ Step │ Dequeue (R-before-L enqueue) │
+  ├──────┼───────────────────────────────┤
+  │  1   │ 1 → enqueue R=3, L=2        │
+  │  2   │ 3 → enqueue R=6, L=5        │
+  │  3   │ 2 → enqueue L=4             │
+  │  4   │ 6 (no children)             │
+  │  5   │ 5 → enqueue L=7             │
+  │  6   │ 4 (no children)             │
+  │  7   │ 7 (no children) ← last! ★   │
+  └──────┴───────────────────────────────┘
+
+  Last node dequeued = 7 = bottom-left value
 ```
 
 ---

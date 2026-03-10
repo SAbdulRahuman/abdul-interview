@@ -61,6 +61,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+         3          depth(nodes)=1, height(edges)=0
+        / \
+       9  20         depth=2, height=1
+         /  \
+        15   7       depth=3, height=2
+
+  maxDepth (node count convention):
+  ┌──────┬───────┬────────┬─────────────┐
+  │ Node │ left  │ right  │ maxDepth    │
+  ├──────┼───────┼────────┼─────────────┤
+  │   9  │   0   │    0   │ 1           │
+  │  15  │   0   │    0   │ 1           │
+  │   7  │   0   │    0   │ 1           │
+  │  20  │   1   │    1   │ 2           │
+  │   3  │   1   │    2   │ 3 ★         │
+  └──────┴───────┴────────┴─────────────┘
+
+  maxDepth (nodes) = 3, height (edges) = 2
+```
+
 ---
 
 ## Example 2: Minimum Depth (LeetCode 111)
@@ -111,6 +133,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Skewed tree:          Balanced tree:
+  2                       1
+   \                     / \
+    3                   2   3   ← leaf at depth 2
+     \                 /
+      4               4
+
+  Common bug vs correct:
+  ┌──────────────────────────────────────────┐
+  │ Skewed (2→3→4):                            │
+  │   ✗ Bug: min(0,3)+1 = 1 (nil left child) │
+  │   ✓ Fix: left=nil → return 1+minDepth(R)  │
+  │         = 1 + 1 + 1 = 3                   │
+  ├──────────────────────────────────────────┤
+  │ Balanced (1→2+3):                          │
+  │   min(2, 1) + 1 = 2  (path 1→3)           │
+  └──────────────────────────────────────────┘
+```
+
 **Why?** A common bug: returning `min(left, right) + 1` when one child is nil gives depth 1 (counting the nil child), which is wrong.
 
 ---
@@ -153,6 +196,26 @@ func main() {
     }
     fmt.Println(maxDepthBFS(root)) // 3
 }
+```
+
+**Textual Figure:**
+```
+       1           Level 1
+      / \
+     2   3         Level 2
+    /
+   4               Level 3
+
+  BFS level counting:
+  ┌───────┬───────────┬─────────┬─────────┐
+  │ Level │ Queue     │ Size    │ depth++ │
+  ├───────┼───────────┼─────────┼─────────┤
+  │   1   │ [1]       │   1     │ d=1     │
+  │   2   │ [2, 3]    │   2     │ d=2     │
+  │   3   │ [4]       │   1     │ d=3 ★   │
+  └───────┴───────────┴─────────┴─────────┘
+
+  maxDepth = 3
 ```
 
 ---
@@ -214,6 +277,29 @@ func main() {
     // Node 5 → height 0
     // Node 3 → height 0
 }
+```
+
+**Textual Figure:**
+```
+       1  (h=3)
+      / \
+     2   3  (h=2, h=0)
+    / \
+   4   5    (h=1, h=0)
+  /
+ 6          (h=0)
+
+  Bottom-up height computation:
+  ┌──────┬────────┬─────────┬───────────────────┐
+  │ Node │ leftH  │ rightH  │ height = max+1 │
+  ├──────┼────────┼─────────┼───────────────────┤
+  │  6   │   -1   │   -1    │ 0              │
+  │  4   │    0   │   -1    │ 1              │
+  │  5   │   -1   │   -1    │ 0              │
+  │  2   │    1   │    0    │ 2              │
+  │  3   │   -1   │   -1    │ 0              │
+  │  1   │    2   │    0    │ 3              │
+  └──────┴────────┴─────────┴───────────────────┘
 ```
 
 ---
@@ -283,6 +369,31 @@ func main() {
     }
     fmt.Println(isBalanced(root2)) // false
 }
+```
+
+**Textual Figure:**
+```
+  Balanced:               Unbalanced:
+     3                       1
+    / \                     / \
+   9  20                   2   2
+     /  \                 / \
+    15   7               3   3
+                        / \
+                       4   4
+
+  Height check with -1 sentinel:
+  ┌──────┬─────┬─────┬───────┐ ┌──────┬─────┬─────┬───────┐
+  │ Node │ lH  │ rH  │ diff  │ │ Node │ lH  │ rH  │ diff  │
+  ├──────┼─────┼─────┼───────┤ ├──────┼─────┼─────┼───────┤
+  │  9   │  0  │  0  │  0 ✓ │ │  4   │  0  │  0  │  0 ✓ │
+  │  15  │  0  │  0  │  0 ✓ │ │  3   │  1  │  1  │  0 ✓ │
+  │   7  │  0  │  0  │  0 ✓ │ │  3   │  0  │  0  │  0 ✓ │
+  │  20  │  1  │  1  │  0 ✓ │ │  2   │  2  │  1  │  1 ✓ │
+  │   3  │  1  │  2  │  1 ✓ │ │  2   │  0  │  0  │  0 ✓ │
+  └──────┴─────┴─────┴───────┘ │  1   │  3  │  1  │  2 ✗ │
+  Balanced ✓                  └──────┴─────┴─────┴───────┘
+                             |3-1|=2 > 1 → unbalanced!
 ```
 
 ---

@@ -60,6 +60,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+         3           Level 0
+        / \
+       9  20          Level 1
+         /  \
+        15   7        Level 2
+
+  BFS Queue Trace:
+  ┌──────┬────────────────┬───────────────┬─────────────┐
+  │ Iter │ Queue          │ Process       │ Level       │
+  ├──────┼────────────────┼───────────────┼─────────────┤
+  │  0   │ [3]            │ dequeue 3     │ [3]         │
+  │      │ [9, 20]        │ enqueue 9, 20 │             │
+  │  1   │ [9, 20]        │ dequeue 9     │ [9, 20]     │
+  │      │ [20]           │ dequeue 20    │             │
+  │      │ [15, 7]        │ enqueue 15, 7 │             │
+  │  2   │ [15, 7]        │ dequeue 15, 7 │ [15, 7]     │
+  └──────┴────────────────┴───────────────┴─────────────┘
+
+  Result: [[3], [9, 20], [15, 7]]
+```
+
 ---
 
 ## Example 2: Level Order Bottom Up (LeetCode 107)
@@ -106,6 +129,29 @@ func main() {
     }
     fmt.Println(levelOrderBottom(root)) // [[15,7],[9,20],[3]]
 }
+```
+
+**Textual Figure:**
+```
+         3           Level 0
+        / \
+       9  20          Level 1
+         /  \
+        15   7        Level 2
+
+  Step 1 ─ Normal level order:
+    [[3], [9,20], [15,7]]
+
+  Step 2 ─ Reverse the result:
+    ┌───────────────┬────────────────┐
+    │ Before        │ After          │
+    ├───────────────┼────────────────┤
+    │ [3]           │ [15, 7]        │
+    │ [9, 20]       │ [9, 20]        │
+    │ [15, 7]       │ [3]            │
+    └───────────────┴────────────────┘
+
+  Result: [[15, 7], [9, 20], [3]]
 ```
 
 ---
@@ -159,6 +205,29 @@ func main() {
     }
     fmt.Println(zigzagLevelOrder(root)) // [[3],[20,9],[15,7]]
 }
+```
+
+**Textual Figure:**
+```
+         3           Level 0 (L→R)
+        / \
+       9  20          Level 1 (R→L)
+         /  \
+        15   7        Level 2 (L→R)
+
+  Zigzag direction alternation:
+  ┌───────┬─────────────┬──────────────┐
+  │ Level │ Direction   │ Output       │
+  ├───────┼─────────────┼──────────────┤
+  │   0   │ L → R       │ [3]          │
+  │   1   │ R → L       │ [20, 9]      │
+  │   2   │ L → R       │ [15, 7]      │
+  └───────┴─────────────┴──────────────┘
+
+  Level 1: queue processes [9,20] but places
+  values in reverse indices → [20, 9]
+
+  Result: [[3], [20, 9], [15, 7]]
 ```
 
 ---
@@ -231,6 +300,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1            ← Right view sees: 1
+      / \           ← Left view sees:  1
+     2   3          ← Right: 3, Left: 2
+      \   \
+       5   4        ← Right: 4, Left: 5
+
+  Level-by-level selection:
+  ┌───────┬───────────┬────────────┬───────────┐
+  │ Level │ Nodes     │ Right View │ Left View │
+  ├───────┼───────────┼────────────┼───────────┤
+  │   0   │ [1]       │ 1 (last)   │ 1 (first) │
+  │   1   │ [2, 3]    │ 3 (last)   │ 2 (first) │
+  │   2   │ [5, 4]    │ 4 (last)   │ 5 (first) │
+  └───────┴───────────┴────────────┴───────────┘
+
+  Right view: [1, 3, 4]
+  Left view:  [1, 2, 5]
+```
+
 ---
 
 ## Example 5: Maximum Width of Binary Tree (LeetCode 662)
@@ -297,6 +387,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1             idx: 0
+      / \
+     3   2           idx: 1, 2
+    / \   \
+   5   3   9         idx: 3, 4, _, 6
+
+  Width = lastIdx - firstIdx + 1 per level:
+  ┌───────┬───────────┬────────┬─────────────┐
+  │ Level │ Indices   │ Width  │ Nodes       │
+  ├───────┼───────────┼────────┼─────────────┤
+  │   0   │ [0]       │   1    │ [1]         │
+  │   1   │ [1, 2]    │   2    │ [3, 2]      │
+  │   2   │ [3, 6]    │   4 ★  │ [5,3,_,9]   │
+  └───────┴───────────┴────────┴─────────────┘
+
+  Indexing: left=2*i+1, right=2*i+2
+  Level 2: 6 - 3 + 1 = 4 (includes null gap)
+  Max width: 4
+```
+
 ---
 
 ## Example 6: Average of Levels (LeetCode 637)
@@ -339,6 +451,26 @@ func main() {
     }
     fmt.Println(averageOfLevels(root)) // [3.0 14.5 11.0]
 }
+```
+
+**Textual Figure:**
+```
+         3           Level 0: sum=3,   count=1
+        / \
+       9  20          Level 1: sum=29,  count=2
+         /  \
+        15   7        Level 2: sum=22,  count=2
+
+  Average computation per level:
+  ┌───────┬─────────┬───────┬─────────────┐
+  │ Level │ Sum     │ Count │ Average     │
+  ├───────┼─────────┼───────┼─────────────┤
+  │   0   │ 3       │   1   │ 3.0         │
+  │   1   │ 9+20=29 │   2   │ 14.5        │
+  │   2   │ 15+7=22 │   2   │ 11.0        │
+  └───────┴─────────┴───────┴─────────────┘
+
+  Result: [3.0, 14.5, 11.0]
 ```
 
 ---
@@ -385,6 +517,28 @@ func main() {
     // Level 1: [2 3]
     // Level 2: [4 5 6]
 }
+```
+
+**Textual Figure:**
+```
+       1              Level 0
+      / \
+     2   3            Level 1
+    / \   \
+   4   5   6          Level 2
+
+  DFS traversal with level parameter:
+  ┌─────────────────────────────────────────┐
+  │ dfs(1, level=0) → result[0] = [1]     │
+  │  ├─ dfs(2, level=1) → result[1] = [2] │
+  │  │   ├─ dfs(4, level=2) → r[2] = [4] │
+  │  │   └─ dfs(5, level=2) → r[2]+= 5  │
+  │  └─ dfs(3, level=1) → result[1]+= 3  │
+  │      └─ dfs(6, level=2) → r[2]+= 6  │
+  └─────────────────────────────────────────┘
+
+  Result: [[1], [2, 3], [4, 5, 6]]
+  Uses O(h) stack space instead of O(w) queue space.
 ```
 
 **Why?** DFS-based level order uses O(h) stack space vs O(w) queue space. Better for very wide but shallow trees.
@@ -434,6 +588,26 @@ func main() {
     }
     fmt.Println(largestValues(root)) // [1 3 9]
 }
+```
+
+**Textual Figure:**
+```
+       1              Level 0: max = 1
+      / \
+     3   2            Level 1: max = 3
+    / \   \
+   5   3   9          Level 2: max = 9
+
+  Per-level max tracking:
+  ┌───────┬───────────┬─────────────┐
+  │ Level │ Nodes     │ Max         │
+  ├───────┼───────────┼─────────────┤
+  │   0   │ [1]       │ 1           │
+  │   1   │ [3, 2]    │ 3           │
+  │   2   │ [5, 3, 9] │ 9           │
+  └───────┴───────────┴─────────────┘
+
+  Result: [1, 3, 9]
 ```
 
 ---
@@ -527,6 +701,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Before (perfect binary tree):
+       1
+      / \
+     2   3
+    / \ / \
+   4  5 6  7
+
+  After connecting Next pointers (→):
+  ┌───┐
+  │ 1 │ → nil
+  └┬─┴┐
+   │   │
+  ┌┴┐ ┌┴┐
+  │ 2│→│ 3│ → nil
+  └┬┴┬┘└┬┴┬┘
+   │  │  │  │
+  ┌┴┐┌┴┐┌┴┐┌┴┐
+  │4│→5│→6│→7│ → nil
+  └─┘└─┘└─┘└─┘
+
+  O(1) space approach for perfect trees:
+  ─ cur.Left.Next  = cur.Right
+  ─ cur.Right.Next = cur.Next.Left (if cur.Next exists)
+```
+
 ---
 
 ## Example 10: Minimum Depth of Binary Tree (LeetCode 111)
@@ -598,6 +799,27 @@ func main() {
     fmt.Println("Min depth:", minDepth(root)) // 2 (1→3)
     fmt.Println("Max depth:", maxDepth(root)) // 3 (1→2→4)
 }
+```
+
+**Textual Figure:**
+```
+       1           depth 1
+      / \
+     2   3         depth 2  ← node 3 is a leaf!
+    /                        BFS stops here for min
+   4               depth 3  ← BFS continues for max
+
+  BFS level-by-level scan:
+  ┌───────┬───────────┬──────────────────────────┐
+  │ Level │ Nodes     │ Action                   │
+  ├───────┼───────────┼──────────────────────────┤
+  │   1   │ [1]       │ not a leaf, continue     │
+  │   2   │ [2, 3]    │ 3 is leaf → return 2 ★  │
+  │   3   │ [4]       │ max depth continues      │
+  └───────┴───────────┴──────────────────────────┘
+
+  Min depth: 2 (path 1→3)
+  Max depth: 3 (path 1→2→4)
 ```
 
 ---

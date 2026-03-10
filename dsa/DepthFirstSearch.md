@@ -53,6 +53,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+        5
+       / \
+      4   8
+     /   / \
+    11  13  4
+   / \       \
+  7   2       1
+
+  DFS path exploration for targetSum=22:
+  ┌──────────────────────────────────────────┐
+  │ Path               │ Sum │ remain │ Leaf?│
+  ├─────────────────────┼─────┼────────┼──────┤
+  │ 5→4→11→7            │  27 │   -5   │  ✗    │
+  │ 5→4→11→2            │  22 │    0   │  ✓ ★  │
+  └─────────────────────┴─────┴────────┴──────┘
+  Found! remain==0 at leaf node 2 → true
+```
+
 ---
 
 ## Example 2: Iterative DFS — Path Sum II (LeetCode 113)
@@ -97,6 +117,30 @@ func main() {
     fmt.Println(pathSum(root, 22))
     // [[5,4,11,2], [5,8,4,5]]
 }
+```
+
+**Textual Figure:**
+```
+        5
+       / \
+      4   8
+     /   / \
+    11  13  4
+   / \     / \
+  7   2   5   1
+
+  DFS collects all root-to-leaf paths with sum=22:
+  ┌─────────────────────┬─────┬───────────┐
+  │ Path                │ Sum │ Match?    │
+  ├─────────────────────┼─────┼───────────┤
+  │ 5→4→11→7            │  27 │     ✗     │
+  │ 5→4→11→2            │  22 │     ✓ ★   │
+  │ 5→8→13                │  26 │     ✗     │
+  │ 5→8→4→5              │  22 │     ✓ ★   │
+  │ 5→8→4→1              │  18 │     ✗     │
+  └─────────────────────┴─────┴───────────┘
+
+  Result: [[5,4,11,2], [5,8,4,5]]
 ```
 
 ---
@@ -151,6 +195,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+        5
+       / \
+      4   8
+     /   / \
+    11  13  4
+   / \       \
+  7   2       1
+
+  Explicit Stack Simulation for target=22:
+  ┌──────┬────────────────────┬────────┬───────────┐
+  │ Step │ Stack (node,sum)   │ curSum │ Leaf?     │
+  ├──────┼────────────────────┼────────┼───────────┤
+  │  0   │ [(5,5)]            │      │           │
+  │  1   │ pop(5,5)           │   5  │ no        │
+  │      │ push (8,13),(4,9)  │      │           │
+  │  2   │ pop(4,9)           │   9  │ no        │
+  │      │ push (11,20)       │      │           │
+  │  3   │ pop(11,20)         │  20  │ no        │
+  │      │ push (2,22),(7,27) │      │           │
+  │  4   │ pop(7,27)          │  27  │ yes,≠22   │
+  │  5   │ pop(2,22)          │  22  │ yes,==22★ │
+  └──────┴────────────────────┴────────┴───────────┘
+
+  Found! return true
+```
+
 ---
 
 ## Example 4: DFS to Collect All Root-to-Leaf Paths (LeetCode 257)
@@ -195,6 +267,28 @@ func main() {
     }
     fmt.Println(binaryTreePaths(root)) // ["1->2->5", "1->3"]
 }
+```
+
+**Textual Figure:**
+```
+       1
+      / \
+     2   3
+      \
+       5
+
+  DFS path collection:
+  ┌────────────────────────────────────────┐
+  │ dfs(1, path=[])                      │
+  │  ├─ dfs(2, path=[1])                │
+  │  │   ├─ dfs(nil) → skip             │
+  │  │   └─ dfs(5, path=[1,2])          │
+  │  │       └─ leaf! → "1->2->5" ✓     │
+  │  └─ dfs(3, path=[1])                │
+  │      └─ leaf! → "1->3" ✓             │
+  └────────────────────────────────────────┘
+
+  Result: ["1->2->5", "1->3"]
 ```
 
 ---
@@ -245,6 +339,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Symmetric (true):         Not symmetric (false):
+       1                         1
+      / \                       / \
+     2   2                     2   2
+    / \ / \                     \   \
+   3  4 4  3                    3   3
+
+  Mirror comparison pairs:
+  ┌────────────────────────────────────────┐
+  │ isMirror(t1, t2):                      │
+  │  Compare t1.Left  ↔ t2.Right           │
+  │  Compare t1.Right ↔ t2.Left            │
+  │                                        │
+  │ Symmetric tree:                        │
+  │  (2,2)✓ → (3,3)✓, (4,4)✓              │
+  │                                        │
+  │ Asymmetric tree:                       │
+  │  (2,2)✓ → (nil,nil)✓, (3,3) vals ok    │
+  │  but (2.Left=nil) ≠ (2.Right=3) ✗      │
+  └────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: DFS — Same Tree (LeetCode 100) & Subtree Check (LeetCode 572)
@@ -282,6 +400,28 @@ func main() {
     sub := &TreeNode{4, &TreeNode{1, nil, nil}, &TreeNode{2, nil, nil}}
     fmt.Println(isSubtree(root, sub)) // true
 }
+```
+
+**Textual Figure:**
+```
+  root:          sub:
+       3           4
+      / \         / \
+     4   5       1   2
+    / \
+   1   2
+
+  isSubtree search:
+  ┌─────────────────────────────────────────┐
+  │ isSubtree(3, sub)                       │
+  │  ├─ isSameTree(3, 4)? NO (3≠4)         │
+  │  ├─ isSubtree(4, sub)                  │
+  │  │   └─ isSameTree(4, 4)? YES ★        │
+  │  │      4==4 ✓, 1==1 ✓, 2==2 ✓         │
+  │  └─ return true                        │
+  └─────────────────────────────────────────┘
+
+  Result: true (subtree rooted at node 4 matches)
 ```
 
 ---
@@ -337,6 +477,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Tree 1:        Tree 2:
+     1               4
+    / \             / \
+   2   3           9   0
+                  / \
+                 5   1
+
+  DFS number formation (num = num*10 + node.Val):
+  ┌─────────────────────────────────────┐
+  │ Tree 1:                             │
+  │  1→2: num = 0*10+1=1, 1*10+2=12    │
+  │  1→3: num = 0*10+1=1, 1*10+3=13    │
+  │  Total: 12 + 13 = 25                │
+  ├─────────────────────────────────────┤
+  │ Tree 2:                             │
+  │  4→9→5: 4 → 49 → 495                │
+  │  4→9→1: 4 → 49 → 491                │
+  │  4→0:   4 → 40                      │
+  │  Total: 495 + 491 + 40 = 1026       │
+  └─────────────────────────────────────┘
+```
+
 ---
 
 ## Example 8: DFS — Invert Binary Tree (LeetCode 226)
@@ -388,6 +552,27 @@ func main() {
     invertTree(root)
     fmt.Print("After:  "); printInorder(root); fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+  Before inversion:        After inversion:
+       4                        4
+      / \                      / \
+     2   7          →         7   2
+    / \ / \                  / \ / \
+   1  3 6  9                9  6 3  1
+
+  Recursive DFS swap at each node:
+  ┌──────────────────────────────────────┐
+  │ invert(4):                          │
+  │   swap(Left=2, Right=7)             │
+  │   ├─ invert(7): swap(6,9)           │
+  │   └─ invert(2): swap(1,3)           │
+  └──────────────────────────────────────┘
+
+  Inorder before: 1 2 3 4 6 7 9
+  Inorder after:  9 7 6 4 3 2 1
 ```
 
 ---
@@ -450,6 +635,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+     -10
+     /  \
+    9   20
+       /  \
+      15   7
+
+  Bottom-up DFS gain computation:
+  ┌──────┬──────────┬───────────┬────────────┬────────┐
+  │ Node │ leftGain │ rightGain │ pathThruMe │ return │
+  ├──────┼──────────┼───────────┼────────────┼────────┤
+  │   9  │    0     │     0     │     9      │    9   │
+  │  15  │    0     │     0     │    15      │   15   │
+  │   7  │    0     │     0     │     7      │    7   │
+  │  20  │   15     │     7     │    42  ★   │   35   │
+  │ -10  │    9     │    35     │    34      │   25   │
+  └──────┴──────────┴───────────┴────────────┴────────┘
+
+  Best path: 15 → 20 → 7 (sum = 42)
+```
+
 ---
 
 ## Example 10: DFS — Count Good Nodes (LeetCode 1448)
@@ -493,6 +700,30 @@ func main() {
     }
     fmt.Println(goodNodes(root)) // 4 (nodes 3, 3, 4, 5)
 }
+```
+
+**Textual Figure:**
+```
+       3 ✓ (maxSoFar=3)
+      / \
+     1   4 ✓ (1<3=no, 4≥3=yes)
+    /   / \
+   3   1   5
+   ✓       ✓
+
+  DFS with maxSoFar tracking:
+  ┌──────┬───────────┬──────────┬─────────┐
+  │ Node │ maxSoFar  │ val≥max? │ Good?   │
+  ├──────┼───────────┼──────────┼─────────┤
+  │  3   │     3     │  3≥3 ✓  │  YES ✓  │
+  │  1   │     3     │  1<3  ✗  │  NO     │
+  │  3   │     3     │  3≥3 ✓  │  YES ✓  │
+  │  4   │     3     │  4≥3 ✓  │  YES ✓  │
+  │  1   │     4     │  1<4  ✗  │  NO     │
+  │  5   │     4     │  5≥4 ✓  │  YES ✓  │
+  └──────┴───────────┴──────────┴─────────┘
+
+  Good nodes: 3, 3, 4, 5 → count = 4
 ```
 
 ---
@@ -541,6 +772,36 @@ func main() {
     flatten(root)
     printList(root) // 1 2 3 4 5 6
 }
+```
+
+**Textual Figure:**
+```
+  Before flatten:          After flatten:
+       1                   1
+      / \                   \
+     2   5                   2
+    / \   \                   \
+   3   4   6                   3
+                                \
+                                 4
+                                  \
+                                   5
+                                    \
+                                     6
+
+  Reverse postorder (Right → Left → Node):
+  ┌──────┬─────────────────────────────────┐
+  │ Step │ Visit node, set Right=prev  │
+  ├──────┼─────────────────────────────────┤
+  │  1   │ 6: Right=nil, prev=6        │
+  │  2   │ 5: Right=6,  prev=5         │
+  │  3   │ 4: Right=5,  prev=4         │
+  │  4   │ 3: Right=4,  prev=3         │
+  │  5   │ 2: Right=3,  prev=2         │
+  │  6   │ 1: Right=2,  prev=1         │
+  └──────┴─────────────────────────────────┘
+
+  Linked list: 1 → 2 → 3 → 4 → 5 → 6
 ```
 
 ---

@@ -59,6 +59,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Min-Heap after inserting [5, 3, 8, 1, 9, 2]:
+
+  Insert order → heap restructures via swim-up:
+
+            1              ← root = minimum
+          /   \
+         3     2
+        / \   /
+       5   9 8
+
+  Array: [1, 3, 2, 5, 9, 8]
+
+  ExtractMin sequence:
+    Pop 1 → Pop 2 → Pop 3 → Pop 5 → Pop 8 → Pop 9
+
+  Output: 1 2 3 5 8 9  (sorted ascending)
+```
+
 ---
 
 ## Example 2: Max-Heap Priority Queue
@@ -99,6 +120,27 @@ func main() {
     }
     fmt.Println() // 9 8 5 3 2 1
 }
+```
+
+**Textual Figure:**
+
+```
+Max-Heap after inserting [5, 3, 8, 1, 9, 2]:
+
+  Less() reversed: h[i] > h[j]  →  largest floats to top
+
+            9              ← root = maximum
+          /   \
+         5     8
+        / \   /
+       1   3 2
+
+  Array: [9, 5, 8, 1, 3, 2]
+
+  ExtractMax sequence:
+    Pop 9 → Pop 8 → Pop 5 → Pop 3 → Pop 2 → Pop 1
+
+  Output: 9 8 5 3 2 1  (sorted descending)
 ```
 
 ---
@@ -156,6 +198,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Max-heap by Priority (higher = more important):
+
+  Tasks inserted: Email(1), Bug fix(5), Meeting(3), Deploy(4), Docs(2)
+
+  Heap after all insertions:
+           Bug fix(5)
+           /        \
+      Deploy(4)   Meeting(3)
+       /     \
+    Email(1) Docs(2)
+
+  Processing order (extract max repeatedly):
+    [P5] Bug fix
+    [P4] Deploy
+    [P3] Meeting
+    [P2] Docs
+    [P1] Email
+```
+
 ---
 
 ## Example 4: Kth Largest Element (LeetCode 215)
@@ -210,6 +274,28 @@ func main() {
     }
     // 5, 4
 }
+```
+
+**Textual Figure:**
+
+```
+nums = [3,2,1,5,6,4], k=2  →  find 2nd largest
+
+Maintain a min-heap of size k=2:
+
+  Push 3:  heap=[3]         size=1
+  Push 2:  heap=[2,3]       size=2
+  Push 1:  heap=[1,2,3]     size=3 > k → pop min(1)
+           heap=[2,3]       ┌───┐
+  Push 5:  heap=[2,3,5]     │   2   │ ← root = kth largest
+           pop min(2)       │  / \  │
+           heap=[3,5]       │ 3   5 │
+  Push 6:  pop min(3)       └─────┘
+           heap=[5,6]
+  Push 4:  pop min(4)
+           heap=[5,6]
+
+  Answer: heap[0] = 5  (2nd largest)
 ```
 
 ---
@@ -271,6 +357,30 @@ func main() {
     fmt.Println(topKFrequent([]int{1}, 1))                       // [1]
     fmt.Println(topKFrequent([]int{4, 1, -1, 2, -1, 2, 3}, 2)) // [-1, 2]
 }
+```
+
+**Textual Figure:**
+
+```
+nums = [1,1,1,2,2,3], k=2  →  top 2 frequent elements
+
+Step 1: Count frequencies:
+  {1:3, 2:2, 3:1}
+
+Step 2: Min-heap by frequency (size ≤ k=2):
+  Push {1,freq=3}:  heap=[{1,3}]
+  Push {2,freq=2}:  heap=[{2,2},{1,3}]     size=2
+  Push {3,freq=1}:  heap=[{3,1},{1,3},{2,2}]  size=3 > k
+                    pop min freq → {3,1}
+                    heap=[{2,2},{1,3}]     size=2
+
+        ┌───────┐
+        │{2,f=2} │ ← root (min freq in heap)
+        │  /     │
+        │{1,f=3}│
+        └───────┘
+
+  Result: [1, 2]  (extract in reverse for descending freq)
 ```
 
 ---
@@ -340,6 +450,32 @@ func main() {
     }
     fmt.Println(mergeKSorted(arrs)) // [1 2 3 4 5 6 7 8 9]
 }
+```
+
+**Textual Figure:**
+
+```
+Merge 3 sorted arrays:  [1,4,7], [2,5,8], [3,6,9]
+
+Min-heap tracks one element per array (head pointers):
+
+Initial heap:     Pop 1, push 4:     Pop 2, push 5:
+      1                 2                  3
+     / \               / \                / \
+    2   3             4   3              4   5
+
+result so far: [1]    [1,2]             [1,2,3]
+
+  Pop min → append to result
+  Push next element from same array
+  Repeat until heap empty
+
+Full trace:
+  arr0: 1 → 4 → 7
+  arr1: 2 → 5 → 8
+  arr2: 3 → 6 → 9
+
+Result: [1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
 ---
@@ -425,6 +561,25 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+tasks = [A,A,A,B,B,B], n=2  (cooldown=2)
+
+Max-heap by frequency:  {A:3, B:3}
+
+Cycle length = n+1 = 3
+
+  Time 1: pop A(3→2)  Time 2: pop B(3→2)  Time 3: idle
+  Time 4: pop A(2→1)  Time 5: pop B(2→1)  Time 6: idle
+  Time 7: pop A(1→0)  Time 8: pop B(1→0)
+
+  Schedule: A B _ A B _ A B
+            └─cycle─┘ └─cycle─┘ └─┘
+
+  Total time: 8
+```
+
 ---
 
 ## Example 8: Median Finder (LeetCode 295) — Two Heaps
@@ -495,6 +650,28 @@ func main() {
     }
     // 1→1.0, 2→1.5, 3→2.0, 4→2.5, 5→3.0
 }
+```
+
+**Textual Figure:**
+
+```
+Two-Heap Median Finder:
+  lo = max-heap (lower half)    hi = min-heap (upper half)
+
+Add 1:  lo=[1]       hi=[]         median=1.0
+Add 2:  lo=[1]       hi=[2]        median=(1+2)/2=1.5
+Add 3:  lo=[2,1]     hi=[3]        median=2.0
+Add 4:  lo=[2,1]     hi=[3,4]      median=(2+3)/2=2.5
+Add 5:  lo=[3,2,1]   hi=[4,5]      median=3.0
+
+  lo (max-heap)      hi (min-heap)
+  ┌─────────┐      ┌────────┐
+  │    3     │      │   4    │
+  │   / \    │      │  /     │
+  │  2   1   │      │ 5      │
+  └─────────┘      └────────┘
+   max=3 ←─────────▶ min=4
+  lo.Len() > hi.Len() → median = lo[0] = 3.0
 ```
 
 ---
@@ -576,6 +753,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+s = "aab"  →  freq: {a:2, b:1}
+
+Max-heap by frequency:
+   a(2)
+   /
+  b(1)
+
+Step 1: pop a(2), pop b(1) → append "ab"  a:1, b:0
+  Push a(1) back  (b is exhausted)
+
+Step 2: heap has a(1) only, size < 2
+  Pop a(1), freq=1 ≤ 1 → append "a"
+
+  Result: "aba"  ✓  (no adjacent duplicates)
+
+s = "aaab" → freq {a:3, b:1}
+  a(3) > (len+1)/2 = 2  → impossible  → ""
+```
+
 ---
 
 ## Example 10: K Closest Points to Origin (LeetCode 973)
@@ -626,6 +825,36 @@ func main() {
     points := [][]int{{1, 3}, {-2, 2}, {5, 8}, {0, 1}}
     fmt.Println(kClosest(points, 2)) // [[0,1], [-2,2]]
 }
+```
+
+**Textual Figure:**
+
+```
+points = [[1,3],[-2,2],[5,8],[0,1]], k=2
+
+Distances (squared, no sqrt needed):
+  (1,3)  → 1+9  = 10
+  (-2,2) → 4+4  = 8
+  (5,8)  → 25+64= 89
+  (0,1)  → 0+1  = 1
+
+Max-heap of size k=2 (by distance):
+  Push (1,3):10   heap=[(1,3)]
+  Push (-2,2):8   heap=[(1,3),(-2,2)]  ← (1,3) is max
+  Push (5,8):89   size>k, pop max (5,8 not added, 89>10)
+                  Actually: push then pop max→removes (1,3):10 since 89>10
+                  Hmm: push 89, pop max=89. heap=[(-2,2),(1,3)]
+                  Wait: push (5,8):89, heap has 3, pop max=89
+                  heap=[(-2,2):8, (1,3):10]
+  Push (0,1):1    push, pop max=10  →  heap=[(-2,2):8, (0,1):1]
+
+                  ┌───────┐
+  max-heap root:  │(-2,2):8│
+                  │  /     │
+                  │(0,1):1 │
+                  └───────┘
+
+  Result: [[0,1], [-2,2]]
 ```
 
 ---

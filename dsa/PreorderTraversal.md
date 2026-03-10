@@ -53,6 +53,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Recursive Preorder (Node → Left → Right)
+  ═════════════════════════════════════════
+
+       ┌───┐
+   ①   │ 1 │  Visit 1 (root first)
+       └─┬─┘
+        ╱ ╲
+     ┌───┐ ┌───┐
+ ②   │ 2 │ │ 3 │  ⑤
+     └─┬─┘ └───┘
+      ╱ ╲
+   ┌───┐┌───┐
+③ │ 4 ││ 5 │ ④
+   └───┘└───┘
+
+  Call stack trace:
+    dfs(1) → visit 1
+      dfs(2) → visit 2
+        dfs(4) → visit 4
+          dfs(nil), dfs(nil)
+        dfs(5) → visit 5
+          dfs(nil), dfs(nil)
+      dfs(3) → visit 3
+        dfs(nil), dfs(nil)
+
+  Result: [1, 2, 4, 5, 3]
+```
+
 ---
 
 ## Example 2: Iterative Preorder with Stack
@@ -98,6 +129,37 @@ func main() {
     }
     fmt.Println(preorderIterative(root)) // [1 2 4 5 3 6 7]
 }
+```
+
+**Textual Figure:**
+
+```
+  Iterative Preorder with Stack
+  ═══════════════════════════════
+
+           ┌───┐
+           │ 1 │
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌───┐
+         │ 2 │ │ 3 │
+         └─┬─┘ └─┬─┘
+          ╱ ╲     ╱ ╲
+       ┌───┐┌───┐┌───┐┌───┐
+       │ 4 ││ 5 ││ 6 ││ 7 │
+       └───┘└───┘└───┘└───┘
+
+  Stack simulation (push right first, then left):
+    Step  Stack (top→right)   Pop   Output
+     1    [1]                  1    [1]
+     2    [3, 2]               2    [1,2]
+     3    [3, 5, 4]            4    [1,2,4]
+     4    [3, 5]               5    [1,2,4,5]
+     5    [3]                  3    [1,2,4,5,3]
+     6    [7, 6]               6    [1,2,4,5,3,6]
+     7    [7]                  7    [1,2,4,5,3,6,7]
+
+  Key: push Right before Left → Left pops first (LIFO)
 ```
 
 ---
@@ -152,6 +214,38 @@ func main() {
     }
     fmt.Println(morrisPreorder(root)) // [1 2 4 5 3]
 }
+```
+
+**Textual Figure:**
+
+```
+  Morris Preorder Traversal (O(1) Space)
+  ═══════════════════════════════════════
+
+       ┌───┐
+       │ 1 │
+       └─┬─┘
+        ╱ ╲
+     ┌───┐ ┌───┐
+     │ 2 │ │ 3 │
+     └─┬─┘ └───┘
+      ╱ ╲
+   ┌───┐┌───┐
+   │ 4 ││ 5 │
+   └───┘└───┘
+
+  Thread creation (predecessor.Right → cur):
+    Step 1: cur=1, pred of 1 = rightmost in left = 5
+            5.Right = 1 (thread), output 1, go left
+    Step 2: cur=2, pred of 2 = rightmost in left = 4
+            4.Right = 2 (thread), output 2, go left
+    Step 3: cur=4, no left → output 4, go right (thread→2)
+    Step 4: cur=2, thread exists (4→2), remove thread, go right
+    Step 5: cur=5, no left → output 5, go right (thread→1)
+    Step 6: cur=1, thread exists (5→1), remove thread, go right
+    Step 7: cur=3, no left → output 3, go right (nil)
+
+  Result: [1, 2, 4, 5, 3]
 ```
 
 ---
@@ -213,6 +307,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Flatten Binary Tree to Linked List (Preorder)
+  ═══════════════════════════════════════════════
+
+  Before:                    After:
+       ┌───┐
+       │ 1 │                 1
+       └─┬─┘                  ╲
+        ╱ ╲                   2
+     ┌───┐ ┌───┐               ╲
+     │ 2 │ │ 5 │                3
+     └─┬─┘ └─┬─┘                ╲
+      ╱ ╲     ╲                  4
+   ┌───┐┌───┐ ┌───┐               ╲
+   │ 3 ││ 4 │ │ 6 │                5
+   └───┘└───┘ └───┘                ╲
+                                  6
+                                   ╲
+                                  nil
+
+  Process: for each node with left child,
+    1. Find rightmost of left subtree
+    2. Attach cur.Right to rightmost.Right
+    3. Move cur.Left to cur.Right
+    4. Set cur.Left = nil
+
+  Preorder: 1 → 2 → 3 → 4 → 5 → 6 → nil
+```
+
 ---
 
 ## Example 5: Construct BST from Preorder (LeetCode 1008)
@@ -263,6 +388,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Construct BST from Preorder
+  ══════════════════════════════
+
+  Preorder: [8, 5, 1, 7, 10, 12]
+
+  Build process (upper bound partitioning):
+    pre[0]=8 → root, bound=MAX
+      pre[1]=5 → left of 8, bound=8
+        pre[2]=1 → left of 5, bound=5
+        pre[3]=7 → right of 5, bound=8
+      pre[4]=10 → right of 8, bound=MAX
+        pre[5]=12 → right of 10, bound=MAX
+
+  Resulting BST:
+           ┌───┐
+           │ 8 │  root
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌────┐
+         │ 5 │ │ 10 │
+         └─┬─┘ └─┬──┘
+          ╱ ╲      ╲
+       ┌───┐┌───┐ ┌────┐
+       │ 1 ││ 7 │ │ 12 │
+       └───┘└───┘ └────┘
+
+  Preorder check: [8, 5, 1, 7, 10, 12] ✔
+```
+
 ---
 
 ## Example 6: Clone a Binary Tree (Preorder Copy)
@@ -311,6 +468,36 @@ func main() {
     fmt.Println("Original left:", original.Left.Val) // 2
     fmt.Println("Clone left:", clone.Left.Val)       // 99
 }
+```
+
+**Textual Figure:**
+
+```
+  Clone Binary Tree (Preorder Copy)
+  ═══════════════════════════════════
+
+  Original:              Clone (deep copy):
+       ┌───┐                  ┌───┐
+       │ 1 │                  │ 1 │
+       └─┬─┘                  └─┬─┘
+        ╱ ╲                    ╱ ╲
+     ┌───┐ ┌───┐          ┌───┐ ┌───┐
+     │ 2 │ │ 3 │          │ 2 │ │ 3 │
+     └─┬─┘ └───┘          └─┬─┘ └───┘
+      ╱                        ╱
+   ┌───┐                    ┌───┐
+   │ 4 │                    │ 4 │
+   └───┘                    └───┘
+
+  Preorder copy order: 1 → 2 → 4 → 3
+  (copy root, then left, then right)
+
+  After clone.Left.Val = 99:
+    Original: 1→2→4    (unchanged)
+    Clone:    1→99→4   (independent copy)
+
+  isSameTree: true (before modify)
+  Same object: false (different pointers)
 ```
 
 ---
@@ -368,6 +555,40 @@ func main() {
     printPreorder(root) // 3 9 20 15 7
     fmt.Println()
 }
+```
+
+**Textual Figure:**
+
+```
+  Build Tree from Preorder + Inorder (LeetCode 105)
+  ═══════════════════════════════════════════════
+
+  Preorder: [3, 9, 20, 15, 7]
+  Inorder:  [9, 3, 15, 20, 7]
+
+  Step 1: root = pre[0] = 3
+          inorder split: [9] | 3 | [15, 20, 7]
+
+  Step 2: left subtree  → pre=[9], in=[9] → leaf 9
+          right subtree → pre=[20,15,7], in=[15,20,7]
+
+  Step 3: root = 20
+          inorder split: [15] | 20 | [7]
+
+  Result:
+           ┌───┐
+           │ 3 │
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌────┐
+         │ 9 │ │ 20 │
+         └───┘ └─┬──┘
+               ╱ ╲
+           ┌────┐┌───┐
+           │ 15 ││ 7 │
+           └────┘└───┘
+
+  Preorder check: 3 9 20 15 7 ✔
 ```
 
 ---
@@ -438,6 +659,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Serialize / Deserialize Tree (Preorder + Null Markers)
+  ═══════════════════════════════════════════════════
+
+  Tree:
+       ┌───┐
+       │ 1 │
+       └─┬─┘
+        ╱ ╲
+     ┌───┐ ┌───┐
+     │ 2 │ │ 3 │
+     └───┘ └─┬─┘
+            ╱ ╲
+         ┌───┐┌───┐
+         │ 4 ││ 5 │
+         └───┘└───┘
+
+  Preorder serialization with # for nil:
+    1 → 2 → # → # → 3 → 4 → # → # → 5 → # → #
+
+  String: "1,2,#,#,3,4,#,#,5,#,#"
+
+  Deserialize (preorder DFS):
+    read 1 → root
+      read 2 → left of 1
+        read # → nil
+        read # → nil
+      read 3 → right of 1
+        read 4 → left of 3
+          read # → nil, read # → nil
+        read 5 → right of 3
+          read # → nil, read # → nil
+```
+
 ---
 
 ## Example 9: N-ary Tree Preorder (LeetCode 589)
@@ -498,6 +755,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  N-ary Preorder Traversal (LeetCode 589)
+  ═════════════════════════════════════════
+
+          ┌───┐
+     ①    │ 1 │
+          └─┬─┘
+         ╱  │  ╲
+      ┌───┐┌───┐┌───┐
+  ②  │ 3 ││ 2 ││ 4 │  ⑥
+      └─┬─┘└───┘└───┘
+       ╱ ╲   ⑤
+    ┌───┐┌───┐
+③  │ 5 ││ 6 │  ④
+    └───┘└───┘
+
+  Recursive: visit node, then each child L→R
+    1 → 3 → 5 → 6 → 2 → 4
+
+  Iterative stack (push children in reverse):
+    Stack       Pop   Output
+    [1]          1    [1]
+    [4,2,3]      3    [1,3]
+    [4,2,6,5]    5    [1,3,5]
+    [4,2,6]      6    [1,3,5,6]
+    [4,2]        2    [1,3,5,6,2]
+    [4]          4    [1,3,5,6,2,4]
+
+  Result: [1, 3, 5, 6, 2, 4]
+```
+
 ---
 
 ## Example 10: Preorder in Expression Trees
@@ -547,6 +837,36 @@ func main() {
     fmt.Println("Prefix:", toPrefix(root))  // + * 1 2 3
     fmt.Println("Infix:", toInfix(root))    // ((1 * 2) + 3)
 }
+```
+
+**Textual Figure:**
+
+```
+  Expression Tree → Prefix / Infix via Traversal
+  ═════════════════════════════════════════════
+
+  Expression: (1 * 2) + 3
+
+       ┌───┐
+       │ + │  operator (root)
+       └─┬─┘
+        ╱ ╲
+     ┌───┐ ┌───┐
+     │ * │ │ 3 │  operand (leaf)
+     └─┬─┘ └───┘
+      ╱ ╲
+   ┌───┐┌───┐
+   │ 1 ││ 2 │  operands (leaves)
+   └───┘└───┘
+
+  Preorder (prefix notation):  + * 1 2 3
+    → operator before operands
+
+  Inorder (infix notation):    ((1 * 2) + 3)
+    → operator between operands
+
+  Postorder (postfix notation): 1 2 * 3 +
+    → operator after operands
 ```
 
 ---

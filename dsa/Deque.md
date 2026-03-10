@@ -101,6 +101,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Deque with Doubly Linked List — step by step:
+
+PushBack(1):   head/tail
+                  │
+               ┌──┴──┐
+          nil◀─┤  1  ├─▶nil
+               └─────┘
+
+PushBack(2):   head       tail
+                │           │
+             ┌──┴──┐   ┌──┴──┐
+        nil◀─┤  1  ├─▶┤  2  ├─▶nil
+             └─────┘   └─────┘
+
+PushFront(0):  head               tail
+                │                   │
+             ┌──┴──┐   ┌─────┐   ┌──┴──┐
+        nil◀─┤  0  ├─▶┤  1  ├─▶┤  2  ├─▶nil
+             └─────┘   └─────┘   └─────┘
+
+PushBack(3):  head                           tail
+               │                               │
+            ┌──┴──┐   ┌─────┐   ┌─────┐   ┌──┴──┐
+       nil◀─┤  0  ├─▶┤  1  ├─▶┤  2  ├─▶┤  3  ├─▶nil
+            └─────┘   └─────┘   └─────┘   └─────┘
+
+PopFront all: 0 → 1 → 2 → 3  (FIFO from front)
+```
+
 ---
 
 ## Example 2: Deque with Circular Array
@@ -186,6 +218,32 @@ func main() {
     }
     fmt.Println() // -1 0 1 2 3
 }
+```
+
+**Textual Figure:**
+
+```
+Circular Array Deque (initial cap=4):
+
+PushBack(1):  head=0           PushBack(2):  head=0
+  ┌───┬───┬───┬───┐            ┌───┬───┬───┬───┐
+  │ 1 │   │   │   │            │ 1 │ 2 │   │   │
+  └───┴───┴───┴───┘            └───┴───┴───┴───┘
+   H                              H
+
+PushFront(0):  head wraps to 3   PushFront(-1): head wraps to 2
+  ┌───┬───┬───┬───┐            ┌───┬───┬────┬───┐
+  │ 1 │ 2 │   │ 0 │  size=3    │ 1 │ 2 │ -1 │ 0 │  size=4 FULL
+  └───┴───┴───┴───┘            └───┴───┴────┴───┘
+               H                          H
+
+PushBack(3): resize cap 4→8! Copy in logical order:
+  ┌────┬───┬───┬───┬───┬───┬───┬───┐
+  │ -1 │ 0 │ 1 │ 2 │ 3 │   │   │   │  head=0, cap=8
+  └────┴───┴───┴───┴───┴───┴───┴───┘
+   H
+
+PopFront all: -1 → 0 → 1 → 2 → 3
 ```
 
 ---
@@ -279,6 +337,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Circular Deque (capacity=3):  indices [0] [1] [2]
+
+InsertLast(1):           InsertLast(2):
+  ┌───┬───┬───┐              ┌───┬───┬───┐
+  │ 1 │   │   │  size=1      │ 1 │ 2 │   │  size=2
+  └───┴───┴───┘              └───┴───┴───┘
+   H                          H
+
+InsertFront(3):  head wraps to index 2
+  ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │   size=3 FULL!  head=2
+  └───┴───┴───┘
+              H   Logical order: 3, 1, 2
+
+InsertFront(4) → false (full)
+GetRear() → 2    IsFull() → true
+
+DeleteLast():  removes 2
+  ┌───┬───┬───┐
+  │ 1 │   │ 3 │   size=2  Logical: 3, 1
+  └───┴───┴───┘
+              H
+
+InsertFront(4):  head wraps to index 1
+  ┌───┬───┬───┐
+  │ 1 │ 4 │ 3 │   size=3  Logical: 4, 3, 1
+  └───┴───┴───┘
+       H          GetFront() → 4
+```
+
 ---
 
 ## Example 4: Sliding Window Maximum (LeetCode 239) — Deque
@@ -331,6 +422,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Sliding Window Maximum (k=3):  nums = [1, 3, -1, -3, 5, 3, 6, 7]
+Deque stores indices, maintains decreasing values.
+
+i=0: num=1   deque=[0]            window incomplete
+i=1: num=3   3>1, pop 0           deque=[1]            window incomplete
+i=2: num=-1  -1<3, keep           deque=[1,2]           max=nums[1]=3
+             ┌─────────┐
+     window  │ 1  3 -1 │ -3  5  3  6  7    result=[3]
+             └─────────┘
+i=3: num=-3  -3<-1, keep          deque=[1,2,3]         max=3
+i=4: num=5   expire 1, pop 2,3    deque=[4]             max=5
+i=5: num=3   3<5, keep            deque=[4,5]           max=5
+i=6: num=6   expire 4(=6-3), pop 5 deque=[6]            max=6
+i=7: num=7   7>6, pop 6           deque=[7]             max=7
+
+Result: [3, 3, 5, 5, 6, 7]
+```
+
 ---
 
 ## Example 5: Maximum of All Subarrays of Size K
@@ -374,6 +486,29 @@ func main() {
         fmt.Printf("k=%d → %v\n", k, maxOfSubarrays(arr, k))
     }
 }
+```
+
+**Textual Figure:**
+
+```
+arr = [1, 2, 3, 1, 4, 5, 2, 3, 6]
+
+k=1:  each element is its own window
+  → [1, 2, 3, 1, 4, 5, 2, 3, 6]
+
+k=2:  windows: [1,2] [2,3] [3,1] [1,4] [4,5] [5,2] [2,3] [3,6]
+  → [2, 3, 3, 4, 5, 5, 3, 6]
+
+k=3:  windows (decreasing deque tracks max):
+  ┌───────┐
+  │1 2 3│ 1  4  5  2  3  6   max=3
+  └───────┘
+    ┌───────┐
+  1 │2 3 1│ 4  5  2  3  6   max=3
+    └───────┘             ...and so on
+  → [3, 3, 4, 5, 5, 5, 6]
+
+k=4:  → [3, 4, 5, 5, 5, 6]
 ```
 
 ---
@@ -437,6 +572,27 @@ func main() {
         fmt.Printf("%-40s → %v\n", s, isPalindrome(s))
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Palindrome check: "racecar"
+
+Load into deque (letters only, lowercase):
+  front → ┌───┬───┬───┬───┬───┬───┬───┐ ← back
+           │ r │ a │ c │ e │ c │ a │ r │
+           └───┴───┴───┴───┴───┴───┴───┘
+
+Compare both ends:
+  Step 1: PopFront()=r  PopBack()=r   ✓ match
+  Step 2: PopFront()=a  PopBack()=a   ✓ match
+  Step 3: PopFront()=c  PopBack()=c   ✓ match
+  Step 4: size=1 (middle 'e')         ✓ done
+
+  Result: true (palindrome)
+
+"hello": h≠o at step 1 → false
 ```
 
 ---
@@ -516,6 +672,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Work Stealing with Deque:
+
+Initial state:
+  Worker1: ┌────┬────┬────┬────┬────┬────┐
+           │ t-1│ t-2│ t-3│ t-4│ t-5│ t-6│   6 tasks
+           └────┴────┴────┴────┴────┴────┘
+            ↑steal                    ↑pop(owner)
+  Worker2: (empty)
+
+Worker2 steals from Worker1's FRONT:
+  Steal t-1:  Worker1=[t-2..t-6]  Worker2=[t-1]
+  Steal t-2:  Worker1=[t-3..t-6]  Worker2=[t-1,t-2]
+  Steal t-3:  Worker1=[t-4..t-6]  Worker2=[t-1,t-2,t-3]
+
+After stealing:
+  Worker1: ┌────┬────┬────┐    Worker2: ┌────┬────┬────┐
+           │ t-4│ t-5│ t-6│             │ t-1│ t-2│ t-3│
+           └────┴────┴────┘             └────┴────┴────┘
+           3 tasks                    3 tasks
+```
+
 ---
 
 ## Example 8: Container/List as Deque
@@ -561,6 +741,30 @@ func main() {
     }
     fmt.Println()
 }
+```
+
+**Textual Figure:**
+
+```
+container/list as Deque:
+
+PushBack(1), PushBack(2), PushFront(0), PushBack(3):
+  Front                               Back
+   │                                    │
+   ▼                                    ▼
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 0 │─▶│ 1 │─▶│ 2 │─▶│ 3 │
+  └───┘   └───┘   └───┘   └───┘
+
+PopFront (remove 0):  Front→1
+  ┌───┐   ┌───┐   ┌───┐
+  │ 1 │─▶│ 2 │─▶│ 3 │
+  └───┘   └───┘   └───┘
+
+PopBack (remove 3):  Back→2
+  ┌───┐   ┌───┐
+  │ 1 │─▶│ 2 │       Remaining: 1 2
+  └───┘   └───┘
 ```
 
 ---
@@ -614,6 +818,23 @@ func main() {
     demoStack()
     demoQueue()
 }
+```
+
+**Textual Figure:**
+
+```
+Deque as Stack (LIFO):                 Deque as Queue (FIFO):
+  PushBack(1,2,3):                       PushBack(1,2,3):
+  ┌───┬───┬───┐                          ┌───┬───┬───┐
+  │ 1 │ 2 │ 3 │                          │ 1 │ 2 │ 3 │
+  └───┴───┴───┘                          └───┴───┴───┘
+                ↑pop                      ↑pop
+
+  PopBack:  3, 2, 1                      PopFront: 1, 2, 3
+
+  Same deque, different access patterns:
+  │ Stack: push/pop from BACK only       │
+  │ Queue: push BACK, pop FRONT          │
 ```
 
 ---
@@ -674,6 +895,29 @@ func main() {
         fmt.Printf("nums=%v, k=%d → %d\n", t.nums, t.k, shortestSubarray(t.nums, t.k))
     }
 }
+```
+
+**Textual Figure:**
+
+```
+nums = [2, -1, 2], k = 3
+
+Prefix sums: [0, 2, 1, 3]
+              0  1  2  3   ← indices
+
+Monotonic increasing deque of prefix indices:
+
+i=0: prefix=0   deque=[0]
+i=1: prefix=2   2-0=2 < 3, no valid     deque=[0,1]
+i=2: prefix=1   1≤2 pop 1               deque=[0,2]
+i=3: prefix=3   3-0=3 ≥ 3 ✓ len=3-0=3  deque=[2]
+                3-1 would be 2, but 1 was popped
+
+  Deque tracks: smallest prefix seen at each position
+  When prefix[i] - prefix[deque[0]] ≥ k:
+    → found valid subarray, record length, pop front
+
+  Result: 3  (subarray [2,-1,2] has sum=3)
 ```
 
 ---

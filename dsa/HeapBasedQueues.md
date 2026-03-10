@@ -111,6 +111,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Indexed Min PQ — tracks priorities by index:
+
+Insert(0,15), Insert(1,10), Insert(2,20), Insert(3,5):
+
+  Heap (by key):      idx:key mapping:
+         3:5            0 → 15
+        /   \           1 → 10
+     1:10   2:20        2 → 20
+      /                 3 →  5
+   0:15
+
+DelMin() → index 3 (key=5):
+         1:10
+        /    \
+     0:15   2:20
+
+DecreaseKey(2, 1):  change index 2: 20→1, swim up!
+          2:1           ← new minimum
+         /   \
+       0:15  1:10
+
+DelMin() → index 2 (key=1)
+```
+
 **Why?** Used in Dijkstra's and Prim's algorithms where you need to update distances efficiently.
 
 ---
@@ -187,6 +214,28 @@ func main() {
     }
     fmt.Println() // 0 4 8 10 15 20
 }
+```
+
+**Textual Figure:**
+
+```
+3-ary Min-Heap (each node has up to 3 children):
+
+After inserting [10, 4, 15, 20, 0, 8]:
+
+              0
+          /   |   \
+         4   15    8
+        / \
+      20  10
+
+parent(i) = (i-1)/3     child(i,k) = 3*i + k + 1
+
+Tree is shallower than binary:  height = O(log_3 n)
+  → swim-up faster:   O(log_3 n)
+  → sink-down slower:  O(3 · log_3 n)  (check 3 children)
+
+Extract order: 0, 4, 8, 10, 15, 20
 ```
 
 **Why?** D-ary heaps have shallower trees → faster `decrease-key` (O(log_d n)) at the cost of slower `sink` (O(d · log_d n)). Good when decrease-key dominates (Dijkstra on dense graphs).
@@ -272,6 +321,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Lazy Deletion PQ:
+
+Push 5, 3, 8, 1:
+  Min-heap:    1
+              / \
+             3   8
+            /
+           5
+
+Delete(3):  mark deleted (don't restructure heap)
+Delete(1):  mark deleted
+
+  Heap still:  1*             (* = marked deleted)
+              / \
+            3*   8
+            /
+           5
+
+Pop():  extract 1 → deleted! skip.
+        extract 3 → deleted! skip.
+        extract 5 → VALID ✓  → Popped: 5
+Pop():  extract 8 → VALID ✓  → Popped: 8
+```
+
 **Why?** When removal from the middle is needed but `O(n)` search is too expensive. Mark as deleted and skip during extraction.
 
 ---
@@ -350,6 +426,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph:   0 ──4──▶ 1
+         │          │
+         1          1
+         │          │
+         ▼          ▼
+         2 ──5──▶ 3
+         │          ▲
+         └──—2──▶ 1 ┘
+
+Dijkstra from 0 (min-heap):
+  dist: [0, ∞, ∞, ∞]
+
+  Pop (0,d=0): relax 0→1(4), 0→2(1)
+    dist: [0, 4, 1, ∞]
+
+  Pop (2,d=1): relax 2→1(1+2=3<4✓), 2→3(1+5=6)
+    dist: [0, 3, 1, 6]
+
+  Pop (1,d=3): relax 1→3(3+1=4<6✓)
+    dist: [0, 3, 1, 4]
+
+  Pop (3,d=4): no updates
+
+  Final: 0→0:0, 0→1:3, 0→2:1, 0→3:4
+```
+
 ---
 
 ## Example 5: Prim's MST (Heap-Based)
@@ -418,6 +523,26 @@ func main() {
 
     fmt.Println("MST weight:", primMST(graph, 4)) // 8
 }
+```
+
+**Textual Figure:**
+
+```
+Graph (undirected):     Prim's MST from node 0:
+     0                   0
+    / \                  |\         Pick min edge to new node:
+  4/   \1               4  1         1. Start 0, pick 0-2 (w=1)
+  /  2  \                 \           2. From {0,2}, pick 2-1 (w=2)
+ 1─────2      MST:         2        3. From {0,1,2}, pick 1-3 (w=5)
+  \   /|               / |
+  5\ /8|              1  |
+    3  |              |  |
+       |              3─5|
+                      |
+                      1─2───3
+
+  MST edges: 0-2(1), 2-1(2), 1-3(5)
+  MST weight: 1 + 2 + 5 = 8
 ```
 
 ---
@@ -511,6 +636,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Huffman Encoding: "abracadabra"
+
+Frequencies: a:5, b:2, r:2, c:1, d:1
+
+Build tree (merge two smallest repeatedly):
+  1. Merge c(1)+d(1) → cd(2)
+  2. Merge b(2)+r(2) → br(4)
+  3. Merge cd(2)+br(4) → … or merge cd(2)+a(5)...
+
+  Final Huffman tree (one possible):
+              (11)
+             /    \
+          a(5)    (6)
+                 /    \
+              (2)     br(4)
+             / \      /  \
+           c(1) d(1) b(2) r(2)
+
+  Codes:  a=0, c=100, d=101, b=110, r=111
+  "abracadabra" → 0 110 111 0 100 0 101 0 110 111 0
+  Encoded: 23 bits vs 88 bits original (74% savings)
+```
+
 ---
 
 ## Example 7: K Closest Points via Heap (Streaming)
@@ -574,6 +725,25 @@ func main() {
         fmt.Println()
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Streaming K=3 closest points to origin:
+
+Max-heap (size ≤ 3) tracks farthest among candidates:
+
+Add (1,2)  d=2.2   heap=[(1,2)]
+Add (3,4)  d=5.0   heap=[(3,4),(1,2)]          top=5.0
+Add (0,1)  d=1.0   heap=[(3,4),(1,2),(0,1)]    top=5.0
+Add (5,5)  d=7.1   push, pop max(7.1)          heap stays 3
+           heap=[(3,4),(1,2),(0,1)]             (5,5) rejected
+Add (-1,0) d=1.0   push, pop max=5.0           (3,4) evicted
+           heap=[(-1,0),(1,2),(0,1)]
+Add (2,1)  d=2.2   push, pop max=2.2            tie: one evicted
+
+Final 3 closest: points with smallest distances
 ```
 
 ---
@@ -683,6 +853,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Double-Ended PQ (two heaps + lazy deletion):
+
+Insert [5, 3, 8, 1, 9, 2, 7]:
+
+  Min-heap:     Max-heap:      active map:
+      1              9          {1:1,2:1,3:1,5:1,7:1,8:1,9:1}
+     / \            / \
+    3   2          8   7
+   /\  /          /\
+  9 5 7 8        5  3
+                /
+               1 2
+
+ExtractMin() → 1:  pop from minH, mark inactive
+ExtractMax() → 9:  pop from maxH, mark inactive
+  active: {2:1,3:1,5:1,7:1,8:1}
+
+ExtractMin() → 2:  (clean skips any inactive entries)
+ExtractMax() → 8:  (clean skips any inactive entries)
+  active: {3:1,5:1,7:1}
+```
+
 ---
 
 ## Example 9: Heap Sort
@@ -743,6 +938,38 @@ func main() {
     heapSort(arr3)
     fmt.Println("Reverse:", arr3)
 }
+```
+
+**Textual Figure:**
+
+```
+Heap Sort: arr = [12, 11, 13, 5, 6, 7]
+
+Step 1: Build max-heap (bottom-up):
+         13
+        /  \
+      11    12         →  heapified in O(n)
+     / \   /
+    5   6 7
+
+Step 2: Extract max repeatedly:
+  Swap root(13) with last → [7,11,12,5,6,|13]  sift 7 down
+        12
+       /  \                arr: [..., 13]
+      11    7
+     / \
+    5   6
+
+  Swap root(12) with last → [6,11,7,5,|12,13]  sift 6 down
+        11
+       /  \                arr: [..., 12, 13]
+      6    7
+     /
+    5
+
+  Continue until sorted...
+
+Result: [5, 6, 7, 11, 12, 13]   (in-place, O(n log n))
 ```
 
 ---
@@ -823,6 +1050,29 @@ func main() {
             num, mt.Median(), mt.lo.Len(), mt.hi.Len())
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Running Median (stream: 5, 15, 1, 3, 8, 7, 9, 10, 6, 2):
+  lo = max-heap (lower half)    hi = min-heap (upper half)
+
+Add  5: lo=[5]      hi=[]        median=5.0
+Add 15: lo=[5]      hi=[15]      median=10.0
+Add  1: lo=[5,1]    hi=[15]      → balance → lo=[5,1] hi=[15]
+                                  median=5.0
+Add  3: lo=[3,1]    hi=[5,15]    median=(3+5)/2=4.0
+Add  8: lo=[5,3,1]  hi=[8,15]    median=5.0
+Add  7: lo=[5,3,1]  hi=[7,8,15]  median=(5+7)/2=6.0
+Add  9: lo=[7,5,3,1] hi=[8,9,15] median=7.0
+Add 10: lo=[7,5,3,1] hi=[8,9,10,15] median=(7+8)/2=7.5
+Add  6: lo=[7,6,5,3,1] hi=[8,9,10,15] median=7.0
+Add  2: lo=[6,5,3,2,1] hi=[7,8,9,10,15] median=(6+7)/2=6.5
+
+  lo always has top = max of lower half
+  hi always has top = min of upper half
+  |lo| == |hi| or |lo| == |hi|+1
 ```
 
 ---

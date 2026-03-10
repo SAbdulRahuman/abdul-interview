@@ -76,6 +76,32 @@ func main() {
 }
 ```
 
+**Textual Figure: Iterative Preorder Traversal**
+
+```
+        1
+       / \
+      2   3
+     / \   \
+    4   5   6
+
+Stack trace (push right first, then left):
+
+  Step  Pop   Visit  Push (R then L)    Stack
+  ────  ───   ─────  ──────────────    ─────
+  init                                  [1]
+  1     1     1      push 3, push 2     [3, 2]
+  2     2     2      push 5, push 4     [3, 5, 4]
+  3     4     4      (no children)      [3, 5]
+  4     5     5      (no children)      [3]
+  5     3     3      push 6             [6]
+  6     6     6      (no children)      []
+
+  Output: [1, 2, 4, 5, 3, 6]  (root → left subtree → right subtree)
+
+  Key: push RIGHT before LEFT so LEFT is popped first (LIFO).
+```
+
 ---
 
 ## Example 2: Iterative Inorder Traversal
@@ -138,6 +164,42 @@ func main() {
     fmt.Println("Inorder:", inorderIterative(root))
     // [1, 2, 3, 4, 5, 6, 7]
 }
+```
+
+**Textual Figure: Iterative Inorder Traversal**
+
+```
+        4
+       / \
+      2   6
+     / \ / \
+    1  3 5  7
+
+Stack trace (go left until nil, pop & process, go right):
+
+  Step curr   Action              Stack         Output
+  ──── ────   ──────              ─────         ──────
+  1    4      push, go left       [4]           []
+  2    2      push, go left       [4,2]         []
+  3    1      push, go left       [4,2,1]       []
+  4    nil    pop 1, process      [4,2]         [1]
+              curr = 1.Right=nil
+  5    nil    pop 2, process      [4]           [1,2]
+              curr = 2.Right=3
+  6    3      push, go left       [4,3]         [1,2]
+  7    nil    pop 3, process      [4]           [1,2,3]
+              curr = 3.Right=nil
+  8    nil    pop 4, process      []            [1,2,3,4]
+              curr = 4.Right=6
+  9    6      push, go left       [6]           [1,2,3,4]
+  10   5      push, go left       [6,5]         [1,2,3,4]
+  11   nil    pop 5, process      [6]           [1,2,3,4,5]
+  12   nil    pop 6, process      []            [1,2,3,4,5,6]
+              curr = 6.Right=7
+  13   7      push                [7]           [1,2,3,4,5,6]
+  14   nil    pop 7, process      []            [1,2,3,4,5,6,7]
+
+  Output: [1, 2, 3, 4, 5, 6, 7]  (sorted for BST!)
 ```
 
 ---
@@ -204,6 +266,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Iterative Postorder (Two Stacks)**
+
+```
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Two-stack approach:
+  Stack1: process order    Stack2: collect in reverse
+
+  Step  Pop S1   Push to S2   Push L,R to S1    S1         S2
+  ────  ──────  ──────────  ──────────────  ──────     ────────
+  init                                          [1]        []
+  1     1        [1]          push 2, push 3    [2,3]      [1]
+  2     3        [1,3]        (no children)     [2]        [1,3]
+  3     2        [1,3,2]      push 4, push 5    [4,5]      [1,3,2]
+  4     5        [1,3,2,5]    (no children)     [4]        [1,3,2,5]
+  5     4        [1,3,2,5,4]  (no children)     []         [1,3,2,5,4]
+
+  Read S2 from top: [4, 5, 2, 3, 1]  ← postorder!
+
+  Trick: S2 collects reverse-preorder (root→right→left)
+         Reversed = postorder (left→right→root)
+```
+
 ---
 
 ## Example 4: Postorder with Single Stack
@@ -267,6 +356,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Postorder with Single Stack**
+
+```
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Use lastVisited to know when right subtree is done:
+
+  Step  Stack(top→)  Peek  lastVisited  Action
+  ────  ────────   ────  ───────────  ──────
+  1     [1,2,4]     4     nil          4.R=nil, pop & visit 4
+  2     [1,2]       2     4            2.R=5≠4, go right
+  3     [1,2,5]     5     4            5.R=nil, pop & visit 5
+  4     [1,2]       2     5            2.R=5=last! pop & visit 2
+  5     [1]         1     2            1.R=3≠2, go right
+  6     [1,3]       3     2            3.R=nil, pop & visit 3
+  7     [1]         1     3            1.R=3=last! pop & visit 1
+
+  Output: [4, 5, 2, 3, 1]
+
+  Key: peek at top, if right child exists and ≠ lastVisited,
+       go right. Otherwise, pop and process.
+```
+
 ---
 
 ## Example 5: Iterative DFS on Graph
@@ -316,6 +432,39 @@ func main() {
     fmt.Println("DFS:", dfsIterative(graph, 0))
     // [0, 1, 3, 4, 2, 5]
 }
+```
+
+**Textual Figure: Iterative DFS on Graph**
+
+```
+Graph (adjacency list):
+  0 → [1, 2]
+  1 → [3, 4]
+  2 → [5]
+  3 → []
+  4 → []
+  5 → []
+
+      0
+     / \
+    1   2
+   / \   \
+  3   4   5
+
+Stack trace (push neighbors in reverse):
+
+  Step  Pop  Visited?  Push (reverse)   Stack       Order
+  ────  ───  ────────  ────────────   ─────       ─────
+  init                                  [0]         []
+  1     0    new       push 2, push 1   [2, 1]      [0]
+  2     1    new       push 4, push 3   [2, 4, 3]   [0,1]
+  3     3    new       (no neighbors)   [2, 4]      [0,1,3]
+  4     4    new       (no neighbors)   [2]         [0,1,3,4]
+  5     2    new       push 5           [5]         [0,1,3,4,2]
+  6     5    new       (no neighbors)   []          [0,1,3,4,2,5]
+
+  DFS Order: [0, 1, 3, 4, 2, 5]
+  Uses visited set to avoid revisiting nodes.
 ```
 
 ---
@@ -392,6 +541,31 @@ func main() {
 }
 ```
 
+**Textual Figure: Flatten Binary Tree to Linked List**
+
+```
+Before:                    After (right-only linked list):
+      1                    1 → 2 → 3 → 4 → 5 → 6 → nil
+     / \
+    2   5
+   / \   \
+  3   4   6
+
+Stack-based preorder flattening:
+
+  Step  Pop  prev   Push (R, L)    Stack       Linked list
+  ────  ───  ────   ──────────    ─────       ───────────
+  1     1    nil    push 5, 2      [5,2]       1
+  2     2    1      push 4, 3      [5,4,3]     1→2
+  3     3    2      (leaves)       [5,4]       1→2→3
+  4     4    3      (leaves)       [5]         1→2→3→4
+  5     5    4      push 6         [6]         1→2→3→4→5
+  6     6    5      (leaves)       []          1→2→3→4→5→6
+
+  Each node: prev.Left=nil, prev.Right=curr
+  Result: preorder sequence as right-only list.
+```
+
 ---
 
 ## Example 7: Binary Tree Zigzag Level Order (BFS + Stack)
@@ -466,6 +640,32 @@ func main() {
 }
 ```
 
+**Textual Figure: Binary Tree Zigzag Level Order**
+
+```
+        3
+       / \
+      9  20
+        /  \
+       15   7
+
+Level-by-level with alternating direction:
+
+  Level 0 (L→R):  [3]
+  Level 1 (R→L):  [20, 9]     (reversed!)
+  Level 2 (L→R):  [15, 7]
+
+  ┌─────────────────────┐
+  │ Level 0:  3            │  →→→
+  │ Level 1:  20  9        │  ←←←
+  │ Level 2:  15  7        │  →→→
+  └─────────────────────┘
+
+  BFS with queue, toggle leftToRight flag each level.
+  On even levels: fill left-to-right.
+  On odd levels:  fill right-to-left (idx = size-1-i).
+```
+
 ---
 
 ## Example 8: BST Iterator (LeetCode 173) — Controlled Inorder
@@ -531,6 +731,37 @@ func main() {
     }
     fmt.Println() // 3 7 9 15 20
 }
+```
+
+**Textual Figure: BST Iterator (Controlled Inorder)**
+
+```
+        7
+       / \
+      3  15
+        /  \
+       9   20
+
+Initial pushLeft(7): push 7, then push 3 (leftmost path)
+
+  Stack: [7, 3]    (3 on top)
+
+  Call     Pop   pushLeft(right)  Stack     Output
+  ────     ───   ─────────────  ─────     ──────
+  Next()   3     3.R=nil          [7]       3
+  Next()   7     pushLeft(15)     [15,9]    7
+                  →push 15, push 9
+  Next()   9     9.R=nil          [15]      9
+  Next()   15    pushLeft(20)     [20]      15
+  Next()   20    20.R=nil         []        20
+
+  Output: 3, 7, 9, 15, 20  (sorted inorder!)
+
+  ┌─────────────────────────────┐
+  │ pushLeft: follow left chain  │
+  │ Next: pop, pushLeft(right)   │
+  │ O(h) space, amortized O(1)   │
+  └─────────────────────────────┘
 ```
 
 ---
@@ -640,6 +871,44 @@ func main() {
 }
 ```
 
+**Textual Figure: Path Sum II — Iterative DFS**
+
+```
+         5           target = 22
+        / \
+       4   8
+      /   / \
+     11  13  4
+    / \     / \
+   7   2   5   1
+
+Stack items carry (node, path, sum):
+
+  Pop Item                    Leaf?  Sum=22?
+  ────────                    ─────  ──────
+  (5, [5], 5)                 no
+    push (4,[5,4],9)
+    push (8,[5,8],13)
+  (4, [5,4], 9)               no
+    push (11,[5,4,11],20)
+  (11, [5,4,11], 20)          no
+    push (7,[5,4,11,7],27)
+    push (2,[5,4,11,2],22)
+  (2, [5,4,11,2], 22)         yes    22=22 ✓ FOUND!
+  (7, [5,4,11,7], 27)         yes    27≠22 ✘
+  (8, [5,8], 13)              no
+    push (13,[5,8,13],21)
+    push (4,[5,8,4],17)
+  (4, [5,8,4], 17)            no
+    push (5,[5,8,4,5],22)
+    push (1,[5,8,4,1],18)
+  (1, [5,8,4,1], 18)          yes    18≠22 ✘
+  (5, [5,8,4,5], 22)          yes    22=22 ✓ FOUND!
+  (13, [5,8,13], 21)          yes    21≠22 ✘
+
+  Paths: [5,4,11,2] and [5,8,4,5]
+```
+
 ---
 
 ## Example 10: N-ary Tree Preorder (Iterative)
@@ -701,6 +970,33 @@ func main() {
     fmt.Println("Preorder:", preorder(root))
     // [1, 3, 5, 6, 2, 4]
 }
+```
+
+**Textual Figure: N-ary Tree Preorder (Iterative)**
+
+```
+        1
+      / | \
+     3  2  4
+    / \
+   5   6
+
+Stack trace (push children in reverse order):
+
+  Step  Pop  Visit  Push children (reverse)  Stack
+  ────  ───  ─────  ───────────────────  ─────
+  init                                       [1]
+  1     1    1      push 4, 2, 3             [4, 2, 3]
+  2     3    3      push 6, 5               [4, 2, 6, 5]
+  3     5    5      (no children)            [4, 2, 6]
+  4     6    6      (no children)            [4, 2]
+  5     2    2      (no children)            [4]
+  6     4    4      (no children)            []
+
+  Output: [1, 3, 5, 6, 2, 4]
+
+  Same idea as binary tree preorder:
+  push children in reverse so leftmost is popped first.
 ```
 
 ---
@@ -784,6 +1080,38 @@ func main() {
     foundDepth := iddfs(root, 5)
     fmt.Printf("\nFound at depth: %d\n", foundDepth)
 }
+```
+
+**Textual Figure: Iterative Deepening DFS (IDDFS)**
+
+```
+        1
+       / \
+      2   3
+     / \
+    4   5   ← target
+
+IDDFS: repeat depth-limited DFS with increasing limits:
+
+  Depth limit 0:  Visit 1 only
+    Stack: [(1,d=0)] → visit 1 → not target, d=0=limit, stop
+
+  Depth limit 1:  Visit 1, 2, 3
+    Stack: [(1,0)] → visit 1 → push (3,1),(2,1)
+    Pop (2,1) → visit 2 → d=1=limit, stop
+    Pop (3,1) → visit 3 → d=1=limit, stop
+
+  Depth limit 2:  Visit 1, 2, 4, 5 ← FOUND!
+    Stack: [(1,0)] → visit 1 → push (3,1),(2,1)
+    Pop (2,1) → visit 2 → push (5,2),(4,2)
+    Pop (4,2) → visit 4 → not target
+    Pop (5,2) → visit 5 → FOUND! return depth=2
+
+  ┌──────────────────────────────────────────┐
+  │ IDDFS = DFS space O(d) + BFS optimality │
+  │ Finds shallowest target first            │
+  │ Overhead: re-visiting upper levels        │
+  └──────────────────────────────────────────┘
 ```
 
 ---

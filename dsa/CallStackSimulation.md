@@ -63,6 +63,32 @@ func main() {
 }
 ```
 
+**Textual Figure: Simulated Call Stack for factorial(5)**
+
+```
+Recursive call stack for factorial(5):
+
+  factorial(5)                       Simulated explicit stack:
+    factorial(4)                     ┌─────────┐
+      factorial(3)                   │ n = 1   │ ← top (base case)
+        factorial(2)                 ├─────────┤
+          factorial(1) ← base        │ n = 2   │
+            return 1                 ├─────────┤
+          return 1*2 = 2             │ n = 3   │
+        return 2*3 = 6               ├─────────┤
+      return 6*4 = 24                │ n = 4   │
+    return 24*5 = 120                ├─────────┤
+                                     │ n = 5   │ ← bottom
+                                     └─────────┘
+
+Unwinding phase (popping & accumulating):
+  Pop n=1 → result = 1
+  Pop n=2 → result = 1 × 2 = 2
+  Pop n=3 → result = 2 × 3 = 6
+  Pop n=4 → result = 6 × 4 = 24
+  Pop n=5 → result = 24 × 5 = 120  ✓
+```
+
 ---
 
 ## Example 2: Simulate Recursive Fibonacci
@@ -121,6 +147,38 @@ func main() {
         fmt.Printf("fib(%d) = %d\n", i, fibStack(i))
     }
 }
+```
+
+**Textual Figure: Simulated Call Stack for fib(4)**
+
+```
+Recursion tree for fib(4):
+
+            fib(4)
+           /      \
+        fib(3)    fib(2)
+        /   \      /   \
+    fib(2) fib(1) fib(1) fib(0)
+    /   \
+ fib(1) fib(0)
+
+Explicit stack simulation (each frame: n, state, partial):
+
+  Step  Stack (top→)                                Action
+  ────  ──────────────────────────────────────────   ──────────────────
+   1    [(4,CALL,0)]                                 Push fib(3)
+   2    [(4,CALL,0),(3,CALL,0)]                      Push fib(2)
+   3    [(4,..,0),(3,..,0),(2,CALL,0)]                Push fib(1)
+   4    [(..),(..),(2,..,0),(1,BASE)]                 fib(1)=1, pop
+   5    [(..),(3,..,0),(2,partial=1)]                 Push fib(0)
+   6    [(..),(3,..),(2,p=1),(0,BASE)]                fib(0)=0, pop
+   7    [(..),(3,..,0),(2,done→1+0=1)]                Pop, return 1
+   8    [(4,..,0),(3,partial=1)]                      Push fib(1)
+   9    [(4,..),(3,p=1),(1,BASE)]                     fib(1)=1, pop
+  10    [(4,..,0),(3,done→1+1=2)]                     Pop, return 2
+  11    [(4,partial=2)]                               Push fib(2)
+  ...   similar for right subtree                     → fib(2)=1
+  fin   [(4,done→2+1=3)]                             Pop → fib(4)=3 ✓
 ```
 
 ---
@@ -186,6 +244,41 @@ func main() {
 }
 ```
 
+**Textual Figure: Tower of Hanoi — Simulated Call Stack (n=3)**
+
+```
+Goal: Move 3 disks from A → C using B as auxiliary
+
+  Initial:    A         B         C
+            ┌─┐
+           ┌┤2├┐
+          ┌┤ 3 ├┐
+          ═══════     ═══════     ═══════
+
+Explicit stack simulates recursive calls:
+
+  Stack:  push (3,A,C,B)
+          pop → n=3: push (2,B,C,A), push MOVE(A→C), push (2,A,B,C)
+          pop → n=2: push (1,C,B,A), push MOVE(A→B), push (1,A,C,B)
+          pop → n=1: MOVE disk 1: A → C
+          pop → MOVE disk 2: A → B
+          pop → n=1: MOVE disk 1: C → B
+          pop → MOVE disk 3: A → C        ← largest disk
+          pop → n=2: push (1,A,C,B), push MOVE(B→C), push (1,B,A,C)
+          pop → n=1: MOVE disk 1: B → A
+          pop → MOVE disk 2: B → C
+          pop → n=1: MOVE disk 1: A → C
+
+  Move sequence: A→C, A→B, C→B, A→C, B→A, B→C, A→C
+  Total moves: 2³ - 1 = 7  ✓
+
+  Final:      A         B         C
+                                ┌─┐
+                               ┌┤2├┐
+                              ┌┤ 3 ├┐
+          ═══════     ═══════  ═══════
+```
+
 ---
 
 ## Example 4: Simulate Recursive Binary Search
@@ -246,6 +339,36 @@ func main() {
         fmt.Printf("Search %d → index %d\n", target, idx)
     }
 }
+```
+
+**Textual Figure: Simulated Call Stack for Binary Search (target=7)**
+
+```
+arr = [1, 3, 5, 7, 9, 11, 13, 15]   target = 7
+        0  1  2  3  4   5   6   7    (indices)
+
+Explicit stack simulation (each frame = lo, hi):
+
+  Push (lo=0, hi=7)
+  ┌────────────────────────────────────────────┐
+  │ Pop (0,7) → mid=3, arr[3]=7 → FOUND!      │
+  └────────────────────────────────────────────┘
+  Return index 3  ✓
+
+Search for target=6 (not found):
+
+  Push (lo=0, hi=7)
+  Pop (0,7) → mid=3, arr[3]=7 > 6 → push (0,2)
+  Pop (0,2) → mid=1, arr[1]=3 < 6 → push (2,2)
+  Pop (2,2) → mid=2, arr[2]=5 < 6 → push (3,2)
+  Pop (3,2) → lo > hi → return -1  (not found)
+
+  Stack depth: O(log n) — same as recursion depth
+
+  ┌──────────────────────────────────────────┐
+  │ Each stack frame replaces a recursive    │
+  │ call with (lo, hi) bounds                │
+  └──────────────────────────────────────────┘
 ```
 
 ---
@@ -324,6 +447,41 @@ func main() {
 }
 ```
 
+**Textual Figure: Tree DFS State Machine Simulation**
+
+```
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Each frame has state: 0=PRE, 1=LEFT, 2=RIGHT, 3=POST
+
+  Step  Stack (node,state)             Action           Pre    In     Post
+  ────  ─────────────────────────────  ───────────────  ─────  ─────  ─────
+   1    [(1,0)]                        Pre-visit 1      [1]    []     []
+   2    [(1,1)]                        Go left→push 2
+   3    [(1,1),(2,0)]                  Pre-visit 2      [1,2]  []     []
+   4    [(1,1),(2,1)]                  Go left→push 4
+   5    [(1,1),(2,1),(4,0)]            Pre-visit 4      [1,2,4]
+   6    [(1,1),(2,1),(4,1)]            Left=nil→skip
+   7    [(1,1),(2,1),(4,2)]            In-visit 4              [4]
+   8    [(1,1),(2,1),(4,3)]            Right=nil→skip
+   9    [(1,1),(2,1)]                  Post-visit 4                   [4]
+  10    [(1,1),(2,2)]                  In-visit 2              [4,2]
+  11    [(1,1),(2,2),(5,0)]            Pre-visit 5      [1,2,4,5]
+  12    ...                            5 is leaf→in,post       [..,5] [4,5]
+  13    [(1,1),(2,3)]                  Post-visit 2                   [4,5,2]
+  14    [(1,2)]                        In-visit 1              [4,2,5,1]
+  15    [(1,2),(3,0)]                  Pre-visit 3      [1,2,4,5,3]
+  16    ...                            3 is leaf→in,post       [..,3] [..,3]
+  17    [(1,3)]                        Post-visit 1                   [4,5,2,3,1]
+  18    []                             Done! ✓
+
+  Result: Pre=[1,2,4,5,3]  In=[4,2,5,1,3]  Post=[4,5,2,3,1]
+```
+
 ---
 
 ## Example 6: Simulate Merge Sort
@@ -399,6 +557,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Simulated Call Stack for Merge Sort**
+
+```
+Input: [38, 27, 43, 3, 9, 82, 10]
+
+Explicit stack simulates divide phase, then merge on return:
+
+  ┌──────────────── DIVIDE (push phase) ───────────────┐
+  │        [38, 27, 43, 3, 9, 82, 10]           │
+  │          /                    \              │
+  │   [38, 27, 43]          [3, 9, 82, 10]      │
+  │    /       \              /         \        │
+  │ [38,27]  [43]        [3,9]      [82,10]     │
+  │  / \                  / \         / \        │
+  │[38][27]             [3] [9]    [82] [10]     │
+  └───────────────────────────────────────────────┘
+  ┌──────────────── MERGE (pop phase) ────────────────┐
+  │ merge([38],[27]) → [27,38]                   │
+  │ merge([27,38],[43]) → [27,38,43]             │
+  │ merge([3],[9]) → [3,9]                       │
+  │ merge([82],[10]) → [10,82]                   │
+  │ merge([3,9],[10,82]) → [3,9,10,82]           │
+  │ merge([27,38,43],[3,9,10,82])                │
+  │   → [3, 9, 10, 27, 38, 43, 82]  ✓           │
+  └───────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Simulate Quick Sort
@@ -459,6 +644,40 @@ func main() {
     quickSortIterative(arr2)
     fmt.Println("Sorted:", arr2)
 }
+```
+
+**Textual Figure: Simulated Call Stack for Quick Sort**
+
+```
+Input: [3, 1, 4, 1, 5, 9, 2, 6]
+
+Explicit stack holds (lo, hi) pairs:
+
+  Push (0,7)                          Stack: [(0,7)]
+  Pop  (0,7) → pivot partition
+    arr after partition: [1, 1, 2, 3, 5, 9, 4, 6]
+    pivot index p = 3
+    Push (4,7), Push (0,2)            Stack: [(4,7),(0,2)]
+
+  Pop  (0,2) → partition left half
+    pivot index p = 0
+    Push (1,2)                        Stack: [(4,7),(1,2)]
+
+  Pop  (1,2) → partition
+    pivot index p = 1
+    (0,0) and (2,2) are single → skip
+    Stack: [(4,7)]
+
+  Pop  (4,7) → partition right half
+    Continue recursively...
+
+  Final: [1, 1, 2, 3, 4, 5, 6, 9]  ✓
+
+  ┌─────────────────────────────────────────┐
+  │ Key: Stack replaces recursive calls    │
+  │ Each pop = one partitioning step        │
+  │ Max stack depth: O(log n) avg, O(n) wc │
+  └─────────────────────────────────────────┘
 ```
 
 ---
@@ -524,6 +743,39 @@ func main() {
 }
 ```
 
+**Textual Figure: Simulated Call Stack for Permutations [1,2,3]**
+
+```
+Explicit stack simulates backtracking:
+Each frame: (index, current permutation built so far)
+
+  Stack frames trace (depth-first):
+
+    push (idx=0, perm=[])
+    pop  → try placing 1,2,3 at position 0:
+      push (1, [3])  push (1, [2])  push (1, [1])
+
+    pop (1, [1]) → try 2,3 at position 1:
+      push (2, [1,3])  push (2, [1,2])
+
+    pop (2, [1,2]) → only 3 left:
+      → emit [1,2,3] ✓
+
+    pop (2, [1,3]) → only 2 left:
+      → emit [1,3,2] ✓
+
+    pop (1, [2]) → try 1,3:
+      → emit [2,1,3] ✓
+      → emit [2,3,1] ✓
+
+    pop (1, [3]) → try 1,2:
+      → emit [3,1,2] ✓
+      → emit [3,2,1] ✓
+
+  Result: 3! = 6 permutations:
+    [1,2,3] [1,3,2] [2,1,3] [2,3,1] [3,1,2] [3,2,1]
+```
+
 ---
 
 ## Example 9: Simulate Recursive Flood Fill
@@ -585,6 +837,38 @@ func main() {
         fmt.Println(row)
     }
 }
+```
+
+**Textual Figure: Simulated Call Stack for Flood Fill**
+
+```
+Image (3×3), fill (1,1) from color 1 → color 2:
+
+  Before:           After:
+  [1, 1, 1]         [2, 2, 2]
+  [1, 1, 0]   →    [2, 2, 0]
+  [1, 0, 1]         [2, 0, 1]
+
+Explicit stack simulates recursive flood fill:
+
+  Push (1,1)
+  ┌────────────────────────────────────────────┐
+  │ Pop (1,1) → color 1→2, push neighbors   │
+  │   push (0,1),(2,1),(1,0),(1,2)         │
+  │ Pop (1,2) → color=0 ≠ 1 → skip         │
+  │ Pop (1,0) → color 1→2, push neighbors   │
+  │   push (0,0),(2,0)                     │
+  │ Pop (2,0) → color 1→2, push (2,1)      │
+  │ Pop (2,1) → color=0 ≠ 1 → skip         │
+  │ Pop (0,0) → color 1→2, push (0,1)      │
+  │ Pop (0,1) → color 1→2, push (0,2)      │
+  │   (already visited neighbors skipped)   │
+  │ Pop (0,2) → color 1→2                   │
+  │ Pop (2,1) → already visited/0 → skip   │
+  │ Stack empty → done! ✓                   │
+  └────────────────────────────────────────────┘
+
+  5 cells filled (connected component of color 1)
 ```
 
 ---
@@ -660,6 +944,39 @@ func main() {
     result := fibTrace(n)
     fmt.Printf("\nfib(%d) = %d\n", n, result)
 }
+```
+
+**Textual Figure: Visualizing Call Stack Depth for fib(5)**
+
+```
+Call tree with depth indentation:
+
+  fib(5)                         depth 0   │
+  ├─ fib(4)                     depth 1   ││
+  │  ├─ fib(3)                  depth 2   │││
+  │  │  ├─ fib(2)               depth 3   ││││
+  │  │  │  ├─ fib(1) → 1        depth 4   │││││  ← max depth
+  │  │  │  └─ fib(0) → 0        depth 4   │││││
+  │  │  │  = 1
+  │  │  └─ fib(1) → 1           depth 3   ││││
+  │  │  = 2
+  │  └─ fib(2)                  depth 2   │││
+  │     ├─ fib(1) → 1           depth 3   ││││
+  │     └─ fib(0) → 0           depth 3   ││││
+  │     = 1
+  │  = 3
+  └─ fib(3)                     depth 1   ││
+     ├─ fib(2)                  depth 2   │││
+     │  ├─ fib(1) → 1           depth 3   ││││
+     │  └─ fib(0) → 0           depth 3   ││││
+     │  = 1
+     └─ fib(1) → 1              depth 2   │││
+     = 2
+  = 5  ✓
+
+  Max stack depth reached: 4
+  Total calls: 15  (exponential overlap!)
+  Bars on right → visual depth gauge
 ```
 
 ---

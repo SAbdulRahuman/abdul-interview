@@ -71,6 +71,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Pointer-Based Binary Tree (Level-Order Insertion)
+  ═══════════════════════════════════════════════
+
+  Inserting values: 1, 2, 3, 4, 5, 6, 7
+
+  Each node stores Val + Left/Right pointers:
+
+            ┌─────────┐
+            │ Val: 1  │
+            │ L │ R   │
+            └─┬─┴─┬───┘
+             ╱     ╲
+     ┌─────────┐  ┌─────────┐
+     │ Val: 2  │  │ Val: 3  │
+     │ L │ R   │  │ L │ R   │
+     └─┬─┴─┬───┘  └─┬─┴─┬───┘
+      ╱     ╲      ╱     ╲
+   ┌───┐ ┌───┐  ┌───┐ ┌───┐
+   │ 4 │ │ 5 │  │ 6 │ │ 7 │
+   └───┘ └───┘  └───┘ └───┘
+
+  Inorder traversal (L → N → R):
+    4 → 2 → 5 → 1 → 6 → 3 → 7
+```
+
 ---
 
 ## Example 2: Array-Based Binary Tree
@@ -141,6 +169,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Array-Based Binary Tree
+  ════════════════════════
+
+  Array storage:
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 2 │ 3 │ 4 │ 5 │-1│-1│ ...
+  └───┴───┴───┴───┴───┴───┴───┘
+   i=0 i=1 i=2 i=3 i=4 i=5 i=6
+
+  Index mapping:
+    parent(i)  = (i-1)/2
+    left(i)    = 2i+1
+    right(i)   = 2i+2
+
+  Logical tree:
+           ┌───┐
+     i=0   │ 1 │
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌───┐
+   i=1   │ 2 │ │ 3 │  i=2
+         └─┬─┘ └───┘
+          ╱ ╲
+       ┌───┐┌───┐
+ i=3   │ 4 ││ 5 │  i=4
+       └───┘└───┘
+
+  Inorder: 4 → 2 → 5 → 1 → 3
+```
+
 ---
 
 ## Example 3: Convert Between Representations
@@ -207,6 +268,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Array ↔ Linked Conversion
+  ═══════════════════════════
+
+  Array: [1, 2, 3, 4, 5, -1, 6]
+          0  1  2  3  4   5  6
+
+             arrayToLinked()
+         ═════════════════→
+
+           ┌───┐
+           │ 1 │
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌───┐
+         │ 2 │ │ 3 │
+         └─┬─┘ └─┬─┘
+          ╱ ╲     ╲
+       ┌───┐┌───┐ ┌───┐
+       │ 4 ││ 5 │ │ 6 │  (i=5 was -1 → nil)
+       └───┘└───┘ └───┘
+
+         ←═════════════════
+             linkedToArray()
+
+  BFS level-order encodes back to:
+    [1, 2, 3, 4, 5, -1, 6]
+  (trailing -1s trimmed)
+```
+
 ---
 
 ## Example 4: N-ary Tree Representation
@@ -261,6 +354,38 @@ func main() {
     printTree(root, "")
     fmt.Println("Total nodes:", countNodes(root)) // 7
 }
+```
+
+**Textual Figure:**
+
+```
+  N-ary Tree Representation
+  ═══════════════════════════
+
+  Each node stores: Val + Children[]
+
+           ┌───┐
+           │ 1 │  Children: [2, 3, 4]
+           └─┬─┘
+          ╱  │  ╲
+       ┌───┐┌───┐┌───┐
+       │ 2 ││ 3 ││ 4 │  3 children of 1
+       └─┬─┘└───┘└─┬─┘
+        ╱ ╲         │
+     ┌───┐┌───┐  ┌───┐
+     │ 5 ││ 6 │  │ 7 │
+     └───┘└───┘  └───┘
+
+  printTree output (indented):
+    1
+      2
+        5
+        6
+      3
+      4
+        7
+
+  Total nodes: 7
 ```
 
 ---
@@ -323,6 +448,32 @@ func main() {
     node5 := root.Left.Right // 5 is right child of 2
     fmt.Println("Path from 5 to root:", pathToRoot(node5)) // [5 2 1]
 }
+```
+
+**Textual Figure:**
+
+```
+  Tree with Parent Pointers
+  ═══════════════════════════
+
+  Each node: Val + Left + Right + Parent
+
+           ┌───┐
+           │ 1 │  parent=nil (root)
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌───┐
+         │ 2 │ │ 3 │  parent=1
+         └─┬─┘ └───┘
+          ╱ ╲
+       ┌───┐┌───┐
+       │ 4 ││ 5 │  parent=2
+       └───┘└───┘
+
+  Path from node 5 to root (following parent pointers):
+    5 → parent → 2 → parent → 1 → parent → nil
+
+  Result: [5, 2, 1]
 ```
 
 ---
@@ -403,6 +554,34 @@ func main() {
     fmt.Print("Threaded inorder: ")
     inorderThreaded(root) // 1 2 3 4 5 6 7
 }
+```
+
+**Textual Figure:**
+
+```
+  Threaded Binary Tree (Inorder Threading)
+  ═════════════════════════════════════════
+
+            ┌───┐
+            │ 4 │
+            └─┬─┘
+             ╱ ╲
+          ┌───┐ ┌───┐
+          │ 2 │ │ 6 │
+          └─┬─┘ └─┬─┘
+           ╱ ╲     ╱ ╲
+        ┌───┐┌───┐┌───┐┌───┐
+        │ 1 ││ 3 ││ 5 ││ 7 │  leaves
+        └───┘└───┘└───┘└───┘
+
+  Threads (dotted = right pointer to inorder successor):
+    1 ──thread──→ 2
+    3 ──thread──→ 4
+    5 ──thread──→ 6
+    (7 has no thread → end)
+
+  Threaded inorder traversal (no stack needed):
+    1 → 2 → 3 → 4 → 5 → 6 → 7
 ```
 
 ---
@@ -492,6 +671,33 @@ func main() {
     back := binaryToNary(bin)
     fmt.Printf("\nBack to N-ary: root=%d, children=%d\n", back.Val, len(back.Children))
 }
+```
+
+**Textual Figure:**
+
+```
+  Left-Child Right-Sibling (LCRS) Encoding
+  ═══════════════════════════════════════
+
+  N-ary tree:              LCRS binary tree:
+
+       ┌───┐                    ┌───┐
+       │ 1 │                    │ 1 │
+       └─┬─┘                    └─┬─┘
+      ╱  │  ╲                    ╱
+   ┌───┐┌───┐┌───┐         ┌───┐
+   │ 2 ││ 3 ││ 4 │         │ 2 │──sibling──┐
+   └─┬─┘└───┘└───┘         └─┬─┘          │
+    ╱ ╲                        ╱          │
+ ┌───┐┌───┐               ┌───┐       ┌───┐
+ │ 5 ││ 6 │               │ 5 │─sib→│ 3 │─sib→[4]
+ └───┘└───┘               └───┘       └───┘
+                                  │       │
+                               ┌───┐   (nil)
+                               │ 6 │
+                               └───┘
+
+  LCRS rule: Left = first child, Right = next sibling
 ```
 
 ---
@@ -591,6 +797,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Tree ↔ Parenthesis String
+  ══════════════════════════════
+
+  Tree:                  String:
+       ┌───┐
+       │ 1 │   →  "1(2(4))(3)"
+       └─┬─┘
+        ╱ ╲
+     ┌───┐ ┌───┐
+     │ 2 │ │ 3 │
+     └─┬─┘ └───┘
+      ╱
+   ┌───┐
+   │ 4 │
+   └───┘
+
+  Encoding rules:
+    root│(left_subtree)(right_subtree)
+         1│  (2(4))       (3)
+
+  Parse:  1 ( 2 ( 4 ) ) ( 3 )
+          │   │   │       │
+          │   │   └─left of 2
+          │   └─left of 1
+          └─root
+               right of 1 ─→ 3
+```
+
 ---
 
 ## Example 9: Adjacency List Representation for Generic Trees
@@ -660,6 +897,39 @@ func main() {
     tree.DFS(0, 0)
     fmt.Println("Height:", tree.Height(0)) // 2
 }
+```
+
+**Textual Figure:**
+
+```
+  Adjacency List for Generic Trees
+  ════════════════════════════════════
+
+  Tree:
+          ┌───┐
+          │ 0 │  root
+          └─┬─┘
+         ╱  │  ╲
+      ┌───┐┌───┐┌───┐
+      │ 1 ││ 2 ││ 3 │
+      └─┬─┘└───┘└─┬─┘
+       ╱ ╲         │
+    ┌───┐┌───┐  ┌───┐
+    │ 4 ││ 5 │  │ 6 │
+    └───┘└───┘  └───┘
+
+  Adjacency list (children[] per node):
+    ┌──────┬───────────┐
+    │ Node │ Children  │
+    ├──────┼───────────┤
+    │  0   │ [1, 2, 3] │
+    │  1   │ [4, 5]    │
+    │  2   │ []        │
+    │  3   │ [6]       │
+    │ 4-6  │ []        │
+    └──────┴───────────┘
+
+  Height of node 0: 2 (path 0→1→4)
 ```
 
 ---
@@ -743,6 +1013,36 @@ func main() {
     fmt.Println("LCA(4,3):", lcaEuler(tour, depth, first, 4, 3)) // 1
     fmt.Println("LCA(2,5):", lcaEuler(tour, depth, first, 2, 5)) // 2
 }
+```
+
+**Textual Figure:**
+
+```
+  Euler Tour Representation
+  ═══════════════════════════
+
+  Tree:
+           ┌───┐
+           │ 1 │
+           └─┬─┘
+            ╱ ╲
+         ┌───┐ ┌───┐
+         │ 2 │ │ 3 │
+         └─┬─┘ └───┘
+          ╱ ╲
+       ┌───┐┌───┐
+       │ 4 ││ 5 │
+       └───┘└───┘
+
+  DFS visit order (enter + return):
+    Tour:  [1, 2, 4, 2, 5, 2, 1, 3, 1]
+    Depth: [0, 1, 2, 1, 2, 1, 0, 1, 0]
+    First: {1:0, 2:1, 4:2, 5:4, 3:7}
+
+  LCA via RMQ (find min depth between first[u]..first[v]):
+    LCA(4,5): range [2..4] → min depth=1 at tour[3]=2 → LCA=2
+    LCA(4,3): range [2..7] → min depth=0 at tour[6]=1 → LCA=1
+    LCA(2,5): range [1..4] → min depth=1 at tour[1]=2 → LCA=2
 ```
 
 ---

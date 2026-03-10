@@ -93,6 +93,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Circular Queue (capacity=3):  array indices [0] [1] [2]
+
+EnQueue(1):              EnQueue(2):              EnQueue(3):
+  ┌───┬───┬───┐              ┌───┬───┬───┐              ┌───┬───┬───┐
+  │ 1 │   │   │  size=1    │ 1 │ 2 │   │  size=2    │ 1 │ 2 │ 3 │  size=3
+  └───┴───┴───┘              └───┴───┴───┘              └───┴───┴───┘
+   H   T                    H       T                H           T→wraps
+                                                     FULL!
+
+EnQueue(4) → false  (queue is full)
+
+DeQueue() → true  (removes 1, head advances):
+  ┌───┬───┬───┐
+  │   │ 2 │ 3 │   head=1, tail=0, size=2
+  └───┴───┴───┘
+   T   H
+
+EnQueue(4) → true  (tail wraps to index 0):
+  ┌───┬───┬───┐
+  │ 4 │ 2 │ 3 │   head=1, tail=1, size=3
+  └───┴───┴───┘
+       H/T          Rear → 4  (index (1-1+3)%3 = 0)
+```
+
 ---
 
 ## Example 2: Circular Queue with Wasted Slot (No Size Counter)
@@ -161,6 +188,30 @@ func main() {
     q.Enqueue(40) // wraps around
     fmt.Println("Size:", q.Size()) // 3
 }
+```
+
+**Textual Figure:**
+
+```
+Wasted-slot approach: array size = 4 (capacity 3 + 1 wasted slot)
+
+Enqueue(10), Enqueue(20), Enqueue(30):
+  ┌────┬────┬────┬────┐
+  │ 10 │ 20 │ 30 │    │   head=0, tail=3
+  └────┴────┴────┴────┘
+   H              T       IsFull: (3+1)%4 == 0 ✓
+
+Dequeue() → 10:
+  ┌────┬────┬────┬────┐
+  │    │ 20 │ 30 │    │   head=1, tail=3, size=2
+  └────┴────┴────┴────┘
+          H         T
+
+Enqueue(40) — tail wraps:
+  ┌────┬────┬────┬────┐
+  │    │ 20 │ 30 │ 40 │   head=1, tail=0 (wrapped), size=3
+  └────┴────┴────┴────┘
+   T     H                IsFull: (0+1)%4 == 1 ✓
 ```
 
 ---
@@ -233,6 +284,26 @@ func main() {
         fmt.Printf("Dequeue %d → cap=%d, size=%d\n", v, q.cap, q.size)
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Auto-resizing circular queue (initial cap=2):
+
+Enqueue 1,2:  cap=2, FULL      Enqueue 3: resize 2→4!
+  ┌───┬───┐                       ┌───┬───┬───┬───┐
+  │ 1 │ 2 │  size=2=cap           │ 1 │ 2 │ 3 │   │  copied in order
+  └───┴───┘                       └───┴───┴───┴───┘  head=0
+
+Enqueue 4: fits             Enqueue 5: resize 4→8!
+  ┌───┬───┬───┬───┐         ┌───┬───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 2 │ 3 │ 4 │ FULL   │ 1 │ 2 │ 3 │ 4 │ 5 │   │   │   │ cap=8
+  └───┴───┴───┴───┘         └───┴───┴───┴───┴───┴───┴───┴───┘
+
+Dequeue shrinks when size == cap/4:
+  cap 16 → 8 → 4 → 2  as elements drain out
+  Elements always copied in logical order during resize
 ```
 
 ---
@@ -325,6 +396,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Producer-Consumer with Circular Buffer (cap=3):
+
+Producer              Buffer [cap=3]            Consumer
+  │                   ┌───┬───┬───┐              │
+  ├─ Produce(1) ─▶   │ 1 │   │   │              │
+  ├─ Produce(2) ─▶   │ 1 │ 2 │   │              │
+  ├─ Produce(3) ─▶   │ 1 │ 2 │ 3 │  FULL!        │
+  │  (blocks…)        └───┴───┴───┘    │         │
+  │  notFull.Wait()      H           T   │         │
+  │                                 │         │
+  │                  Consume() → 1  │  ───▶   │
+  │                  notFull.Signal()┘         │
+  ├─ Produce(4) ─▶   slot freed, write 4        │
+  │                                             │
+  │   ...continues alternating...                │
+  │                                             │
+  └────── All 6 produced  /  All 6 consumed ────┘
+```
+
 ---
 
 ## Example 5: Go's container/ring Package
@@ -374,6 +467,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Ring of size 5 (doubly-linked circular list):
+
+       ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  ┌─▶ │ 1 │─▶│ 2 │─▶│ 3 │─▶│ 4 │─▶│ 5 │─┐
+  │   └───┘   └───┘   └───┘   └───┘   └───┘ │
+  └───────────────────────────────────┘
+
+After Move(2):  current points to → 3
+
+Unlink(2) at position 3:  removes 4 and 5
+       ┌───┐   ┌───┐   ┌───┐
+  ┌─▶ │ 1 │─▶│ 2 │─▶│ 3 │─┐
+  │   └───┘   └───┘   └───┘ │
+  └─────────────────────┘
+
+  Removed ring: 4 5
+  Remaining: 3 1 2 (starting from current)
+```
+
 ---
 
 ## Example 6: Josephus Problem Using Circular Queue
@@ -416,6 +531,34 @@ func main() {
         fmt.Printf("n=%d, k=%d → survivor=%d\n\n", test.n, test.k, survivor)
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Josephus Problem: n=7, k=3
+
+Start:   1  2  3  4  5  6  7    (circle)
+
+Round 1: count 3 from 1 → eliminate 3
+  1  2  ✗  4  5  6  7
+
+Round 2: count 3 from 4 → eliminate 6
+  1  2  ✗  4  5  ✗  7
+
+Round 3: count 3 from 7 → eliminate 2
+  1  ✗  ✗  4  5  ✗  7
+
+Round 4: count 3 from 4 → eliminate 7
+  1  ✗  ✗  4  5  ✗  ✗
+
+Round 5: count 3 from 1 → eliminate 5
+  1  ✗  ✗  4  ✗  ✗  ✗
+
+Round 6: count 3 from 1 → eliminate 1
+  ✗  ✗  ✗  4  ✗  ✗  ✗
+
+Survivor: 4
 ```
 
 ---
@@ -475,6 +618,34 @@ func main() {
         fmt.Printf("t=%ds: allowed=%v (window count=%d)\n", sec, allowed, rl.size)
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Rate Limiter (limit=3 requests per 10s window):
+
+Timeline:  0s   1s   2s   3s        5s        11s  12s
+           │    │    │    │         │          │    │
+           ✓    ✓    ✓    ✗         ✗          ✓    ✓
+
+t=0s:  ┌───┐            count=1  ✓ allowed
+       │ 0s │
+       └───┘
+t=1s:  ┌───┬───┐       count=2  ✓ allowed
+       │ 0s │ 1s │
+       └───┴───┘
+t=2s:  ┌───┬───┬───┐  count=3  ✓ allowed (at limit)
+       │ 0s │ 1s │ 2s │
+       └───┴───┴───┘
+t=3s:  count=3 == limit   ✗ DENIED
+t=5s:  count=3 == limit   ✗ DENIED
+t=11s: 0s,1s,2s expired! ┌────┐  count=1  ✓ allowed
+                          │ 11s │
+                          └────┘
+t=12s: ┌────┬────┐       count=2  ✓ allowed
+       │ 11s │ 12s │
+       └────┴────┘
 ```
 
 ---
@@ -568,6 +739,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Visual Queue (cap=5), H=head marker, T=tail marker:
+
+Empty:       [_T] [_ ] [_ ] [_ ] [_ ]    H at 0, T at 0
+
+Enqueue(A):  [AH] [_T] [_ ] [_ ] [_ ]
+Enqueue(B):  [AH] [B ] [_T] [_ ] [_ ]
+Enqueue(C):  [AH] [B ] [C ] [_T] [_ ]
+
+Dequeue:     [_ ] [BH] [C ] [_T] [_ ]    removed A
+Dequeue:     [_ ] [_ ] [CH] [_T] [_ ]    removed B
+
+Enqueue(D):  [_ ] [_ ] [CH] [D ] [_T]
+Enqueue(E):  [_T] [_ ] [CH] [D ] [E ]    tail wraps!
+Enqueue(F):  [F ] [_T] [CH] [D ] [E ]    wrapped around!
+
+  Logical order: C → D → E → F  (front to rear)
+```
+
 ---
 
 ## Example 9: Hot Potato Game (Queue Rotation)
@@ -602,6 +794,26 @@ func main() {
     winner := hotPotato(names, 3)
     fmt.Printf("\nWinner: %s\n", winner)
 }
+```
+
+**Textual Figure:**
+
+```
+Hot Potato (passes=3, players: Alice Bob Charlie Diana Eve):
+
+  Round 1:  ┌───────┬─────┬─────────┬───────┬─────┐
+            │ Alice │ Bob │ Charlie │ Diana │ Eve │
+            └───────┴─────┴─────────┴───────┴─────┘
+            pass 3×: rotate Alice→Bob→Charlie to back
+            → Eliminate Diana
+
+  Round 2:  ┌─────┬───────┬─────┬─────────┐
+            │ Eve │ Alice │ Bob │ Charlie │    → Eliminate Bob
+            └─────┴───────┴─────┴─────────┘
+
+  ...continues until 1 player remains...
+
+  Winner: last player standing
 ```
 
 ---
@@ -675,6 +887,35 @@ func main() {
     }
     // After overwriting: [checkpoint, validate, complete]
 }
+```
+
+**Textual Figure:**
+
+```
+Circular Log Buffer (cap=3):
+
+Write "start":        ┌───────┬───┬───┐
+                       │ start │   │   │   count=1
+                       └───────┴───┴───┘
+
+Write "process":      ┌───────┬─────────┬───┐
+                       │ start │ process │   │   count=2
+                       └───────┴─────────┴───┘
+
+Write "checkpoint":   ┌───────┬─────────┬────────────┐
+                       │ start │ process │ checkpoint │  FULL count=3
+                       └───────┴─────────┴────────────┘
+
+Write "validate":     ┌──────────┬────────────┬──────────┐
+  overwrites "start"   │ validate │ checkpoint │  process │
+                       └──────────┴────────────┴──────────┘
+                        ↑head advances
+
+Write "complete":     ┌────────────┬──────────┬──────────┐
+  overwrites "process" │ checkpoint │ validate │ complete │
+                       └────────────┴──────────┴──────────┘
+
+  Final buffer: [checkpoint, validate, complete]
 ```
 
 ---
