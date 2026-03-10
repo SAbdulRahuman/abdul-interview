@@ -87,6 +87,47 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [3, 7, 1], target = 4   (simplified to 3 elements)
+
+  Brute Force (explores ALL 2³ = 8 subsets, checks sum at leaves):
+  ─────────────────────────────────────────────────────────────────
+                            idx=0
+                      ┌──────┴──────┐
+                 include 3        exclude 3
+                   idx=1            idx=1
+               ┌─────┴─────┐   ┌─────┴─────┐
+          include 7    excl 7  incl 7    excl 7
+            idx=2       idx=2  idx=2      idx=2
+           ┌──┴──┐    ┌──┴──┐ ┌──┴──┐   ┌──┴──┐
+          +1   skip  +1  skip +1  skip  +1   skip
+         {3,7,1} {3,7} {3,1} {3} {7,1} {7}  {1}  {}
+         sum=11  sum=10 sum=4✓ s=3 s=8   s=7  s=1  s=0
+          ✗       ✗      ✓    ✗    ✗     ✗    ✗    ✗
+
+         Nodes explored: 15 (all internal + leaves)
+
+  Backtracking (prunes when sum > target):
+  ────────────────────────────────────────
+                            idx=0, sum=0
+                      ┌──────┴──────┐
+                 +3 (sum=3)     skip (sum=0)
+                   idx=1            idx=1
+               ┌─────┴─────┐   ┌─────┴─────┐
+          +7 (sum=10)  skip    +7 (sum=7)   skip
+           PRUNED ✂    idx=2    PRUNED ✂    idx=2
+          sum>4!     ┌──┴──┐   sum>4!     ┌──┴──┐
+                   +1   skip             +1    skip
+                 sum=4✓  sum=3          sum=1   sum=0
+                   ✓       ✗              ✗       ✗
+
+         Nodes explored: 11 (2 pruned branches saved)
+
+  Result: {3, 1} → sum = 4 ✓
+```
+
 ---
 
 ## Example 2: Permutations — Filter vs Prune
@@ -170,6 +211,41 @@ func factorial(n int) int {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [1, 2, 3]   n=3
+
+  Brute Force (tries n^n = 27 leaf nodes — picks from ALL elements each time):
+  ───────────────────────────────────────────────────────────────────────────
+                              []
+              ┌───────────────┼───────────────┐
+             +1              +2              +3
+          ┌───┼───┐       ┌───┼───┐       ┌───┼───┐
+         +1  +2  +3      +1  +2  +3      +1  +2  +3
+        ┌┼┐ ┌┼┐ ┌┼┐    ┌┼┐ ┌┼┐ ┌┼┐    ┌┼┐ ┌┼┐ ┌┼┐
+        123 123 123    123 123 123    123 123 123
+        ─── ─── ───    ─── ─── ───    ─── ─── ───
+  [1,1,1]✗ [1,2,3]✓  ... 27 leaves total, only 6 valid
+
+  Backtracking (only picks UNUSED elements — generates n! = 6 leaves):
+  ────────────────────────────────────────────────────────────────────
+                              []
+              ┌───────────────┼───────────────┐
+             +1              +2              +3
+          (used:{1})      (used:{2})      (used:{3})
+          ┌─────┐         ┌─────┐         ┌─────┐
+         +2    +3        +1    +3        +1    +2
+          │     │         │     │         │     │
+         +3    +2        +3    +1        +2    +1
+       [1,2,3] [1,3,2] [2,1,3] [2,3,1] [3,1,2] [3,2,1]
+         ✓       ✓       ✓       ✓       ✓       ✓
+
+  Brute: 27 leaves → 6 valid (22% hit rate)
+  Backtracking: 6 leaves → 6 valid (100% hit rate)
+  Nodes: 40 (brute) vs 16 (backtrack) → 2.5x speedup
+```
+
 ---
 
 ## Example 3: N-Queens — Full Enumeration vs Backtracking
@@ -251,6 +327,50 @@ func main() {
 		_ = r2
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+4-Queens: Brute Force vs Backtracking
+
+  Brute Force tries ALL 4⁴ = 256 placements, validates at end:
+  ─────────────────────────────────────────────────────────────
+    col: 0 1 2 3    0 1 2 3    0 1 2 3        0 1 2 3
+  row 0: Q . . .    Q . . .    Q . . .   ...  . . . Q
+  row 1: Q . . .    . Q . .    . . Q .   ...  . . Q .
+  row 2: Q . . .    Q . . .    Q . . .   ...  . Q . .
+  row 3: Q . . .    Q . . .    Q . . .   ...  Q . . .
+         ✗ all      ✗ diag     ✗ col          ✗ check
+         same col   conflict               all 256 placements
+
+  Backtracking prunes row-by-row:
+  ──────────────────────────────
+  Row 0: try col 0
+    ┌─────────────────────────────────────────┐
+    │  Q . . .   Row 1: col 0 ✂ (same col)   │
+    │  . . . .         col 1 ✂ (diagonal)     │
+    │  . . . .         col 2 → place          │
+    │  . . . .                                │
+    └─────────────────────────────────────────┘
+    ┌─────────────────────────────────────────┐
+    │  Q . . .   Row 1: col 2 placed          │
+    │  . . Q .   Row 2: col 0 ✂ (col)         │
+    │  . . . .         col 1 → place          │
+    │  . . . .         but Row 3 fails → back │
+    └─────────────────────────────────────────┘
+
+  First valid solution found:
+    ┌───────────┐
+    │ . Q . .   │  Row 0: col 1
+    │ . . . Q   │  Row 1: col 3
+    │ Q . . .   │  Row 2: col 0
+    │ . . Q .   │  Row 3: col 2
+    └───────────┘
+    queens = [1, 3, 0, 2] ✓
+
+  N=4: Brute=341 nodes, Backtrack=17 nodes → 20x speedup
+  N=8: Brute=19,173,961, Backtrack=2,057 → 9,322x speedup!
 ```
 
 ---
@@ -355,6 +475,48 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Board:                  Word: "ABCCED"
+  ┌───┬───┬───┬───┐
+  │ A │ B │ C │ E │
+  ├───┼───┼───┼───┤
+  │ S │ F │ C │ S │
+  ├───┼───┼───┼───┤
+  │ A │ D │ E │ E │
+  └───┴───┴───┴───┘
+
+  Brute Force: generates all length-6 paths, checks at end
+  ─────────────────────────────────────────────────────────
+  Start (0,0)='A' → tries all 4 directions at each step
+    (0,0)→(0,1)→(0,2)→(0,3)→... keeps going even if mismatch
+    (0,0)→(1,0)→(2,0)→... explores 'A','S','A' path fully
+    Many wasted ops on paths that diverge early
+
+  Backtracking: prunes on FIRST character mismatch
+  ────────────────────────────────────────────────
+  Start (0,0)='A'=word[0] ✓
+    → (0,1)='B'=word[1] ✓
+      → (0,2)='C'=word[2] ✓
+        → (0,3)='E' ≠ word[3]='C' ✂ PRUNE!
+        → (1,2)='C'=word[3] ✓
+          → (1,1)='F' ≠ word[4]='E' ✂ PRUNE!
+          → (2,2)='E'=word[4] ✓
+            → (2,1)='D'=word[5] ✓ FOUND!
+
+  Path traced on board:
+  ┌───┬───┬───┬───┐
+  │ A→│→B→│→C │ E │   A(0,0) → B(0,1) → C(0,2)
+  ├───┼───┼───┼───┤                       ↓
+  │ S │ F │ C │ S │               C(1,2)←─┘
+  ├───┼───┼───┼───┤               ↓
+  │ A │ D←│←E │ E │   D(2,1) ← E(2,2)
+  └───┴───┴───┴───┘
+
+  Result: "ABCCED" found ✓
+```
+
 ---
 
 ## Example 5: When Brute Force Is Better
@@ -393,6 +555,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+  Decision Guide: When Brute Force Wins vs Backtracking Wins
+  ══════════════════════════════════════════════════════════
+
+  ┌──────────────────────────┐     ┌──────────────────────────┐
+  │     BRUTE FORCE WINS     │     │    BACKTRACKING WINS     │
+  ├──────────────────────────┤     ├──────────────────────────┤
+  │ • Small input (n ≤ 5)    │     │ • Strong constraints     │
+  │ • No constraints to      │     │ • Sparse solution space  │
+  │   prune on               │     │ • Cheap constraint check │
+  │ • Dense solutions (most  │     │ • Find any/first valid   │
+  │   branches succeed)      │     │ • Early bounds available │
+  │ • Counting via formula   │     │                          │
+  │ • Need shortest path     │     │                          │
+  └────────────┬─────────────┘     └────────────┬─────────────┘
+               │                                │
+               ▼                                ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │           Solution Density Spectrum                      │
+  │                                                          │
+  │  Dense ◄────────────────────────────────────► Sparse     │
+  │  (most valid)         ↑                  (few valid)     │
+  │  Brute OK         BOTH OK             Backtrack wins     │
+  │                                                          │
+  │  Example:          Example:             Example:         │
+  │  All subsets       Small perms          N-Queens          │
+  │  of size k         (n ≤ 5)              Sudoku            │
+  └──────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 6: Decision Tree Comparison
@@ -427,6 +621,48 @@ func main() {
 	fmt.Printf("  Backtracking nodes: ~65 (varies by branching)\n")
 	fmt.Printf("  Speedup: ~5x for n=4, grows exponentially\n")
 }
+```
+
+**Textual Figure:**
+
+```
+4 Non-Attacking Rooks on 4×4 Board
+
+  Brute Force Decision Tree (4⁴ = 256 leaves):
+  ────────────────────────────────────────────
+  Row 0:     0       1       2       3
+  Row 1:   0 1 2 3  0 1 2 3  0 1 2 3  0 1 2 3
+  Row 2:   ││││... (4 branches each → 4×4×4×4 paths)
+  Row 3:   ││││... total = 256 leaves
+           └─ check all 256 for unique columns
+              Only 24 valid (4! = 24)
+
+  Backtracking Decision Tree (~65 nodes):
+  ────────────────────────────────────────────
+  Row 0:    col=0         col=1        col=2      col=3
+              │             │            │          │
+  Row 1:   1  2  3       0  2  3      0  1  3    0  1  2
+           │  │  │       │  │  │      │  │  │    │  │  │
+  Row 2:  2  3 1  3 1  2  ...  (only unused columns)
+           │  │ │  │ │  │
+  Row 3:   3  2 3  1 2  1     (1 choice left each)
+
+  Pruning illustration (Row 0=col 0):
+    Row 0: col 0  →  R . . .
+    Row 1: col 0  ✂ PRUNED (col 0 taken)
+    Row 1: col 1  →  R . . .
+                     . R . .
+    Row 2: col 0  ✂ PRUNED
+    Row 2: col 1  ✂ PRUNED
+    Row 2: col 2  →  R . . .
+                     . R . .
+                     . . R .
+    Row 3: col 3  →  R . . .  (only option left)
+                     . R . .
+                     . . R .
+                     . . . R  ✓
+
+  Summary: 256 nodes (brute) vs ~65 nodes (backtrack) → ~5x speedup
 ```
 
 ---
@@ -494,6 +730,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [2, 4, 6, 8, ...], target = 50
+
+  Brute Force (bitmask enumeration — all 2^20 = 1,048,576 subsets):
+  ────────────────────────────────────────────────────────────
+  mask = 00000000000000000000  → sum=0    ≠ 50
+  mask = 00000000000000000001  → sum=2    ≠ 50
+  mask = 00000000000000000010  → sum=4    ≠ 50
+  ...                          (checks ALL 1,048,576 masks)
+  mask = 11111111111111111111  → sum=210  ≠ 50
+
+  Backtracking (recursive with pruning on sum > target):
+  ────────────────────────────────────────────────────────────
+                        idx=0, sum=0
+                  ┌───────┴───────┐
+             +2 (sum=2)        skip
+                idx=1           idx=1
+           ┌─────┴─────┐       ...
+      +4 (sum=6)     skip
+         idx=2        idx=2
+       ┌───┴───┐     ...
+  +6 (sum=12)  skip
+      ...       ...
+  Eventually: sum = 2+4+6+8+10+12+8 = 50 → found!
+  But if sum > 50, subtree is PRUNED ✂
+
+  Example prune: {2,4,6,8,10,12,14} sum=56 > 50 ✂
+    → Skips all 2^13 subsets of remaining elements!
+
+  Result: Backtracking ~2–10x faster on this input
+```
+
 ---
 
 ## Example 8: Backtracking With Memoization (Hybrid)
@@ -555,6 +825,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [1, 5, 11, 5], sum=22, target=11
+
+  Pure Backtracking (many repeated subproblems):
+  ─────────────────────────────────────────────────
+                   (idx=0, rem=11)
+              ┌───────┴───────┐
+         -1 (rem=10)      skip (rem=11)
+            idx=1              idx=1
+         ┌───┴───┐        ┌───┴───┐
+    -5(rem=5) skip(10) -5(rem=6) skip(11)
+       idx=2    idx=2     idx=2 ◄── SAME
+      ┌─┴─┐  ┌─┴─┐   ┌─┴─┐      subproblem!
+   -11 skip -11 skip  -11 skip
+   rem=-6 rem=5  ...
+    │     │
+   <0│   ┌┴┐    (idx=2,rem=5) computed TWICE
+  prune -5 skip   (idx=2,rem=10) computed TWICE
+
+  With Memoization (cache key = (idx, remaining)):
+  ─────────────────────────────────────────────────
+   memo[(2,5)]  = true  ← cached, reused!
+   memo[(2,10)] = false ← cached, reused!
+
+   Pure backtracking: ~15 nodes
+   With memoization:  ~10 nodes (overlaps eliminated)
+
+   Key insight: backtracking + memo = DP!
+```
+
 ---
 
 ## Example 9: Complexity Comparison Table
@@ -591,6 +893,30 @@ func main() {
 		fmt.Printf("%-18s %-12s %-14s %s\n", p.problem, p.bruteTime, p.btTime, p.note)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+  Complexity Growth: Brute Force vs Backtracking
+  ═════════════════════════════════════════════════════
+
+  Permutations (n elements):     N-Queens:
+  ────────────────────────     ────────────────────────
+   n   Brute(n^n) Backtrack(n!)   n   Brute(n^n)   Backtrack
+   3      27          6          4     256            17
+   5    3,125        120          8  16.7M         2,057
+  10    10^10    3,628,800       12   8.9×10^12     ~15,000
+
+  ┌────────────────────────────────────────────────────┐
+  │  Sudoku:                                          │
+  │    Brute: 9^81 ≈ 1.97 × 10^77  (impossible!)       │
+  │    Backtrack: 9^empty ≈ 9^51 but with constraints  │
+  │    In practice: solves in < 1ms with pruning       │
+  └────────────────────────────────────────────────────┘
+
+  The gap between brute force and backtracking grows
+  EXPONENTIALLY as n increases.
 ```
 
 ---
@@ -633,6 +959,38 @@ func main() {
 	fmt.Println("  Backtracking = recursive build + constraint check + undo")
 	fmt.Println("  DP = backtracking + memoization (when subproblems overlap)")
 }
+```
+
+**Textual Figure:**
+
+```
+  Algorithm Selection Flowchart
+  ═══════════════════════════════
+
+                ┌─────────────────┐
+                │  Has constraints │
+                │  to prune on?    │
+                └────────┬────────┘
+               YES│         │NO
+          ┌─────┴─────┐  ┌┴─────────────┐
+          │ Backtracking │  │  BRUTE FORCE   │
+          └──────┬─────┘  └──────────────┘
+                 │
+      ┌─────────┴─────────┐
+      │ Overlapping          │
+      │ subproblems?         │
+      └─────────┬─────────┘
+             YES│         │NO
+        ┌─────┴─────┐  ┌┴─────────────┐
+        │ Add memo    │  │ Pure backtrack │
+        │ → becomes  │  │ (no memo)      │
+        │   DP        │  └──────────────┘
+        └────────────┘
+
+  Mental Model:
+    Brute Force  ─────────→  for-loop over all, filter
+    Backtracking ─────────→  recursive build + prune + undo
+    DP           ─────────→  backtracking + memoization
 ```
 
 ---

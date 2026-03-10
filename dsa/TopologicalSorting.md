@@ -51,6 +51,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Directed Acyclic Graph:
+    ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │
+    └─┬─┘     └─┬─┘
+      │         │
+      ↓         ↓
+    ┌───┐     ┌───┐
+    │ 2 │────→│ 3 │
+    └───┘     └───┘
+
+Kahn's BFS (process indegree-0 nodes):
+┌──────┬──────────────────┬─────────┬───────────────────┐
+│ Step │ indegree         │ Queue   │ Process             │
+├──────┼──────────────────┼─────────┼───────────────────┤
+│ Init │ [0, 1, 1, 2]     │ [0]     │                     │
+│  1   │ [0, 0, 0, 2]     │ [1, 2]  │ Pop 0; ──indeg 1,2  │
+│  2   │ [0, 0, 0, 1]     │ [2]     │ Pop 1; ──indeg 3    │
+│  3   │ [0, 0, 0, 0]     │ [3]     │ Pop 2; ──indeg 3    │
+│  4   │ [0, 0, 0, 0]     │ []      │ Pop 3; done         │
+└──────┴──────────────────┴─────────┴───────────────────┘
+
+Topological Order: [0, 1, 2, 3]  (or [0, 2, 1, 3])
+```
+
 ---
 
 ## Example 2: DFS-Based Topological Sort
@@ -88,6 +114,34 @@ func main() {
 	adj := [][]int{{1,2},{3},{3},{}}
 	fmt.Println(topoSortDFS(4, adj)) // [0 2 1 3] or [0 1 2 3]
 }
+```
+
+**Textual Figure:**
+```
+Same DAG:
+    ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │
+    └─┬─┘     └─┬─┘
+      │         │
+      ↓         ↓
+    ┌───┐     ┌───┐
+    │ 2 │────→│ 3 │
+    └───┘     └───┘
+
+DFS Post-order Approach:
+  dfs(0):
+    └→ dfs(1):
+        └→ dfs(3): no unvisited neighbors
+           post-order push: 3
+       post-order push: 1
+    └→ dfs(2): (3 already visited)
+       post-order push: 2
+   post-order push: 0
+
+  Stack (post-order): [3, 1, 2, 0]
+  Reversed:           [0, 2, 1, 3]  ← topological order
+
+  Verify: 0→1 ✓, 0→2 ✓, 1→3 ✓, 2→3 ✓
 ```
 
 ---
@@ -130,6 +184,32 @@ func main() {
 	fmt.Println(findOrder(4, [][]int{{1,0},{2,0},{3,1},{3,2}})) // [0 1 2 3] or [0 2 1 3]
 	fmt.Println(findOrder(2, [][]int{{1,0},{0,1}}))              // [] (cycle)
 }
+```
+
+**Textual Figure:**
+```
+Test 1: prerequisites [[1,0],[2,0],[3,1],[3,2]]
+  Dependency edges: 0→1, 0→2, 1→3, 2→3
+
+      ┌───┐     ┌───┐
+      │ 0 │────→│ 1 │
+      └─┬─┘     └─┬─┘
+        │         │
+        ↓         ↓
+      ┌───┐     ┌───┐
+      │ 2 │────→│ 3 │
+      └───┘     └───┘
+
+  Kahn's: indeg=[0,1,1,2] → queue=[0]
+    Process 0 → order=[0], queue=[1,2]
+    Process 1 → order=[0,1], indeg[3]-- → queue=[2]
+    Process 2 → order=[0,1,2], indeg[3]-- → queue=[3]
+    Process 3 → order=[0,1,2,3]
+  Result: [0, 1, 2, 3]
+
+Test 2: prerequisites [[1,0],[0,1]] → cycle
+  0 ⇌ 1 (mutual dependency) → no valid order
+  Result: []
 ```
 
 ---
@@ -201,6 +281,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Test 1: words = ["wrt","wrf","er","ett","rftt"]
+
+  Derive edges from adjacent pairs:
+    "wrt" vs "wrf" → t → f  (3rd char differs)
+    "wrf" vs "er"  → w → e  (1st char differs)
+    "er"  vs "ett" → r → t  (2nd char differs)
+    "ett" vs "rftt"→ e → r  (1st char differs)
+
+  Dependency graph:
+    w → e → r → t → f
+
+  Kahn's: indeg: w=0, e=1, r=1, t=1, f=1
+    queue=[w] → process w → queue=[e]
+    process e → queue=[r] → process r → queue=[t]
+    process t → queue=[f] → process f → done
+
+  Result: "wertf"
+
+Test 3: ["z","x","z"] → z→x, x→z → cycle → ""
+```
+
 ---
 
 ## Example 5: Longest Path in DAG
@@ -246,6 +349,38 @@ func main() {
 	adj := [][]int{{1,2},{3},{3},{4,5},{},{}}
 	fmt.Println("Longest path:", longestPathDAG(6, adj)) // 3
 }
+```
+
+**Textual Figure:**
+```
+DAG (6 vertices): 0→1, 0→2, 1→3, 2→3, 3→4, 3→5
+
+    ┌───┐         ┌───┐
+    │ 0 │────────→│ 1 │
+    └─┬─┘         └─┬─┘
+      │             │
+      ↓             ↓
+    ┌───┐         ┌───┐
+    │ 2 │────────→│ 3 │
+    └───┘         └─┬─┘
+               ┌───┘└───┐
+               ↓       ↓
+             ┌───┐  ┌───┐
+             │ 4 │  │ 5 │
+             └───┘  └───┘
+
+Longest Path Computation (topo order + DP):
+  Topo stack (post-order reversed): [0, 2, 1, 3, 5, 4]
+
+  dist[v] = max length path ending at v:
+    dist[0]=0
+    dist[2]=0+1=1, dist[1]=0+1=1
+    dist[3]=max(dist[1]+1, dist[2]+1)=2
+    dist[4]=dist[3]+1=3, dist[5]=dist[3]+1=3
+
+  Longest path: 0→1→3→4 = 3 edges
+
+Result: 3
 ```
 
 ---
@@ -295,6 +430,32 @@ func main() {
 	duration := []int{3, 2, 4, 1}
 	fmt.Println("Min time:", minCompletionTime(4, adj, duration)) // 8
 }
+```
+
+**Textual Figure:**
+```
+Jobs DAG with durations:
+  Job 0 (dur=3) → Job 1 (dur=2) → Job 3 (dur=1)
+  Job 0 (dur=3) → Job 2 (dur=4) → Job 3 (dur=1)
+
+    ┌───────┐       ┌───────┐
+    │ 0 (3) │──────→│ 1 (2) │
+    └───┬───┘       └───┬───┘
+        │               │
+        ↓               ↓
+    ┌───────┐       ┌───────┐
+    │ 2 (4) │──────→│ 3 (1) │
+    └───────┘       └───────┘
+
+Earliest completion times:
+  Job 0: starts at 0, finishes at 3
+  Job 1: starts at 3 (after 0), finishes at 3+2=5
+  Job 2: starts at 3 (after 0), finishes at 3+4=7
+  Job 3: starts at max(5,7)=7, finishes at 7+1=8
+
+  Critical path: 0 → 2 → 3  (total = 3+4+1 = 8)
+
+Result: 8
 ```
 
 ---
@@ -353,6 +514,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+DAG: 0→1, 0→2, 1→3, 2→3
+    ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │
+    └─┬─┘     └─┬─┘
+      │         │
+      ↓         ↓
+    ┌───┐     ┌───┐
+    │ 2 │────→│ 3 │
+    └───┘     └───┘
+
+Backtracking generates ALL valid orderings:
+  indeg = [0,1,1,2]
+
+  Pick 0 (indeg=0):
+    Pick 1 (indeg=0 after 0 processed):
+      Pick 2 (indeg=0 after 1 processed):
+        Pick 3 → [0, 1, 2, 3] ✓
+    Pick 2 (indeg=0 after 0 processed):
+      Pick 1 (indeg=0 after 2 processed):
+        Pick 3 → [0, 2, 1, 3] ✓
+
+All topological orderings:
+  [0, 1, 2, 3]
+  [0, 2, 1, 3]
+```
+
 ---
 
 ## Example 8: Build Order with Multiple Sources
@@ -403,6 +592,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Dependency Graph (6 projects):
+  Edges: a→d, f→b, b→d, f→a, d→c
+
+    ┌───┐     ┌───┐     ┌───┐     ┌───┐
+    │ f │────→│ a │────→│ d │────→│ c │
+    └─┬─┘     └───┘     └───┘     └───┘
+      │                  ↑
+      ↓               ┌──┘
+    ┌───┐         ┌───┐
+    │ b │────────→│   │  (b→d)
+    └───┘         └───┘
+    ┌───┐
+    │ e │  (no dependencies, independent)
+    └───┘
+
+Kahn's BFS:
+  indeg: e=0, f=0, a=1, b=1, d=2, c=1
+  queue=[e, f] (multiple sources)
+  Process e → Process f → unlock a, b
+  Process a, b → unlock d
+  Process d → unlock c
+
+Result: [e, f, a, b, d, c] (one valid ordering)
+```
+
 ---
 
 ## Example 9: Minimum Semesters to Graduate (LeetCode 1136)
@@ -447,6 +663,29 @@ func main() {
 	fmt.Println(minimumSemesters(3, [][]int{{1,3},{2,3}}))       // 2
 	fmt.Println(minimumSemesters(3, [][]int{{1,2},{2,3},{3,1}})) // -1 (cycle)
 }
+```
+
+**Textual Figure:**
+```
+Test 1: n=3, relations=[[1,3],[2,3]]
+  Dependency: 1→3, 2→3
+
+    ┌───┐
+    │ 1 │───┐
+    └───┘   │    ┌───┐
+              └───→│ 3 │
+    ┌───┐   ┌───→└───┘
+    │ 2 │───┘
+    └───┘
+
+  Level-by-level BFS (each level = 1 semester):
+    Semester 1: [1, 2]  (indeg=0)
+    Semester 2: [3]     (indeg becomes 0)
+  Result: 2 semesters
+
+Test 2: relations=[[1,2],[2,3],[3,1]] → cycle
+    1 → 2 → 3 → 1  (all indeg ≥ 1, no start)
+  Result: -1
 ```
 
 ---
@@ -503,6 +742,31 @@ func main() {
 	fmt.Println("Earliest:", earliest) // [0 3 2 7]
 	fmt.Println("Critical path length:", total) // 7
 }
+```
+
+**Textual Figure:**
+```
+Weighted DAG (4 vertices):
+    ┌───┐ ──w=3── ┌───┐
+    │ 0 │────────→│ 1 │
+    └─┬─┘         └─┬─┘
+      │  w=2       │ w=4
+      ↓            ↓
+    ┌───┐         ┌───┐
+    │ 2 │────────→│ 3 │
+    └───┘ ──w=5── └───┘
+
+Critical Path Calculation:
+  earliest[0] = 0                        (source)
+  earliest[1] = earliest[0] + 3 = 3      (via 0→1)
+  earliest[2] = earliest[0] + 2 = 2      (via 0→2)
+  earliest[3] = max(3+4, 2+5) = max(7,7) = 7
+
+  Two critical paths (both length 7):
+    0 ──3──→ 1 ──4──→ 3   (total=7)
+    0 ──2──→ 2 ──5──→ 3   (total=7)
+
+Result: earliest=[0, 3, 2, 7], critical path length=7
 ```
 
 ---

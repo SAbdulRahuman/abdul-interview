@@ -64,6 +64,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Graph (undirected, weighted):              MST Result (weight = 19):
+
+       0 ──(10)── 1                              0 ──(10)── 1
+       │╲         │                              │
+      (6) (5)   (15)                            (5)
+       │    ╲     │                               │
+       2 ──(4)── 3                              3 ──(4)── 2
+
+  Kruskal's Step-by-Step (edges sorted by weight):
+  ┌──────┬────────────┬────────┬─────────┬────────────────────┐
+  │ Step │ Edge       │ Action │ Running │ Components         │
+  │      │            │        │ Total   │                    │
+  ├──────┼────────────┼────────┼─────────┼────────────────────┤
+  │  1   │ 2─3 (w=4) │ ADD    │    4    │ {2,3}{0}{1}        │
+  │  2   │ 0─3 (w=5) │ ADD    │    9    │ {0,2,3}{1}         │
+  │  3   │ 0─2 (w=6) │ SKIP   │    9    │ cycle! 0,2 same set │
+  │  4   │ 0─1 (w=10)│ ADD    │   19    │ {0,1,2,3}          │
+  │  5   │ 1─3 (w=15)│ SKIP   │   19    │ cycle! (done)      │
+  └──────┴────────────┴────────┴─────────┴────────────────────┘
+
+  MST Edges: 2─3(4), 0─3(5), 0─1(10)  →  Total = 19
+```
+
 ---
 
 ## Example 2: Kruskal's with Union-by-Size
@@ -115,6 +140,29 @@ func main() {
 	}
 	fmt.Println("MST weight:", total) // 10
 }
+```
+
+**Textual Figure:**
+```
+  Graph:  0 ─(1)─ 1 ─(2)─ 2 ─(3)─ 3 ─(4)─ 4
+          │                  │             │
+          └─────(5)───────────────────┘
+                             │
+                 1 ───(6)─── 3
+
+  Kruskal's with Union-by-Size:
+  ┌──────┬────────────┬────────┬─────────┬───────────────────┐
+  │ Step │ Edge       │ Action │ Running │ DSU state         │
+  ├──────┼────────────┼────────┼─────────┼───────────────────┤
+  │  1   │ 0─1 (w=1) │ ADD    │    1    │ {0,1}{2}{3}{4}    │
+  │  2   │ 1─2 (w=2) │ ADD    │    3    │ {0,1,2}{3}{4}     │
+  │  3   │ 2─3 (w=3) │ ADD    │    6    │ {0,1,2,3}{4}      │
+  │  4   │ 3─4 (w=4) │ ADD    │   10    │ {0,1,2,3,4}       │
+  │  5   │ 0─4 (w=5) │ SKIP   │   10    │ cycle (done)      │
+  │  6   │ 1─3 (w=6) │ SKIP   │   10    │ cycle             │
+  └──────┴────────────┴────────┴─────────┴───────────────────┘
+
+  MST = {0─1(1), 1─2(2), 2─3(3), 3─4(4)} = 10
 ```
 
 ---
@@ -172,6 +220,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Points (Manhattan distance):
+
+       10│       P2(3,10)
+         │        │
+         │       d=9
+         │        │
+        2│ P1(2,2)╎····P3(5,2)        P0─P1: 4   P2─P3: 10
+         │  │  d=3   d=4 │            P1─P3: 3   P2─P4: 14
+        0│P0 ··········· P4(7,0)      P3─P4: 4   ...
+         └───────────────────
+          0  1  2  3  4  5  6  7
+
+  Kruskal's on complete graph (all ¹⁰C₂ = 10 edges):
+  ┌──────┬─────────────┬────────┬─────────┐
+  │ Step │ Edge        │ Action │ Running │
+  ├──────┼─────────────┼────────┼─────────┤
+  │  1   │ P1─P3 (d=3)│ ADD    │    3    │
+  │  2   │ P0─P1 (d=4)│ ADD    │    7    │
+  │  3   │ P3─P4 (d=4)│ ADD    │   11    │
+  │  4   │ P0─P3 (d=7)│ SKIP   │   11    │
+  │  5   │ P1─P2 (d=9)│ ADD    │   20    │  ← done (4 edges)
+  └──────┴─────────────┴────────┴─────────┘
+
+  MST total cost = 20
+```
+
 ---
 
 ## Example 4: MST with Maximum Edge Constraint
@@ -214,6 +290,26 @@ func main() {
 	fmt.Println("Max weight 5:", canConnect(4, edges, 5)) // true
 	fmt.Println("Max weight 2:", canConnect(4, edges, 2)) // false
 }
+```
+
+**Textual Figure:**
+```
+  Graph:  0 ──(1)── 1 ──(3)── 2 ──(5)── 3
+          │                             │
+          └──────────(7)────────────────┘
+
+  Query 1: maxWeight = 5
+  ┌──────┬────────────┬────────┬──────────────────┐
+  │ Step │ Edge       │ w ≤ 5? │ Result           │
+  ├──────┼────────────┼────────┼──────────────────┤
+  │  1   │ 0─1 (w=1) │  Yes   │ ADD → count=1    │
+  │  2   │ 1─2 (w=3) │  Yes   │ ADD → count=2    │
+  │  3   │ 2─3 (w=5) │  Yes   │ ADD → count=3=n-1│
+  └──────┴────────────┴────────┴──────────────────┘
+  → true (count == n-1, all connected)
+
+  Query 2: maxWeight = 2
+  Only edge 0─1(w=1) qualifies → count=1 ≠ 3 → false
 ```
 
 ---
@@ -260,6 +356,29 @@ func main() {
 	total, comp := mstForest(5, edges)
 	fmt.Printf("MST forest weight: %d, components: %d\n", total, comp) // 6, 2
 }
+```
+
+**Textual Figure:**
+```
+  Disconnected Graph:
+
+    Component A              Component B
+    0 ──(2)── 1 ──(3)── 2    3 ──(1)── 4
+
+  Kruskal's on disconnected graph:
+  ┌──────┬────────────┬────────┬───────────────────────┐
+  │ Step │ Edge       │ Action │ Components              │
+  ├──────┼────────────┼────────┼───────────────────────┤
+  │  1   │ 3─4 (w=1) │ ADD    │ {0}{1}{2}{3,4}          │
+  │  2   │ 0─1 (w=2) │ ADD    │ {0,1}{2}{3,4}           │
+  │  3   │ 1─2 (w=3) │ ADD    │ {0,1,2}{3,4}            │
+  └──────┴────────────┴────────┴───────────────────────┘
+
+  edgesUsed = 3,  components = n - edgesUsed = 5 - 3 = 2
+  Total MST forest weight = 1 + 2 + 3 = 6
+
+  MST Forest (two separate trees):
+    Tree A: 0─(2)─1─(3)─2     Tree B: 3─(1)─4
 ```
 
 ---
@@ -311,6 +430,32 @@ func main() {
 	removed := minEdgesToRemove(4, edges)
 	fmt.Println("Remove edge indices:", removed) // [2 4]
 }
+```
+
+**Textual Figure:**
+```
+  Graph with indexed edges:
+
+       0 ──(1,idx0)── 1           Sorted by weight:
+       │╲            │            idx0: 0─1 w=1
+      (3,idx2)  (5,idx4)          idx1: 1─2 w=2
+       │    ╲        │            idx2: 0─2 w=3
+       2 ─(2,idx1)─ 1            idx3: 2─3 w=4
+       │            │            idx4: 1─3 w=5
+       └─(4,idx3)── 3
+
+  Kruskal's MST selection:
+  ┌─────┬───────────────┬────────┬───────────┐
+  │ idx │ Edge          │ Action │ In MST?   │
+  ├─────┼───────────────┼────────┼───────────┤
+  │  0  │ 0─1 (w=1)     │ ADD    │ ✓ Yes     │
+  │  1  │ 1─2 (w=2)     │ ADD    │ ✓ Yes     │
+  │  2  │ 0─2 (w=3)     │ SKIP   │ ✗ Remove  │
+  │  3  │ 2─3 (w=4)     │ ADD    │ ✓ Yes     │
+  │  4  │ 1─3 (w=5)     │ SKIP   │ ✗ Remove  │
+  └─────┴───────────────┴────────┴───────────┘
+
+  Removed edge indices: [2, 4] (redundant edges not in MST)
 ```
 
 ---
@@ -379,6 +524,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Graph: edges = {0-1(1), 1-2(1), 2-3(2), 0-3(2), 0-2(2), 1-3(1)}
+
+       0 ──(1)── 1       Base MST weight:
+       │╲      │╲        1+1+1 = 3 (using 3 weight-1 edges)
+      (2)(2) (1)(1)
+       │    ╳    │
+       3 ──(2)── 2
+
+  Critical/Pseudo-Critical Analysis:
+  ┌─────┬────────────┬──────┬────────────────────────────────┐
+  │ idx │ Edge       │ Type │ Reason                         │
+  ├─────┼────────────┼──────┼────────────────────────────────┤
+  │  0  │ 0─1 (w=1) │ Crit │ Skip → MST > 3 (no alt w=1)   │
+  │  1  │ 1─2 (w=1) │ Crit │ Skip → MST > 3                │
+  │  5  │ 1─3 (w=1) │ Crit │ Skip → MST > 3                │
+  │  2  │ 2─3 (w=2) │ Pse  │ Force → MST still = 3         │
+  │  3  │ 0─3 (w=2) │ Pse  │ Force → MST still = 3         │
+  │  4  │ 0─2 (w=2) │ Pse  │ Force → MST still = 3         │
+  └─────┴────────────┴──────┴────────────────────────────────┘
+
+  Critical: must exist in every MST (removing increases cost)
+  Pseudo-critical: can appear in some MST (forcing doesn't increase cost)
+```
+
 ---
 
 ## Example 8: Kruskal's Step-by-Step Trace
@@ -425,6 +596,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Graph: 0─1(4)  0─2(8)  1─2(2)  1─3(5)  2─3(6)  2─4(7)  3─4(3)
+
+  Sorted edges: 1─2(2), 3─4(3), 0─1(4), 1─3(5), 2─3(6), 2─4(7), 0─2(8)
+
+  Trace Output:
+  ┌──────┬─────────────┬────────┬─────────┬────────────────────┐
+  │ Step │ Edge        │ Action │ Running │ Components         │
+  ├──────┼─────────────┼────────┼─────────┼────────────────────┤
+  │  1   │ 1─2 (w=2)  │ ADD    │    2    │ {1,2}{0}{3}{4}     │
+  │  2   │ 3─4 (w=3)  │ ADD    │    5    │ {1,2}{3,4}{0}      │
+  │  3   │ 0─1 (w=4)  │ ADD    │    9    │ {0,1,2}{3,4}       │
+  │  4   │ 1─3 (w=5)  │ ADD    │   14    │ {0,1,2,3,4}        │
+  │  5   │ 2─3 (w=6)  │ SKIP   │   14    │ creates cycle       │
+  │  6   │ 2─4 (w=7)  │ SKIP   │   14    │ creates cycle       │
+  │  7   │ 0─2 (w=8)  │ SKIP   │   14    │ creates cycle       │
+  └──────┴─────────────┴────────┴─────────┴────────────────────┘
+
+  MST weight = 14.  Edges used: 1─2(2), 3─4(3), 0─1(4), 1─3(5)
+```
+
 ---
 
 ## Example 9: Kruskal's for Maximum Spanning Tree
@@ -468,6 +661,35 @@ func main() {
 	edges := []Edge{{0,1,1},{0,2,4},{1,2,2},{1,3,6},{2,3,3}}
 	fmt.Println("Max spanning tree:", maxSpanningTree(4, edges)) // 12
 }
+```
+
+**Textual Figure:**
+```
+  Graph (undirected, weighted):         Max Spanning Tree:
+
+     0 ─(1)─ 1                            0       1
+     │       │                            │       │
+    (4)     (6)                          (4)     (6)
+     │       │                            │       │
+     2 ─(2)─ 1    2 ─(3)─ 3               2       3
+                                          │
+                                         (3)
+                                          │
+                                          3
+
+  Kruskal's Max (edges sorted DESCENDING):
+  ┌──────┬────────────┬────────┬─────────┬───────────────────┐
+  │ Step │ Edge       │ Action │ Running │ Components        │
+  ├──────┼────────────┼────────┼─────────┼───────────────────┤
+  │  1   │ 1─3 (w=6) │ ADD    │    6    │ {1,3}{0}{2}       │
+  │  2   │ 0─2 (w=4) │ ADD    │   10    │ {0,2}{1,3}        │
+  │  3   │ 2─3 (w=3) │ ADD    │   13    │ {0,1,2,3} done    │
+  │  4   │ 1─2 (w=2) │ SKIP   │   13    │ cycle             │
+  │  5   │ 0─1 (w=1) │ SKIP   │   13    │ cycle             │
+  └──────┴────────────┴────────┴─────────┴───────────────────┘
+
+  Max ST = 1─3(6) + 0─2(4) + 2─3(3) = 13
+  Key: sort edges DESCENDING instead of ascending
 ```
 
 ---
@@ -519,6 +741,31 @@ func main() {
 	}
 	fmt.Println("\nKruskal's: O(E log E) dominated by sorting")
 }
+```
+
+**Textual Figure:**
+```
+  Kruskal's Time Complexity Breakdown:
+
+  Total: O(E log E) + O(E · α(V)) ≈ O(E log E)
+         │                │
+         │                └─ Union-Find operations
+         │                   (nearly constant per op)
+         └─ Sorting edges
+            (dominates)
+
+  Scaling behavior:
+  ┌─────────┬──────────┬───────────────────────────┐
+  │ V       │ E        │ Relative time               │
+  ├─────────┼──────────┼───────────────────────────┤
+  │     100 │      500 │ ▓░░░                        │
+  │   1,000 │    5,000 │ ▓▓▓░░░░░                  │
+  │  10,000 │   50,000 │ ▓▓▓▓▓▓▓░░░░░░            │
+  │ 100,000 │  500,000 │ ▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░  │
+  └─────────┴──────────┴───────────────────────────┘
+
+  Sorting (O(E log E)) dominates total runtime.
+  Union-Find with path compression + union by rank ≈ O(1) amortized.
 ```
 
 ---

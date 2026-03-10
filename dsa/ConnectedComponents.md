@@ -53,6 +53,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Test 1: n=5, edges=[[0,1],[1,2],[3,4]]
+
+  Component 0       Component 1
+  ┌───────────┐     ┌───────┐
+  │ 0 ─ 1 ─ 2 │     │ 3 ─ 4 │
+  └───────────┘     └───────┘
+
+  DFS: visit 0→1→2 (comp 1), then 3→4 (comp 2)
+  Result: 2 components
+
+Test 2: n=5, edges=[[0,1],[1,2],[2,3],[3,4]]
+  All connected: 0─1─2─3─4  → 1 component
+
+Test 3: n=5, edges=[]  (no edges)
+  Each vertex is its own component
+  {0} {1} {2} {3} {4}  → 5 components
+```
+
 ---
 
 ## Example 2: Label Each Component
@@ -97,6 +117,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Undirected Graph (7 vertices):
+  Edges: 0─1, 1─2, 3─4, 5─6
+
+  Component 0 (id=0)    Component 1 (id=1)   Component 2 (id=2)
+  ┌───────────┐      ┌───────┐       ┌───────┐
+  │ 0 ─ 1 ─ 2 │      │ 3 ─ 4 │       │ 5 ─ 6 │
+  └───────────┘      └───────┘       └───────┘
+
+Labeling process:
+  i=0: comp[0]=-1 → dfs(0), assign id=0
+       dfs(0)→dfs(1)→dfs(2): comp=[0,0,0,-1,-1,-1,-1]
+  i=3: comp[3]=-1 → dfs(3), assign id=1
+       dfs(3)→dfs(4): comp=[0,0,0,1,1,-1,-1]
+  i=5: comp[5]=-1 → dfs(5), assign id=2
+       dfs(5)→dfs(6): comp=[0,0,0,1,1,2,2]
+
+Labels: [0, 0, 0, 1, 1, 2, 2]   Count: 3
+```
+
 ---
 
 ## Example 3: Connected Components with BFS
@@ -136,6 +177,29 @@ func main() {
 	}
 	fmt.Println("Components:", componentsBFS(6, adj)) // 3
 }
+```
+
+**Textual Figure:**
+```
+Undirected Graph (6 vertices):
+  Edges: 0─1, 2─3, 4─5
+
+  ┌───────┐  ┌───────┐  ┌───────┐
+  │ 0 ─ 1 │  │ 2 ─ 3 │  │ 4 ─ 5 │
+  └───────┘  └───────┘  └───────┘
+
+BFS Component Discovery:
+  i=0: not visited → BFS from 0
+       queue=[0] → visit 0, enqueue 1
+       queue=[1] → visit 1 → done. Component 1.
+  i=2: not visited → BFS from 2
+       queue=[2] → visit 2, enqueue 3
+       queue=[3] → visit 3 → done. Component 2.
+  i=4: not visited → BFS from 4
+       queue=[4] → visit 4, enqueue 5
+       queue=[5] → visit 5 → done. Component 3.
+
+Result: 3 components
 ```
 
 ---
@@ -180,6 +244,24 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Union-Find on n=5, edges=[[0,1],[1,2],[3,4]]
+
+Initial: each node is its own component (count=5)
+  parent: [0, 1, 2, 3, 4]
+
+┌──────┬──────────────────┬───────┬─────────────────────┐
+│ Edge │ Union            │ count │ Components            │
+├──────┼──────────────────┼───────┼─────────────────────┤
+│ 0─1 │ Union(0,1)       │   4   │ {0,1} {2} {3} {4}     │
+│ 1─2 │ Union(1,2)       │   3   │ {0,1,2} {3} {4}       │
+│ 3─4 │ Union(3,4)       │   2   │ {0,1,2} {3,4}         │
+└──────┴──────────────────┴───────┴─────────────────────┘
+
+Result: 2 components
+```
+
 ---
 
 ## Example 5: Number of Provinces (LeetCode 547)
@@ -217,6 +299,27 @@ func main() {
 	fmt.Println(findCircleNum([][]int{{1,1,0},{1,1,0},{0,0,1}})) // 2
 	fmt.Println(findCircleNum([][]int{{1,0,0},{0,1,0},{0,0,1}})) // 3
 }
+```
+
+**Textual Figure:**
+```
+Test 1: isConnected = [[1,1,0],[1,1,0],[0,0,1]]
+
+  Adjacency matrix view:
+       0  1  2
+    0 [1, 1, 0]   → 0 connected to 1
+    1 [1, 1, 0]   → 1 connected to 0
+    2 [0, 0, 1]   → 2 alone
+
+  Province 1: {0, 1}     Province 2: {2}
+  ┌───────┐              ┌───┐
+  │ 0 ─ 1 │              │ 2 │
+  └───────┘              └───┘
+  Result: 2
+
+Test 2: isConnected = [[1,0,0],[0,1,0],[0,0,1]]
+  No connections: {0} {1} {2}
+  Result: 3
 ```
 
 ---
@@ -261,6 +364,24 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Undirected Graph (8 vertices):
+  Edges: 0─1, 1─2, 3─4, 4─5, 5─6, 6─7
+
+  Component A (size=3)    Component B (size=5)
+  ┌───────────┐        ┌───────────────────┐
+  │ 0 ─ 1 ─ 2 │        │ 3 ─ 4 ─ 5 ─ 6 ─ 7 │
+  └───────────┘        └───────────────────┘
+
+DFS finds each component and tracks size:
+  dfs(0): visits {0,1,2} → size=3
+  dfs(3): visits {3,4,5,6,7} → size=5
+  maxSize = max(3, 5) = 5
+
+Result: 5
+```
+
 ---
 
 ## Example 7: Number of Islands (Grid Components) LeetCode 200
@@ -302,6 +423,27 @@ func main() {
 	}
 	fmt.Println(numIslands(grid)) // 3
 }
+```
+
+**Textual Figure:**
+```
+Input Grid (4×5, '1'=land, '0'=water):
+┌───┬───┬───┬───┬───┐
+│ 1 │ 1 │ 0 │ 0 │ 0 │  ← Island 1
+├───┼───┼───┼───┼───┤
+│ 1 │ 1 │ 0 │ 0 │ 0 │
+├───┼───┼───┼───┼───┤
+│ 0 │ 0 │ 1 │ 0 │ 0 │  ← Island 2
+├───┼───┼───┼───┼───┤
+│ 0 │ 0 │ 0 │ 1 │ 1 │  ← Island 3
+└───┴───┴───┴───┴───┘
+
+DFS Flood Fill per island:
+  Island 1: start(0,0) → (0,1) → (1,0) → (1,1)  [4 cells]
+  Island 2: start(2,2)                          [1 cell]
+  Island 3: start(3,3) → (3,4)                  [2 cells]
+
+Result: 3 islands
 ```
 
 ---
@@ -349,6 +491,30 @@ func removeStones(stones [][]int) int {
 func main() {
 	fmt.Println(removeStones([][]int{{0,0},{0,1},{1,0},{1,2},{2,1},{2,2}})) // 5
 }
+```
+
+**Textual Figure:**
+```
+Stones at coordinates (row, col):
+  s0=(0,0)  s1=(0,1)  s2=(1,0)  s3=(1,2)  s4=(2,1)  s5=(2,2)
+
+  Grid view:       col 0  col 1  col 2
+  row 0:            s0     s1
+  row 1:            s2            s3
+  row 2:                   s4     s5
+
+Union-Find groups stones sharing row or column:
+  s0 & s1: same row 0    → union(0,1)
+  s0 & s2: same col 0    → union(0,2)
+  s1 & s4: same col 1    → union(1,4)
+  s3 & s5: same col 2    → union(3,5)
+  s2 & s3: same row 1    → union(2,3)
+  s4 & s5: same row 2    → union(4,5)
+
+  All stones end up in ONE component!
+  Removable = total - components = 6 - 1 = 5
+
+Result: 5
 ```
 
 ---
@@ -413,6 +579,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Input Accounts:
+  Acc 0: John  {john@mail.com, john_newyork@mail.com}
+  Acc 1: John  {john@mail.com, john00@mail.com}
+  Acc 2: Mary  {mary@mail.com}
+  Acc 3: John  {johnnybravo@mail.com}
+
+Union-Find on emails:
+  john@mail.com = john_newyork@mail.com     (from Acc 0)
+  john@mail.com = john00@mail.com           (from Acc 1)
+  → All three merge into one component:
+
+  Component 1 (John):
+    ┌───────────────────────────────────────────┐
+    │ john00  ─  john@mail  ─  john_newyork │
+    └───────────────────────────────────────────┘
+  Component 2 (Mary):    {mary@mail.com}
+  Component 3 (John):    {johnnybravo@mail.com}
+
+Result: 3 merged accounts (sorted emails within each)
+```
+
 ---
 
 ## Example 10: Dynamic Connectivity (Online Components)
@@ -462,6 +651,27 @@ func main() {
 	}
 	fmt.Println("0 and 5 connected?", dsu.Connected(0, 5)) // true
 }
+```
+
+**Textual Figure:**
+```
+Dynamic Connectivity (6 vertices, edges added online):
+
+Initial: 6 isolated nodes, count=6
+  {0} {1} {2} {3} {4} {5}
+
+┌────────────┬─────────┬───────────────────────────────┐
+│ Operation  │  Count  │ Components                    │
+├────────────┼─────────┼───────────────────────────────┤
+│ Union(0,1) │    5    │ {0,1} {2} {3} {4} {5}         │
+│ Union(2,3) │    4    │ {0,1} {2,3} {4} {5}           │
+│ Union(4,5) │    3    │ {0,1} {2,3} {4,5}             │
+│ Union(1,2) │    2    │ {0,1,2,3} {4,5}               │
+│ Union(3,4) │    1    │ {0,1,2,3,4,5}                 │
+└────────────┴─────────┴───────────────────────────────┘
+
+Final: 0─1─2─3─4─5 all in one component
+  Connected(0, 5)? → true
 ```
 
 ---

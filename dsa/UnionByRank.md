@@ -69,6 +69,50 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Union by Rank: 8 elements, pairs {0,1},{2,3},{4,5},{6,7},{0,2},{4,6},{0,4}
+
+  Step 1-4: pair unions (equal ranks → rank++):
+    ┌───┐  ┌───┐  ┌───┐  ┌───┐
+    │0 r1│  │2 r1│  │4 r1│  │6 r1│
+    └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘
+    ┌─┴─┐  ┌─┴─┐  ┌─┴─┐  ┌─┴─┐
+    │ 1 │  │ 3 │  │ 5 │  │ 7 │
+    └───┘  └───┘  └───┘  └───┘
+
+  Step 5: Union(0,2) → rank[0]=1 == rank[2]=1 → parent[2]=0, rank[0]=2
+  Step 6: Union(4,6) → rank[4]=1 == rank[6]=1 → parent[6]=4, rank[4]=2
+      ┌───┐              ┌───┐
+      │0 r2│              │4 r2│
+      └─┬─┘              └─┬─┘
+     ┌──┴──┐           ┌──┴──┐
+   ┌─┴─┐ ┌─┴─┐       ┌─┴─┐ ┌─┴─┐
+   │ 1 │ │ 2 │       │ 5 │ │ 6 │
+   └───┘ └─┬─┘       └───┘ └─┬─┘
+         ┌─┴─┐             ┌─┴─┐
+         │ 3 │             │ 7 │
+         └───┘             └───┘
+
+  Step 7: Union(0,4) → rank[0]=2 == rank[4]=2 → parent[4]=0, rank[0]=3
+            ┌───┐
+            │0 r3│ (root)
+            └─┬─┘
+        ┌───┼───┐
+      ┌─┴─┐┌┴─┐┌┴─┐
+      │ 1 ││2 ││4 │
+      └───┘└┬─┘└┬─┘
+           │  ┌──┴──┐
+          ┌┴┐┌┴─┐┌┴─┐
+          │3││5 ││6 │
+          └─┘└──┘└┬─┘
+                  │
+                 ┌┴┐
+                 │7│
+                 └─┘
+  Max height = 3 = ⌊log₂(8)⌋  ✓
+```
+
 ---
 
 ## Example 2: Why Rank Keeps Trees Balanced
@@ -119,6 +163,32 @@ func main() {
 	fmt.Println("Key property: A tree of rank r has at least 2^r nodes")
 	fmt.Println("Therefore max rank ≤ log₂(n)")
 }
+```
+
+**Textual Figure:**
+```
+  Naive union (chain):             Union by rank (balanced):
+
+    0→1→2→3→4                        ┌───┐
+    Height = 4 = O(n)              │0 r3│
+                                   └─┬─┘
+    ┌─┐                          ┌──┬┴─┬──┐
+    │4│                        ┌─┴┐┌┴┐┌┴┐┌┴─┐
+    └┬┘                        │1││2││5││ 4 │
+    ┌┴┐                        └─┘└┬┘└─┘└┬─┘
+    │3│                           │   ┌─┴─┐
+    └┬┘                          ┌┴┐ ┌┴─┐┌┴┐
+    ┌┴┐                          │3│ │6 ││7│
+    │2│                          └─┘ └──┘└─┘
+    └┬┘
+    ┌┴┐                        Height = 3 = log₂(8)
+    │1│
+    └┬┘                        Key property:
+    ┌┴┐                          rank r → ≥ 2^r nodes
+    │0│                          rank 0: ≥ 1 node
+    └─┘                          rank 1: ≥ 2 nodes
+                                   rank 2: ≥ 4 nodes
+                                   rank 3: ≥ 8 nodes  ✓
 ```
 
 ---
@@ -184,6 +254,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Build tree: Union(0,1), Union(2,3), Union(0,2),
+              Union(4,5), Union(6,7), Union(4,6), Union(0,4)
+
+  Before compression:          After Find(7) with compression:
+        ┌───┐                        ┌───┐
+        │0 r3│                        │0 r3│ ← rank stays 3!
+        └─┬─┘                        └─┬─┘
+      ┌──┼──┐                    ┌──┼──┬──┐
+    ┌─┴┐┌┴┐┌┴─┐                ┌─┴┐┌┴┐┌┴┐┌┴─┐
+    │1││2││4 │                │1││2││4││ 7 │ ← 7 now
+    └─┘└┬┘└┬─┘                └─┘└┬┘└┬┘└───┘   points
+       │ ┌─┴─┐                   │  │         to 0!
+      ┌┴┐┌┴─┐┌─┐              ┌┴┐┌┴┐
+      │3││5 ││6│              │3││5│
+      └─┘└──┘└┬┘              └─┘└─┘
+              │
+             ┌┴┐                Actual height: 1
+             │7│                Rank: 3 (unchanged)
+             └─┘                Rank ≥ actual height always
+    Actual height: 3
+    Rank: 3
+
+  Key insight: rank is an UPPER BOUND on height.
+  Path compression reduces height but never updates rank.
+  Rank only increases during union of equal-rank trees.
+```
+
 ---
 
 ## Example 4: Connected Components with Rank
@@ -226,6 +325,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  n=8, edges: {0,1},{1,2},{3,4},{5,6},{6,7},{3,7}
+
+  ┌────────┬────────────┬──────────────────────────┬────────────┐
+  │ Edge   │ find(u,v)  │ Action                   │ Components │
+  ├────────┼────────────┼──────────────────────────┼────────────┤
+  │ {0,1}  │ 0 ≠ 1     │ Union, rank++ → r[0]=1   │   8 → 7    │
+  │ {1,2}  │ 0 ≠ 2     │ Union, r[0]>r[2]         │   7 → 6    │
+  │ {3,4}  │ 3 ≠ 4     │ Union, rank++ → r[3]=1   │   6 → 5    │
+  │ {5,6}  │ 5 ≠ 6     │ Union, rank++ → r[5]=1   │   5 → 4    │
+  │ {6,7}  │ 5 ≠ 7     │ Union, r[5]>r[7]         │   4 → 3    │
+  │ {3,7}  │ 3 ≠ 5     │ Union, rank++ → r[3]=2   │   3 → 2    │
+  └────────┴────────────┴──────────────────────────┴────────────┘
+
+  Final forest (2 components):
+    Component 1:         Component 2:
+      ┌───┐                 ┌───┐
+      │ 0 │ (r=1)           │ 3 │ (r=2)
+      └─┬─┘                 └─┬─┘
+     ┌──┴──┐             ┌──┴──┐
+   ┌─┴─┐ ┌─┴─┐         ┌─┴─┐ ┌─┴─┐
+   │ 1 │ │ 2 │         │ 4 │ │ 5 │
+   └───┘ └───┘         └───┘ └─┬─┘
+                              ┌──┴──┐
+                            ┌─┴─┐ ┌─┴─┐
+                            │ 6 │ │ 7 │
+                            └───┘ └───┘
+
+  Result: 2 components
+```
+
 ---
 
 ## Example 5: Redundant Connection with Rank
@@ -263,6 +394,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  edges = [[1,2], [1,3], [2,3]]
+
+  ┌────────┬────────────┬──────────────────────────────────┐
+  │ Edge   │ find(u,v)  │ Action                           │
+  ├────────┼────────────┼──────────────────────────────────┤
+  │ [1,2]  │ 1 ≠ 2     │ rank eq → parent[2]=1, r[1]++    │
+  │ [1,3]  │ 1 ≠ 3     │ r[1]>r[3] → parent[3]=1          │
+  │ [2,3]  │ 1 == 1    │ SAME ROOT → CYCLE! Return [2,3]  │
+  └────────┴────────────┴──────────────────────────────────┘
+
+  Forest at cycle detection:
+      ┌───┐
+      │ 1 │ (root, rank=1)
+      └─┬─┘
+     ┌──┴──┐
+   ┌─┴─┐ ┌─┴─┐
+   │ 2 │ │ 3 │    Edge [2,3]: find(2)=1, find(3)=1
+   └───┘ └───┘    Same root → redundant edge!
+
+  Note: Union by rank kept tree balanced (height=1)
+  instead of creating chain 1→2→3
+```
+
 ---
 
 ## Example 6: Rank Property Proof
@@ -296,6 +452,53 @@ func main() {
 		fmt.Printf("  %d  |    %3d    | 2^%d = %d\n", s.rank, s.minNodes, s.rank, s.minNodes)
 	}
 }
+```
+
+**Textual Figure:**
+```
+  Rank Property Proof by Induction:
+  ═══════════════════════════════════
+
+  Base case: rank 0
+    ┌───┐
+    │ x │  rank=0  →  1 node  =  2⁰ ✓
+    └───┘
+
+  Inductive step: rank r formed by merging two rank (r-1) trees
+
+    rank 1: merge two rank-0 trees
+      ┌───┐         ┌───┐           ┌───┐
+      │ A │ (r=0) + │ B │ (r=0) →   │ A │ (r=1)   ≥ 2¹ = 2 nodes ✓
+      └───┘         └───┘           └─┬─┘
+                                    ┌─┴─┐
+                                    │ B │
+                                    └───┘
+
+    rank 2: merge two rank-1 trees
+      ┌───┐           ┌───┐           ┌───┐
+      │ A │ (r=1) +   │ C │ (r=1) →  │ A │ (r=2)   ≥ 2² = 4 nodes ✓
+      └─┬─┘           └─┬─┘           └─┬─┘
+      ┌─┴─┐           ┌─┴─┐          ┌──┴──┐
+      │ B │           │ D │        ┌─┴─┐ ┌─┴─┐
+      └───┘           └───┘        │ B │ │ C │
+                                   └───┘ └─┬─┘
+                                         ┌─┴─┐
+                                         │ D │
+                                         └───┘
+
+  ┌──────┬───────────┬─────────────────────────┐
+  │ Rank │ Min Nodes │ Proof                   │
+  ├──────┼───────────┼─────────────────────────┤
+  │  0   │     1     │ 2⁰ = 1  (base case)     │
+  │  1   │     2     │ 2¹ = 2                  │
+  │  2   │     4     │ 2² = 4                  │
+  │  3   │     8     │ 2³ = 8                  │
+  │  4   │    16     │ 2⁴ = 16                 │
+  │  5   │    32     │ 2⁵ = 32                 │
+  └──────┴───────────┴─────────────────────────┘
+
+  Corollary: max rank ≤ log₂(n)
+    n = 1000000 → max rank ≤ 19
 ```
 
 ---
@@ -346,6 +549,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Adjacency matrix (3 cities):
+       0  1  2
+    0 [1, 1, 0]    0 ↔ 1 (connected)
+    1 [1, 1, 0]    1 ↔ 0 (same)
+    2 [0, 0, 1]    2 is isolated
+
+  Graph:
+    ┌───┐     ┌───┐       ┌───┐
+    │ 0 │─────│ 1 │       │ 2 │ (isolated)
+    └───┘     └───┘       └───┘
+
+  Union-Find trace:
+  ┌──────────┬─────────────────────────────┬──────────────┐
+  │ Pair(i,j)│ Action                      │ parent[]     │
+  ├──────────┼─────────────────────────────┼──────────────┤
+  │ (0, 1)   │ rank eq → parent[1]=0, r++  │ [0, 0, 2]    │
+  │ (0, 2)   │ isConnected=0 → skip        │ [0, 0, 2]    │
+  │ (1, 2)   │ isConnected=0 → skip        │ [0, 0, 2]    │
+  └──────────┴─────────────────────────────┴──────────────┘
+
+  Final forest:
+    Province 1:        Province 2:
+      ┌───┐              ┌───┐
+      │ 0 │ (root,r=1)   │ 2 │ (root,r=0)
+      └─┬─┘              └───┘
+      ┌─┴─┐
+      │ 1 │
+      └───┘
+
+  Count roots: {0, 2} → 2 provinces
+```
+
 ---
 
 ## Example 8: Rank Update Trace
@@ -389,6 +626,41 @@ func main() {
 		fmt.Printf("  parent=%v rank=%v\n\n", parent, rank)
 	}
 }
+```
+
+**Textual Figure:**
+```
+  Rank Update Trace: 8 elements
+  Operations: {0,1},{2,3},{0,2},{4,5},{6,7},{4,6},{0,4}
+
+  ┌─────────────┬────────────────────────────────────┬──────────────────────────┐
+  │ Operation   │ Rank Decision                      │ parent[]       rank[]    │
+  ├─────────────┼────────────────────────────────────┼──────────────────────────┤
+  │ Union(0,1)  │ r[0]=0 == r[1]=0 → p[1]=0, r[0]++ │ [0,0,2,3,4,5,6,7] [1,..]│
+  │ Union(2,3)  │ r[2]=0 == r[3]=0 → p[3]=2, r[2]++ │ [0,0,2,2,4,5,6,7] [1,0,1]│
+  │ Union(0,2)  │ r[0]=1 == r[2]=1 → p[2]=0, r[0]++ │ [0,0,0,2,4,5,6,7] [2,..]│
+  │ Union(4,5)  │ r[4]=0 == r[5]=0 → p[5]=4, r[4]++ │ [..,4,4,6,7]    [..,1,..]│
+  │ Union(6,7)  │ r[6]=0 == r[7]=0 → p[7]=6, r[6]++ │ [..,4,4,6,6]    [..,1,1] │
+  │ Union(4,6)  │ r[4]=1 == r[6]=1 → p[6]=4, r[4]++ │ [..,4,4,4,6]    [..,2,1] │
+  │ Union(0,4)  │ r[0]=2 == r[4]=2 → p[4]=0, r[0]++ │ [0,0,0,2,0,4,4,6] [3,..] │
+  └─────────────┴────────────────────────────────────┴──────────────────────────┘
+
+  Final tree (rank[0] = 3):
+            ┌───┐
+            │0 r3│ (root)
+            └─┬─┘
+        ┌────┬┴────┐
+      ┌─┴─┐┌┴──┐┌─┴─┐
+      │ 1 ││ 2 ││ 4 │
+      └───┘└─┬─┘└─┬─┘
+            ┌┴┐┌──┴──┐
+            │3││ 5  6│
+            └─┘└──┬──┘
+                 ┌┴┐
+                 │7│
+                 └─┘
+
+  Key: rank increments ONLY on equal-rank merges (7 unions, 3 increments)
 ```
 
 ---
@@ -444,6 +716,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  n=7 nodes, edges: {0,1,w=1}, {1,2,w=2}, {4,5,w=3}, {5,6,w=1}
+
+  Sorted edges by weight:
+  ┌──────────┬────┬─────────────────────────────────────┐
+  │ Edge     │ W  │ Action                              │
+  ├──────────┼────┼─────────────────────────────────────┤
+  │ (0, 1)   │  1 │ find(0)≠find(1) → Union → MST ✓    │
+  │ (5, 6)   │  1 │ find(5)≠find(6) → Union → MST ✓    │
+  │ (1, 2)   │  2 │ find(1)≠find(2) → Union → MST ✓    │
+  │ (4, 5)   │  3 │ find(4)≠find(5) → Union → MST ✓    │
+  └──────────┴────┴─────────────────────────────────────┘
+
+  MST forest (disconnected graph → forest, not single tree):
+
+    Tree 1:             Tree 2:         Isolated:
+      ┌───┐               ┌───┐          ┌───┐
+      │ 0 │ (root,r=1)    │ 5 │ (r=1)    │ 3 │
+      └─┬─┘               └─┬─┘          └───┘
+     ┌──┴──┐             ┌──┴──┐
+   ┌─┴─┐ ┌─┴─┐         ┌─┴─┐ ┌─┴─┐
+   │ 1 │ │ 2 │         │ 4 │ │ 6 │
+   └───┘ └───┘         └───┘ └───┘
+
+  Total weight: 1+1+2+3 = 7
+  Number of trees: 3  (nodes 3 has no edges)
+```
+
 ---
 
 ## Example 10: Union by Rank vs Naive Comparison
@@ -476,6 +777,47 @@ func main() {
 		fmt.Printf("%-22s %-22s %-22s\n", r.aspect, r.naive, r.ranked)
 	}
 }
+```
+
+**Textual Figure:**
+```
+  Union by Rank vs Naive — Visual Comparison:
+  ════════════════════════════════════════════
+
+  NAIVE UNION (n=8):              UNION BY RANK (n=8):
+  Sequential unions → chain      Same unions → balanced tree
+
+    ┌─┐                              ┌───┐
+    │7│ ← root                       │0 r3│ ← root
+    └┬┘                              └─┬─┘
+    ┌┴┐                          ┌────┬┴────┐
+    │6│                        ┌─┴─┐┌┴──┐┌─┴─┐
+    └┬┘                        │ 1 ││ 2 ││ 4 │
+    ┌┴┐                        └───┘└─┬─┘└─┬─┘
+    │5│                              │  ┌──┴──┐
+    └┬┘                             ┌┴┐┌┴─┐ ┌┴┐
+    ┌┴┐                             │3││5 │ │6│
+    │4│                             └─┘└──┘ └┬┘
+    └┬┘                                     ┌┴┐
+    ...                                     │7│
+    ┌┴┐                                     └─┘
+    │0│
+    └─┘
+    Height = 7 = O(n)            Height = 3 = O(log n)
+
+  ┌─────────────────────┬─────────────┬──────────────────┐
+  │ Aspect              │ Naive       │ Union by Rank    │
+  ├─────────────────────┼─────────────┼──────────────────┤
+  │ Tree height         │ O(n)        │ O(log n)         │
+  │ Find time           │ O(n)        │ O(log n)         │
+  │ Extra space         │ None        │ O(n) rank array  │
+  │ With compression    │ O(log n)    │ O(α(n)) ≈ O(1)  │
+  │ Max rank            │ N/A         │ ⌊log₂(n)⌋       │
+  └─────────────────────┴─────────────┴──────────────────┘
+
+  Practical impact: n=10⁶
+    Naive:  up to 10⁶ steps per Find
+    Ranked: ≤ 20 steps per Find  (log₂(10⁶) ≈ 20)
 ```
 
 ---

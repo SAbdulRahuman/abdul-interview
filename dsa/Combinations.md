@@ -49,6 +49,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+n = 4, k = 2   C(4,2) = 6
+
+  Recursion tree (always pick from i+1 onward, stop at depth k):
+  ───────────────────────────────────────────────────────
+                        []  start=1
+         ┌───────┬─────┼─────┬───────┐
+        +1      +2       +3       +4✂
+       start=2 start=3  start=4  PRUNED
+     ┌──┼──┐   ┌─┴─┐    │     (need 1 more
+    +2  +3  +4  +3  +4   +4      but 0 remain)
+     │   │   │   │   │    │
+   [1,2][1,3][1,4][2,3][2,4][3,4]
+     ✓    ✓    ✓    ✓    ✓    ✓
+
+  Pruning: i ≤ n-(k-len(path))+1
+    At root: i ≤ 4-(2-0)+1 = 3  → try 1,2,3 (not 4)
+    At [1]: i ≤ 4-(2-1)+1 = 4   → try 2,3,4 (all ok)
+
+  Result: [1,2] [1,3] [1,4] [2,3] [2,4] [3,4]  (6 total)
+```
+
 ---
 
 ## Example 2: All Subsets (LeetCode 78)
@@ -82,6 +106,31 @@ func main() {
 	for _, s := range result { fmt.Println(s) }
 	fmt.Println("Total:", len(result)) // 2^3 = 8
 }
+```
+
+**Textual Figure:**
+
+```
+nums = [1, 2, 3]   All subsets (every node is a valid answer)
+
+  Recursion tree:
+  ───────────────────────────────────────────────────────
+                     []✓  start=0
+           ┌─────────┼─────────┐
+         +1✓          +2✓         +3✓
+        start=1      start=2     start=3
+      ┌───┴───┐     ┌──┴──┐        │
+    +2✓     +3✓    +3✓     │       (no more)
+   start=2  start=3 start=3 │
+     │        │      │     │
+    +3✓     (end)   (end)  │
+     │                     │
+   (end)                   │
+
+  Nodes visited and subsets collected:
+    []  [1]  [1,2]  [1,2,3]  [1,3]  [2]  [2,3]  [3]
+
+  Total: 2³ = 8 subsets
 ```
 
 ---
@@ -125,6 +174,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [1, 2, 2]  (sorted)
+
+  Without duplicate skipping (would produce 8):
+  ──────────────────────────────────────
+                   []
+         ┌────────┼────────┐
+        +1        +2₀       +2₁
+     ┌──┴──┐   ┌─┴─┐     │
+   +2₀   +2₁   +2₁    │    (end)
+    │     │     │     │
+   +2₁  (end)  (end)  │
+  [1,2,2][1,2][1,2]  [2,2][2]← DUP!
+                      ^^^DUP of +2₀ path!
+
+  With duplicate skipping (i > start && nums[i]==nums[i-1]):
+  ──────────────────────────────────────
+                   []✓
+         ┌────────┼────────┐
+        +1✓       +2₀✓      +2₁ ✂ SKIP
+     ┌──┴──┐    ┌─┴─┐    (2₁==2₀ && i>start)
+   +2₀✓   +2₁│   +2₁✓    │
+    │    SKIP││    │      │
+   +2₁✓        (end)    │
+    │                    │
+  (end)                  │
+
+  Result: [] [1] [1,2] [1,2,2] [2] [2,2]  (6 unique subsets)
+```
+
 ---
 
 ## Example 4: Combination Sum (LeetCode 39) — Reuse Allowed
@@ -164,6 +245,37 @@ func main() {
 	fmt.Println(combinationSum([]int{2, 3, 6, 7}, 7))
 	// [[2 2 3] [7]]
 }
+```
+
+**Textual Figure:**
+
+```
+candidates = [2, 3, 6, 7], target = 7
+
+  Recursion tree (reuse allowed: recurse with i, not i+1):
+  ─────────────────────────────────────────────────────────
+                       rem=7
+         ┌───────┬─────┼─────┬───────┐
+        +2       +3       +6      +7
+       rem=5    rem=4    rem=1   rem=0 ✓
+      ┌──┼──┐   ┌─┴─┐    │     [7] ✓
+    +2  +3  +6  +3 +6   +6│+7
+   r=3 r=2 <0│  r=1 <0  ││ <0
+    │   │ ││  ││ ││  ││││
+   +2  +3 │✂  ││ ││  ││││
+   r=1 r=-1│  +3│ ││  ││││
+    │  ││││  r=-2 ││  all│││
+   +2  ✂│││  ││  ││  >rem│││
+   r=-1   │  ││  ││  ✂   │││
+    ││    │  ││  ││       │││
+    ✂     │  ││  ││       │││
+   ┌┴─────┘  ││  ││       │││
+   +3       ││  ││       │││
+   rem=0 ✓  ││  ││       │││
+   [2,2,3]  all pruned   all pruned
+
+  Result: [2,2,3] and [7]   (2 solutions)
+  Key: +2 recurses with i=0 (reuse), not i+1
 ```
 
 ---
@@ -209,6 +321,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+candidates = [1, 1, 2, 5, 6, 7, 10] (sorted), target = 8
+
+  Recursion tree (no reuse: i+1, skip dups at same level):
+  ───────────────────────────────────────────────────────
+                         rem=8
+         ┌──────┬────┼─────┬────┬────┐
+        +1₀     +1₁│   +2    +5   +6   +7  +10│
+       rem=7  SKIP││ rem=6 rem=3 rem=2 rem=1 >8│
+        │    (dup)││   │    │     │     │    ││
+      ┌─┴─┐       │ ...  +5   +6  +7│   ││
+    +1₁  +2       │      r=-2  r=-4 r=-6  ││
+    r=6  r=5      │       ✂    ││    ✂    ││
+     │    │       │            +6           ││
+   +2  +5  +5     │            rem=0 ✓      ││
+   r=4 rem=0✓ r=0✓│            [2,6]        ││
+    │  [1,2,5] │  │                         ││
+   +5     [1,1,6]←┘                         ││
+   rem=0✓ via +6                             ││
+    │                                        ││
+   wait→ +6, r=-1 not valid                  ││
+   path: +1₀+1₁+6=8 ✓                       ││
+   path: +1₀+7=8 ✓ via +7 branch             ││
+
+  Result: [1,1,6] [1,2,5] [1,7] [2,6]   (4 solutions)
+  Key: i+1 (no reuse) + skip if nums[i]==nums[i-1] at same level
+```
+
 ---
 
 ## Example 6: Combination Sum III — k Numbers Summing to n (LeetCode 216)
@@ -249,6 +391,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+k = 3, n = 9   (pick 3 digits from 1–9 that sum to 9)
+
+  Recursion tree (start=1, digits 1–9, stop at count=k):
+  ──────────────────────────────────────────────────────────
+                      rem=9, count=0
+         ┌──────┬─────┼─────┬─────┬────┐
+        +1      +2      +3     +4    +5...+9│
+       rem=8   rem=7   rem=6  rem=5  i>rem │
+        │       │       │      │    PRUNE││
+      ┌─┴─┐   ┌─┴─┐   ┌─┴─┐  ┌┴┐        ││
+    +2  +3   +3  +4   +4 +5  +5 │        ││
+    r=6 r=5  r=4 r=3  r=2 r=1 r=0│       ││
+     │   │    │   │    │   │  count=2│      ││
+    +6  +5   +4  +3   │   │  but k=3 │      ││
+    r=0✓ r=0✓ r=0│  r=0✓ ...      need 1   ││
+  [1,2,6][1,3,5] │  [2,3,4]      more     ││
+                 +5                         ││
+                r=-3 ✂ PRUNE                ││
+
+  Result: [1,2,6] [1,3,5] [2,3,4]   (3 solutions)
+```
+
 ---
 
 ## Example 7: Subsets Using Bitmask (Iterative)
@@ -283,6 +450,30 @@ func main() {
 ```
 
 **Why?** Each integer from 0 to 2^n-1 represents a unique subset via its bits. No recursion needed.
+
+**Textual Figure:**
+
+```
+nums = [1, 2, 3]   Bitmask subsets (n=3, 2³=8 masks)
+
+  ┌───────┬─────────┬─────────────┬────────────┐
+  │ mask  │ binary  │ bits set    │ subset     │
+  ├───────┼─────────┼─────────────┼────────────┤
+  │   0   │  000    │ none        │ []         │
+  │   1   │  001    │ bit 0       │ [1]        │
+  │   2   │  010    │ bit 1       │ [2]        │
+  │   3   │  011    │ bits 0,1    │ [1,2]      │
+  │   4   │  100    │ bit 2       │ [3]        │
+  │   5   │  101    │ bits 0,2    │ [1,3]      │
+  │   6   │  110    │ bits 1,2    │ [2,3]      │
+  │   7   │  111    │ bits 0,1,2  │ [1,2,3]    │
+  └───────┴─────────┴─────────────┴────────────┘
+
+  Check: mask & (1<<i) != 0  → include nums[i]
+    mask=5 (101): bit0=1→+1, bit1=0, bit2=1→+3 → [1,3]
+
+  Total: 8 subsets (no recursion needed)
+```
 
 ---
 
@@ -328,6 +519,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+n = 5, k = 3   Gosper's Hack (iterate masks with exactly 3 bits set)
+
+  Trace of mask transitions (binary, 5 bits):
+  ────────────────────────────────────────────
+  Step  mask(bin)  Subset       Gosper step
+  ────────────────────────────────────────────
+   1    00111      {1,2,3}     initial: (1<<3)-1
+   2    01011      {1,2,4}     c=1, r=8, next
+   3    01101      {1,3,4}     c=1, r=8, next
+   4    01110      {2,3,4}     c=2, r=8, next
+   5    10011      {1,2,5}     c=1, r=16, next
+   6    10101      {1,3,5}     c=1, r=16, next
+   7    10110      {2,3,5}     c=2, r=16, next
+   8    11001      {1,4,5}     c=1, r=16, next
+   9    11010      {2,4,5}     c=2, r=16, next
+  10    11100      {3,4,5}     c=4, r=16, next
+  11    100000... ≥ 2⁵ → STOP
+
+  Algorithm: c = mask & (-mask)     ← lowest set bit
+             r = mask + c           ← carry propagation
+             mask = ((r^mask)>>2)/c | r
+
+  Result: 10 subsets = C(5,3) ✓
+```
+
 ---
 
 ## Example 9: Count Combinations With Target Sum
@@ -369,6 +588,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+nums = [1, 2, 3, 4, 5], counting subsets that sum to target=6
+
+  Recursion tree with sum pruning:
+  ──────────────────────────────────────────────────────────
+                     start=0, sum=0
+         ┌──────┬────┼────┬────┐
+        +1     +2     +3    +4   +5
+       s=1    s=2    s=3   s=4   s=5
+      ┌─┼─┐  ┌─┼─┐  ┌┴┐  ┌┴┐   │
+    +2 +3+4  +3+4 +5 +4+5 +5 │  (end)
+    s=3 s=4s=5 s=5s=6 s=8 s=7s=8s=9
+     │   │  │  │ s=6✓ >6 >6 >6 >6
+    +3 +4+5  +4 +5 count! ✂  ✂  ✂  │
+    s=6✓ s=7>6 s=7 >6          │
+   count! ✂     │              │
+    {1,2,3} {2,4}←┘              │
+                                 │
+  Found subsets summing to 6:    │
+    {1,2,3}: 1+2+3 = 6 ✓        │
+    {2,4}:   2+4   = 6 ✓        │
+    {1,5}:   1+5   = 6 ✓        │
+
+  Result: Target 6 has 3 combinations
+```
+
 ---
 
 ## Example 10: Combinations Concepts Summary
@@ -406,6 +653,43 @@ func main() {
 	fmt.Println("  3. No reuse → recurse with i+1")
 	fmt.Println("  4. Duplicates → sort + skip if nums[i]==nums[i-1] at same level")
 }
+```
+
+**Textual Figure:**
+
+```
+  Combination Patterns Decision Tree
+  ═════════════════════════════════════════════
+
+              ┌─────────────────┐
+              │ Order matters?  │
+              └────────┬────────┘
+             YES│          │NO
+              │           │
+        PERMUTATION    COMBINATION
+              │           │
+        ┌─────┴─────┐  │
+        │ Use        │  ┌────┴───────────┐
+        │ Permutations│  │ Reuse allowed?   │
+        └───────────┘  └────┬───────────┘
+                         YES│        │NO
+                          │         │
+                    recurse(i)  recurse(i+1)
+                          │         │
+                    ┌─────┴─────┐  │
+                    │ Duplicates?  │  │
+                    └─────┬─────┘  │
+                       YES│   NO│   │
+                        │     │    │
+                    sort+skip  │   sort+skip
+                    at level   │   at level
+
+  ┌───────────────┬───────────────┬───────────────┐
+  │   ALL SUBSETS  │   BITMASK      │  GOSPER'S HACK │
+  │   O(2ⁿ·n)      │   O(2ⁿ·n)      │  O(C(n,k))     │
+  │   Record at    │   No recursion │  k-bit masks   │
+  │   every node   │   iterate ints  │  only          │
+  └───────────────┴───────────────┴───────────────┘
 ```
 
 ---

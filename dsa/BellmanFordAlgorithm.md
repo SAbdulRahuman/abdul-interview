@@ -61,6 +61,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph (directed, weighted, has negative edge):
+
+   0 ──4─→ 1
+   │       │
+  5│     -3│
+   │       │
+   └───→ 2 ──3─→ 3
+
+Bellman-Ford from source 0 (V-1 = 3 passes):
+┌──────┬───────────────────────┬─────────────────────┐
+│ Pass │ Relaxations           │ dist = [0, 1, 2, 3] │
+├──────┼───────────────────────┼─────────────────────┤
+│ init │                       │ [0, ∞, ∞, ∞]       │
+│  1   │ 0→1:4, 0→2:5         │ [0, 4, 5, ∞]       │
+│      │ 1→2:4-3=1, 2→3:5+3=8 │ [0, 4, 1, 8]       │
+│  2   │ 2→3:1+3=4 < 8       │ [0, 4, 1, 4]       │
+│  3   │ no changes           │ [0, 4, 1, 4] final │
+└──────┴───────────────────────┴─────────────────────┘
+
+Negative cycle check (pass V): no edge relaxes → false
+Result: dist = [0, 4, 1, 4], no negative cycle
+```
+
 ---
 
 ## Example 2: Detecting Negative Cycles
@@ -105,6 +131,36 @@ func main() {
 	edges2 := [][3]int{{0,1,1},{1,2,-1},{2,3,2}}
 	fmt.Println("Has negative cycle:", detectNegCycle(4, edges2)) // false
 }
+```
+
+**Textual Figure:**
+
+```
+Case 1: edges = (0,1,1),(1,2,-1),(2,3,-1),(3,1,-1)
+
+  0 ──1─→ 1 ──-1─→ 2
+              ↑         │
+             -1        -1
+              │         │
+              3 ──────┘
+
+  Cycle: 1 → 2 → 3 → 1  (total weight = -1-1-1 = -3 < 0)
+
+  After V-1=3 passes, extra pass still relaxes → negative cycle!
+
+┌──────┬────────────────────────┐
+│ Pass │ dist = [0, 1, 2, 3]    │
+├──────┼────────────────────────┤
+│ init │ [0, ∞, ∞, ∞]         │
+│  1   │ [0, 1, 0, -1]         │
+│  2   │ [0, -2, -1, -2]       │
+│  3   │ [0, -3, -4, -3]       │
+│  V   │ still relaxes! → true │
+└──────┴────────────────────────┘
+
+Case 2: edges = (0,1,1),(1,2,-1),(2,3,2)
+  0 → 1 → 2 → 3 (no cycle)
+  After V-1 passes, extra pass: no relaxation → false
 ```
 
 ---
@@ -154,6 +210,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph: edges = (0,1,4),(0,2,5),(1,2,-3),(2,3,3)
+
+   0 ──4─→ 1
+   │       │
+  5│     -3│
+   │       │
+   └───→ 2 ──3─→ 3
+
+Bellman-Ford from 0 to 3 with prev[] tracking:
+┌──────┬──────────────┬────────────────────┐
+│ Pass │ dist         │ prev               │
+├──────┼──────────────┼────────────────────┤
+│ init │ [0,∞,∞,∞]   │ [-1,-1,-1,-1]       │
+│  1   │ [0,4,1,4]    │ [-1, 0, 1, 2]       │
+│  2   │ [0,4,1,4]    │ [-1, 0, 1, 2]       │
+└──────┴──────────────┴────────────────────┘
+
+Reconstruct path to node 3:
+  3 ← prev[3]=2 ← prev[2]=1 ← prev[1]=0 ← prev[0]=-1
+  Reverse: [0, 1, 2, 3]
+
+  0 ──4─→ 1 ─-3─→ 2 ──3─→ 3    total = 4+(-3)+3 = 4
+```
+
 ---
 
 ## Example 4: Cheapest Flights Within K Stops (LeetCode 787, BF Variant)
@@ -195,6 +278,35 @@ func main() {
 ```
 
 **Why temp copy?** Prevents using edges from the same iteration — ensures at most k+1 edges.
+
+**Textual Figure:**
+
+```
+Flights: 0─100→1, 1─100→2, 0─500→2
+
+       0
+      / \
+  100/   \500
+    /     \
+   1─────2
+     100
+
+Bellman-Ford variant with temp copy (at most k+1 edges):
+
+k=1 (at most 1 stop = 2 edges):
+┌───────┬────────────────┬──────────────────┐
+│ Round │ temp (before) │ dist (after)     │
+├───────┼────────────────┼──────────────────┤
+│ init  │                │ [0, ∞, ∞]        │
+│  i=0  │ copy dist      │ [0, 100, 500]    │
+│  i=1  │ copy dist      │ [0, 100, 200]    │
+└───────┴────────────────┴──────────────────┘
+  Answer: 200  (path 0→1→2 using 1 stop)
+
+k=0 (0 stops = 1 edge, direct only):
+  i=0: dist = [0, 100, 500]
+  Answer: 500  (only direct 0→2)
+```
 
 ---
 
@@ -251,6 +363,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+SPFA: Bellman-Ford with queue optimization
+
+   0 ──4─→ 1
+   │       │
+  5│     -3│
+   │       │
+   └───→ 2 ──3─→ 3
+
+SPFA trace from source 0:
+┌──────┬────────────┬─────────────────┬─────────────────┐
+│ Step │ Dequeue    │ Queue           │ dist            │
+├──────┼────────────┼─────────────────┼─────────────────┤
+│ init │            │ [0]             │ [0, ∞, ∞, ∞]    │
+│  1   │ 0          │ [1, 2]          │ [0, 4, 5, ∞]    │
+│  2   │ 1          │ [2]             │ [0, 4, 1, ∞]    │
+│  3   │ 2          │ [3]             │ [0, 4, 1, 4]    │
+│  4   │ 3          │ []              │ [0, 4, 1, 4]    │
+└──────┴────────────┴─────────────────┴─────────────────┘
+
+No node enqueued ≥ V times → no negative cycle
+Result: [0, 4, 1, 4]
+
+Key: SPFA only re-processes nodes whose distance improved
+     → Often faster than O(VE) in practice
+```
+
 ---
 
 ## Example 6: Bellman-Ford for Undirected Graph
@@ -289,6 +430,36 @@ func main() {
 	edges := [][3]int{{0,1,4},{0,2,1},{1,2,2},{1,3,5},{2,3,8}}
 	fmt.Println(bellmanFordUndirected(4, edges, 0)) // [0 3 1 8]
 }
+```
+
+**Textual Figure:**
+
+```
+Undirected graph (converted to bidirectional edges):
+
+   0 ──4── 1
+   │      │\
+  1│    2│ \5
+   │      │  \
+   2 ──8─ 3
+   ↑↓   ↑↓
+   both directions for each edge
+
+Bellman-Ford from source 0:
+┌──────┬────────────────────────┬───────────────────┐
+│ Pass │ Key relaxations        │ dist = [0,1,2,3]  │
+├──────┼────────────────────────┼───────────────────┤
+│ init │                        │ [0, ∞, ∞, ∞]     │
+│  1   │ 0→1:4, 0→2:1          │ [0, 4, 1, ∞]     │
+│      │ 2→1:1+2=3 < 4         │ [0, 3, 1, ∞]     │
+│      │ 1→3:3+5=8             │ [0, 3, 1, 8]     │
+│  2   │ no changes             │ [0, 3, 1, 8]     │
+└──────┴────────────────────────┴───────────────────┘
+
+Shortest paths:
+  0→1: 0→2→1 = 1+2 = 3 (not direct 4)
+  0→2: direct = 1
+  0→3: 0→2→1→3 = 1+2+5 = 8
 ```
 
 ---
@@ -339,6 +510,40 @@ func main() {
 		if a { fmt.Printf("Node %d in/reachable from neg cycle\n", i) }
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Graph: edges = (0,1,1),(1,2,-1),(2,3,-1),(3,1,-1),(3,4,2)
+
+  0 ──1─→ 1 ─-1─→ 2
+              ↑         │
+             -1        -1
+              │         │
+              3 ──────┘
+              │
+             +2
+              │
+              4
+
+Negative cycle: 1 → 2 → 3 → 1  (weight = -1-1-1 = -3)
+
+After V-1 passes, run V more passes:
+  Nodes where dist keeps decreasing = affected by neg cycle
+
+┌──────┬────────────┐
+│ Node │ Affected?  │
+├──────┼────────────┤
+│  0   │ No         │
+│  1   │ Yes (cycle) │
+│  2   │ Yes (cycle) │
+│  3   │ Yes (cycle) │
+│  4   │ Yes (reach) │
+└──────┴────────────┘
+
+  Nodes 1,2,3 are IN the cycle
+  Node 4 is REACHABLE from the cycle (also affected)
 ```
 
 ---
@@ -394,6 +599,34 @@ func main() {
 	}
 	fmt.Println("Arbitrage?", hasArbitrage(rates)) // true
 }
+```
+
+**Textual Figure:**
+
+```
+Currency Arbitrage via Bellman-Ford:
+
+  Convert exchange rates to negative log weights:
+    rate[i][j] → weight = -log(rate[i][j])
+    Multiplication becomes addition
+    Arbitrage cycle → negative weight cycle
+
+  Currencies: USD(0), EUR(1), GBP(2)
+
+  Exchange rates:
+  ┌─────┬──────┬──────┬──────┐
+  │     │ USD  │ EUR  │ GBP  │
+  ├─────┼──────┼──────┼──────┤
+  │ USD │  1   │ 0.9  │ 0.75 │
+  │ EUR │ 1.15 │  1   │ 0.85 │
+  │ GBP │ 1.4  │ 1.2  │  1   │
+  └─────┴──────┴──────┴──────┘
+
+  Try cycle: USD → EUR → GBP → USD
+    1.00 × 0.9 × 0.85 × 1.4 = 1.071 > 1.0
+    → 7.1% profit per cycle = ARBITRAGE!
+
+  Bellman-Ford detects negative cycle in -log graph → true
 ```
 
 ---
@@ -460,6 +693,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Same graph, comparing both algorithms:
+
+       0
+      / \
+   4/    \1
+    /      \
+   1───────2
+   │  2↑    │
+  1│       │5
+   │       │
+   3──────4
+      3
+
+┌────────────┬────────────────┬───────────────┐
+│            │ Dijkstra       │ Bellman-Ford   │
+├────────────┼────────────────┼───────────────┤
+│ Approach   │ Greedy + Heap  │ Relax all VE   │
+│ Time       │ O((V+E)log V) │ O(V×E)         │
+│ Neg edges  │ ✗ Cannot       │ ✓ Handles      │
+│ Neg cycles │ ✗ Cannot       │ ✓ Detects      │
+├────────────┼────────────────┼───────────────┤
+│ Result     │ [0,3,1,4,7]  │ [0,3,1,4,7]   │
+└────────────┴────────────────┴───────────────┘
+
+Both give same result on non-negative graphs.
+Dijkstra is faster; Bellman-Ford handles negative edges.
+```
+
 ---
 
 ## Example 10: Early Termination Optimization
@@ -496,6 +760,29 @@ func main() {
 	fmt.Println(bellmanFordEarly(5, edges, 0)) // [0 1 2 3 4]
 	// Converges in 4 passes (not worst case)
 }
+```
+
+**Textual Figure:**
+
+```
+Linear graph: 0 ──1─→ 1 ──1─→ 2 ──1─→ 3 ──1─→ 4
+
+Early termination optimization:
+┌──────┬──────────────────┬──────────────────────┐
+│ Pass │ Relaxations      │ dist = [0,1,2,3,4]   │
+├──────┼──────────────────┼──────────────────────┤
+│ init │                  │ [0, ∞, ∞, ∞, ∞]     │
+│  1   │ 0→1:1            │ [0, 1, ∞, ∞, ∞]     │
+│  2   │ 1→2:2            │ [0, 1, 2, ∞, ∞]     │
+│  3   │ 2→3:3            │ [0, 1, 2, 3, ∞]     │
+│  4   │ 3→4:4            │ [0, 1, 2, 3, 4]     │
+│  5   │ no updates → STOP│ [0, 1, 2, 3, 4]     │
+└──────┴──────────────────┴──────────────────────┘
+
+Without early termination: always runs V-1 = 4 passes
+With early termination: stops at pass 5 when no updates
+  (In this linear case, still needs 4 passes, but for
+   dense graphs it can converge much faster)
 ```
 
 ---

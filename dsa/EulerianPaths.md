@@ -77,6 +77,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Test Case 1: Triangle (all degrees even → Circuit)
+
+       0                  Degree table:
+      / \                 ┌────────┬────────┐
+     /   \                │ Vertex │ Degree │
+    1─────2                ├────────┼────────┤
+                          │   0    │   2    │
+    Odd-degree count: 0   │   1    │   2    │
+    → Eulerian Circuit    │   2    │   2    │
+                          └────────┴────────┘
+
+  Test Case 2: Path 0─1─2 (exactly 2 odd → Eulerian Path)
+
+    0 ─── 1 ─── 2         deg(0)=1, deg(1)=2, deg(2)=1
+                          Odd count = 2 → Eulerian Path
+
+  Test Case 3: K₄ (all degrees = 3 → Not Eulerian)
+
+    0───1      Every vertex connected to every other
+    │\ /│      deg = 3 for all → odd count = 4
+    │ X │      4 > 2 → Not Eulerian
+    │/ \│
+    3───2
+```
+
 ---
 
 ## Example 2: Check Eulerian Path/Circuit (Directed)
@@ -117,6 +144,26 @@ func main() {
 	adj2 := [][]int{{1},{2},{}}  // 0→1→2 → path
 	fmt.Println(checkEulerianDirected(3, adj2))
 }
+```
+
+**Textual Figure:**
+```
+  Test Case 1: Directed cycle 0→1→2→0 (Circuit)
+
+    0 ──→ 1              in/out degree table:
+    ↑     │              ┌────────┬────┬─────┬──────┐
+    │     ↓              │ Vertex │ in │ out │ diff │
+    2 ────┘              ├────────┼────┼─────┼──────┤
+                         │   0    │  1 │  1  │   0  │
+    All diff = 0         │   1    │  1 │  1  │   0  │
+    → Eulerian Circuit   │   2    │  1 │  1  │   0  │
+                         └────────┴────┴─────┴──────┘
+
+  Test Case 2: Directed path 0→1→2 (Eulerian Path)
+
+    0 ─→ 1 ─→ 2          diff: 0(+1), 1(0), 2(-1)
+                         Exactly 1 start (+1) and 1 end (-1)
+                         → Eulerian Path
 ```
 
 ---
@@ -178,6 +225,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Graph (square with diagonal):
+
+    0 ───── 1         Degrees:  0=3(odd), 1=2, 2=3(odd), 3=2
+    │ \     │         Odd-degree vertices: 0, 2 → start at 0
+    │  \    │
+    │   \   │         5 edges total (need path visiting each once)
+    │    \  │
+    3 ───── 2
+
+  Hierholzer's Algorithm Trace:
+  ┌──────┬───────────────────┬───────────────────────┐
+  │ Step │ Action            │ Stack           path  │
+  ├──────┼───────────────────┼───────────────────────┤
+  │  1   │ Push 0, go to 1   │ [0,1]           []    │
+  │  2   │ Push 1, go to 2   │ [0,1,2]         []    │
+  │  3   │ Push 2, go to 0   │ [0,1,2,0]       []    │
+  │  4   │ Push 0, go to 3   │ [0,1,2,0,3]     []    │
+  │  5   │ Push 3, go to 2   │ [0,1,2,0,3,2]   []    │
+  │  6   │ 2 stuck → pop     │ [0,1,2,0,3]     [2]   │
+  │  7   │ 3 stuck → pop     │ [0,1,2,0]       [2,3] │
+  │ ...  │ pop remaining     │ []          [2,3,0,2,1,0]│
+  └──────┴───────────────────┴───────────────────────┘
+
+  Reverse → Eulerian path: [0, 1, 2, 0, 3, 2]
+  Traverses all 5 edges exactly once: 0-1, 1-2, 2-0, 0-3, 3-2
+```
+
 ---
 
 ## Example 4: Hierholzer's Algorithm (Directed)
@@ -235,6 +311,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Test 1: Directed cycle 0→1→2→0
+
+    0 ──→ 1          Hierholzer's:
+    ↑     │          Stack: [0] → [0,1] → [0,1,2] → [0,1,2,0]
+    │     ↓          0 stuck → pop all
+    2 ────┘          Path (reversed): [0, 1, 2, 0]
+                     Circuit: 0 → 1 → 2 → 0 ✓
+
+  Test 2: Directed graph with 5 nodes
+
+    0 ─→ 1 ─→ 2       Degree analysis:
+         │ ↑          ┌──────┬────┬─────┬──────┐
+         ↓ │          │ Node │ in │ out │ diff │
+    4 ←─ 3 ┘          ├──────┼────┼─────┼──────┤
+    (1→2→1 cycle)     │  0   │  0 │  1  │  +1  │ ← start
+                     │  1   │  2 │  2  │   0  │
+                     │  2   │  1 │  1  │   0  │
+                     │  3   │  1 │  1  │   0  │
+                     │  4   │  1 │  0  │  -1  │ ← end
+                     └──────┴────┴─────┴──────┘
+
+    Path: 0 → 1 → 2 → 1 → 3 → 4
+```
+
 ---
 
 ## Example 5: Reconstruct Itinerary (LeetCode 332)
@@ -287,6 +389,33 @@ func main() {
 	fmt.Println(findItinerary(tickets2))
 	// [JFK ATL JFK SFO ATL SFO]
 }
+```
+
+**Textual Figure:**
+```
+  Test 1: tickets = {MUC→LHR, JFK→MUC, SFO→SJC, LHR→SFO}
+
+    JFK ─→ MUC ─→ LHR ─→ SFO ─→ SJC
+
+    Adjacency (sorted lexicographically):
+    JFK: [MUC]    MUC: [LHR]    LHR: [SFO]    SFO: [SJC]
+
+    Hierholzer from JFK:
+    Stack: JFK → MUC → LHR → SFO → SJC (stuck)
+    Pop all → reverse: [JFK, MUC, LHR, SFO, SJC] ✓
+
+  Test 2: tickets = {JFK→SFO, JFK→ATL, SFO→ATL, ATL→JFK, ATL→SFO}
+
+         JFK ──→ ATL
+        ╱ ↑       │ ╲
+       ╱  │       │  ╲
+      ╱   └───────┘   ╲
+    SFO ───────────── ATL
+     ↑                 │
+     └────────────────┘
+
+    Sorted adj: ATL:[JFK,SFO], JFK:[ATL,SFO], SFO:[ATL]
+    Result: [JFK, ATL, JFK, SFO, ATL, SFO] ✓
 ```
 
 ---
@@ -353,6 +482,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Pairs as directed edges:  [5,1]  [4,5]  [11,9]  [9,4]
+
+    11 ──→ 9 ──→ 4 ──→ 5 ──→ 1
+
+    Degree analysis:
+    ┌──────┬────┬─────┬──────┐
+    │ Node │ in │ out │ diff │
+    ├──────┼────┼─────┼──────┤
+    │  11  │  0 │  1  │  +1  │ ← start (out-in=1)
+    │   9  │  1 │  1  │   0  │
+    │   4  │  1 │  1  │   0  │
+    │   5  │  1 │  1  │   0  │
+    │   1  │  1 │  0  │  -1  │ ← end (in-out=1)
+    └──────┴────┴─────┴──────┘
+
+    Hierholzer from 11:
+    Path: 11 → 9 → 4 → 5 → 1
+    Output pairs: [[11,9], [9,4], [4,5], [5,1]]
+```
+
 ---
 
 ## Example 7: Eulerian Circuit Verification
@@ -398,6 +549,29 @@ func main() {
 	badPath := []int{0, 1, 2, 1}
 	fmt.Println("Valid circuit:", verifyEulerianCircuit(3, edges, badPath)) // false
 }
+```
+
+**Textual Figure:**
+```
+  Triangle graph: edges = {0-1, 1-2, 2-0}
+
+       0                Edge multiset:
+      / \               {0-1: 1, 0-2: 1, 1-2: 1}
+     /   \
+    1─────2
+
+  Test 1: path = [0, 1, 2, 0]
+  ┌──────┬───────────┬───────────────┐
+  │ Step │ Edge used │ Remaining      │
+  ├──────┼───────────┼───────────────┤
+  │  1   │ 0─1       │ {0-2:1, 1-2:1} │
+  │  2   │ 1─2       │ {0-2:1}        │
+  │  3   │ 2─0       │ {} (all used)  │
+  └──────┴───────────┴───────────────┘
+  len=4=edges+1 ✓, path[0]=path[3] ✓, all edges used ✓ → true
+
+  Test 2: path = [0, 1, 2, 1]
+  path[0]=0 ≠ path[3]=1 → NOT a circuit → false
 ```
 
 ---
@@ -449,6 +623,28 @@ func main() {
 	cost := chinesePostman(4, edges)
 	fmt.Println("Base cost:", cost)
 }
+```
+
+**Textual Figure:**
+```
+  Graph with weighted edges:
+
+    0 ──(1)── 1          Degree analysis:
+    │ \       │          ┌────────┬────────┬─────────┐
+   (4)  (5)  (2)        │ Vertex │ Degree │ Parity  │
+    │     \   │          ├────────┼────────┼─────────┤
+    3 ──(3)── 2          │   0    │   3    │  ODD    │
+                         │   1    │   2    │  even   │
+                         │   2    │   3    │  ODD    │
+                         │   3    │   2    │  even   │
+                         └────────┴────────┴─────────┘
+
+  Chinese Postman approach:
+  • Total edge weight = 1+2+3+4+5 = 15
+  • 2 odd-degree vertices (0, 2) → not Eulerian
+  • Must duplicate shortest path between 0 and 2
+  • Shortest 0→2: direct edge weight 5 (or 0→1→2 = 3)
+  • Chinese Postman cost = 15 + min_matching = 15 + 3 = 18
 ```
 
 ---
@@ -525,6 +721,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  de Bruijn Graph for k=2, alphabet={0,1}:
+
+  Nodes = all (k-1)-length strings: {"0", "1"}
+  Edges = all k-length strings (as transitions):
+
+        ┌───┐
+    "00"│   │         Edge labels:
+        └→ "0" ──"01"─→ "1"       "0" ─"00"→ "0"
+                        │  ┌─┐     "0" ─"01"→ "1"
+              ┌─"10"───┘  │ │     "1" ─"10"→ "0"
+              ┴────────┘ │"11"  "1" ─"11"→ "1"
+                         └─┘
+
+  Euler circuit on this graph: "0" → "0" → "1" → "1" → "0"
+  Using edge labels:  00,  01,  11,  10
+  de Bruijn sequence: "00110" (length 2² + 1 = 5)
+  Contains all 2-char substrings: 00, 01, 11, 10 ✓
+
+  For k=2, alphabet={a,b,c}: 3²=9 edges on 3 nodes
+  Eulerian circuit produces sequence of length 9+1=10
+```
+
 ---
 
 ## Example 10: Eulerian Concepts Summary
@@ -562,6 +782,28 @@ func main() {
 	fmt.Println("  3. When stuck, pop to result (post-order)")
 	fmt.Println("  4. Reverse result → Eulerian path")
 }
+```
+
+**Textual Figure:**
+```
+  Eulerian vs Hamiltonian — Key Distinction:
+
+  EULERIAN (edges):                 HAMILTONIAN (vertices):
+
+    0──1──2                          0──1──2
+    Every EDGE once                Every VERTEX once
+    Polynomial: O(V+E)             NP-Complete
+
+  Existence Conditions Summary:
+  ┌───────────┬────────────────────┬──────────────────────┐
+  │           │ Circuit            │ Path                 │
+  ├───────────┼────────────────────┼──────────────────────┤
+  │ Undirected│ All even degree    │ 0 or 2 odd-degree    │
+  │ Directed  │ in=out for all     │ ≤1 with out-in=1      │
+  └───────────┴────────────────────┴──────────────────────┘
+
+  Hierholzer's Template:
+    1. Find start → 2. DFS (consume edges) → 3. Pop when stuck → 4. Reverse
 ```
 
 ---

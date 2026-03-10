@@ -44,6 +44,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph 1: Even cycle 0─1─2─3─0 → Bipartite ✓
+
+    Set A          Set B
+   ┌─────┐       ┌─────┐
+   │  0  │───────│  1  │
+   │     │       │     │
+   │  2  │───────│  3  │
+   └─────┘       └─────┘
+
+BFS 2-Coloring from node 0:
+┌──────┬─────────┬────────────────────┬──────────────┐
+│ Step │ Dequeue │ Assign Colors      │ Queue        │
+├──────┼─────────┼────────────────────┼──────────────┤
+│  1   │    0    │ color[0] =  1      │ [1, 3]       │
+│  2   │    1    │ color[1] = -1      │ [3, 2]       │
+│  3   │    3    │ color[3] = -1      │ [2]          │
+│  4   │    2    │ color[2] =  1      │ []           │
+└──────┴─────────┴────────────────────┴──────────────┘
+All neighbors have opposite colors → true ✓
+
+Graph 2: Has triangle 0─1─2 → NOT Bipartite ✗
+
+       0 (color= 1)
+      /│\
+     / │ \
+    1  2  3     ← all get color = -1
+    └──┘        ← 1 & 2 are neighbors with SAME color
+                   → conflict! return false ✗
+```
+
 ---
 
 ## Example 2: Bipartite Check with DFS
@@ -85,6 +118,39 @@ func main() {
 	graph2 := [][]int{{1,2},{0,2},{0,1}}
 	fmt.Println("Bipartite:", isBipartiteDFS(graph2)) // false
 }
+```
+
+**Textual Figure:**
+
+```
+DFS 2-Coloring on graph 0─1─2─3─0 (even cycle):
+
+  dfs(0, +1)
+   │
+   ├─→ dfs(1, -1)
+   │    │
+   │    └─→ dfs(2, +1)
+   │         │
+   │         └─→ neighbor 3: color[3]=0 → dfs(3, -1)
+   │              │
+   │              └─→ neighbor 0: color[0]=+1 ≠ -1 ✓
+   │
+   └─→ neighbor 3: color[3]=-1 ≠ +1 ✓
+
+  Result: color = [+1, -1, +1, -1] → Bipartite ✓
+
+DFS on triangle 0─1─2─0:
+
+  dfs(0, +1)
+   │
+   ├─→ dfs(1, -1)
+   │    │
+   │    └─→ dfs(2, +1)
+   │         │
+   │         └─→ neighbor 0: color[0]=+1 ≠ +1 ✓
+   │
+   └─→ neighbor 2: color[2]=+1 == color[0]=+1
+        → CONFLICT! return false ✗
 ```
 
 ---
@@ -133,6 +199,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph: 0─1─2─3─0  (square / even cycle)
+
+   0 ─── 1
+   │     │
+   3 ─── 2
+
+BFS coloring from node 0:
+  color[0]= 1 → color[1]=-1 → color[2]= 1 → color[3]=-1
+
+Partition into two sets:
+  ┌───────────┐     ┌───────────┐
+  │  Set A    │     │  Set B    │
+  │  color=1  │     │  color=-1 │
+  │           │     │           │
+  │  0,  2    │─────│  1,  3    │
+  └───────────┘     └───────────┘
+
+  Every edge crosses from Set A to Set B ✓
+  Set A = [0, 2]   Set B = [1, 3]
+```
+
 ---
 
 ## Example 4: Possible Bipartition (LeetCode 886)
@@ -175,6 +265,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Case 1: n=4, dislikes=[(1,2),(1,3),(2,4)]
+
+  Dislike graph (1-indexed):
+    1 ─── 2
+    │     │
+    3     4
+
+  BFS coloring:
+    color[1]= 1 → color[2]=-1 → color[3]=-1 → color[4]= 1
+
+   Group A: {1, 4}     Group B: {2, 3}
+    1─2 ✓ (diff groups)   1─3 ✓   2─4 ✓
+    → Possible bipartition = true ✓
+
+Case 2: n=3, dislikes=[(1,2),(1,3),(2,3)]
+
+  Dislike graph:
+    1 ─── 2
+     \   /
+      \ /
+       3
+
+  BFS: color[1]=1 → color[2]=-1, color[3]=-1
+       but 2─3 are neighbors with SAME color → conflict!
+    → Possible bipartition = false ✗
+```
+
 ---
 
 ## Example 5: Bipartite Check with Union-Find
@@ -212,6 +332,32 @@ func main() {
 	fmt.Println(isBipartiteUF([][]int{{1,3},{0,2},{1,3},{0,2}}))       // true
 	fmt.Println(isBipartiteUF([][]int{{1,2,3},{0,2},{0,1,3},{0,2}}))   // false
 }
+```
+
+**Textual Figure:**
+
+```
+Union-Find Bipartite Check:
+
+For each vertex v, union ALL its neighbors together.
+Then check: if v is in the same component as any neighbor → NOT bipartite.
+
+Graph 1: 0─1─2─3─0  (adj = {{1,3},{0,2},{1,3},{0,2}})
+
+  v=0: neighbors={1,3} → union(1,3)    parent: 0 1 2 1
+  v=1: neighbors={0,2} → union(0,2)    parent: 0 1 0 1
+  v=2: neighbors={1,3} → union(1,3)    (already same set)
+  v=3: neighbors={0,2} → union(0,2)    (already same set)
+
+  Check: find(0)=0, find(1)=1 → diff ✓
+         find(1)=1, find(2)=0 → diff ✓
+         find(2)=0, find(3)=1 → diff ✓
+  → Bipartite = true ✓
+
+Graph 2: Triangle 0─1, 0─2, 1─2
+  v=0: neighbors={1,2,3} → union(1,2), union(2,3)
+  Check: find(0) vs find(1) → 0 == union'd group?
+         0 is in same component as neighbor → false ✗
 ```
 
 ---
@@ -266,6 +412,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Triangle graph: adj = {{1,2},{0,2},{0,1}}
+
+       0
+      / \
+     1───2
+
+BFS from node 0:
+  color[0] =  1   queue = [0]
+  pop 0: color[1] = -1, color[2] = -1   queue = [1, 2]
+  pop 1: neighbor 2 has color[2] = -1 == color[1] = -1
+         → CONFLICT at edge 1─2 (same color)
+
+Odd Cycle Reconstruction:
+  v = 1, u = 2  (both color = -1)
+  Trace parents back to common ancestor:
+    pathV: 1 → parent[1]=0
+    pathU: 2 → parent[2]=0
+    Meet at node 0
+
+  Cycle: [1, 0, 2] → odd length (3) ✓
+
+       0 ←── start
+      ↙ ↘
+     1 → 2    (odd cycle of length 3)
+```
+
 ---
 
 ## Example 7: Maximum Bipartite Matching (Hungarian/Hopcroft-Karp Simplified)
@@ -311,6 +486,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Bipartite Matching: Left = {L0, L1, L2}, Right = {R0, R1, R2}
+Edges: L0→{R0,R1}, L1→{R0}, L2→{R2}
+
+  Left        Right
+  ┌────┐      ┌────┐
+  │ L0 │─────→│ R0 │
+  │    │──┐   │    │
+  └────┘  │   └────┘
+          │
+  ┌────┐  │   ┌────┐
+  │ L1 │──┼──→│ R1 │
+  └────┘  │   └────┘
+          │
+  ┌────┐  │   ┌────┐
+  │ L2 │  └──→│ R2 │
+  └────┘      └────┘
+
+Augmenting path DFS:
+  Step 1: L0 → R0 (free)        match: L0─R0
+  Step 2: L1 → R0 (taken by L0)
+          → augment: L0 → R1    match: L0─R1, L1─R0
+  Step 3: L2 → R2 (free)        match: L0─R1, L1─R0, L2─R2
+
+  Final Matching (size = 3):
+    L0 ═══ R1
+    L1 ═══ R0
+    L2 ═══ R2
+```
+
 ---
 
 ## Example 8: Graph Coloring (2-Colorable = Bipartite)
@@ -350,6 +557,34 @@ func main() {
 	fmt.Println("2-colorable:", ok) // true
 	fmt.Println("Colors:", colors)  // [1 2 1 2]
 }
+```
+
+**Textual Figure:**
+
+```
+Graph: 0─1─2─3─0  (square / even cycle)
+
+  2-Coloring via DFS (colors 1 and 2):
+
+    dfs(0, color=1)
+     ├→ dfs(1, color=2)
+     │   └→ dfs(2, color=1)
+     │       └→ neighbor 3: color=2
+     └→ neighbor 3: already color=2 ≠ 1 ✓
+
+  Result:
+    ┌─────────┬─────────┐
+    │ Color 1 │ Color 2 │
+    ├─────────┼─────────┤
+    │  0, 2   │  1, 3   │
+    └─────────┴─────────┘
+
+    0(1) ─── 1(2)
+    │         │
+    3(2) ─── 2(1)
+
+  No two adjacent nodes share the same color → 2-colorable ✓
+  colors = [1, 2, 1, 2]
 ```
 
 ---
@@ -397,6 +632,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+3×3 Grid (all cells = 1) with chessboard coloring:
+
+  ┌─────┬─────┬─────┐
+  │ +1  │ -1  │ +1  │   row 0
+  ├─────┼─────┼─────┤
+  │ -1  │ +1  │ -1  │   row 1
+  ├─────┼─────┼─────┤
+  │ +1  │ -1  │ +1  │   row 2
+  └─────┴─────┴─────┘
+
+  Every horizontal neighbor: +1 ↔ -1  ✓
+  Every vertical   neighbor: +1 ↔ -1  ✓
+
+  BFS from (0,0) assigns alternating colors:
+    (0,0)=+1 → (0,1)=-1 → (0,2)=+1
+                  ↓
+              (1,1)=+1 → (1,0)=-1, (1,2)=-1
+                           ↓
+                       (2,0)=+1 → (2,1)=-1 → (2,2)=+1
+
+  No adjacent cells share the same color → Grid is bipartite ✓
+```
+
 ---
 
 ## Example 10: Bipartite Properties Summary
@@ -427,6 +688,37 @@ func main() {
 		fmt.Printf("%2d. %-20s %s\n", i+1, p.prop, p.desc)
 	}
 }
+```
+
+**Textual Figure:**
+
+```
+Bipartite Graph Properties at a Glance:
+
+┌──────────────────────────────────────────────────────────┐
+│                  BIPARTITE GRAPH                         │
+│                                                          │
+│  Set A ●───────● Set B     Every edge crosses the cut    │
+│        ●───────●                                         │
+│        ●───────●           No edges within a set         │
+└──────────────────────────────────────────────────────────┘
+
+┌────────────────────┬──────────────────────────────┐
+│ Property           │ Detail                       │
+├────────────────────┼──────────────────────────────┤
+│ Odd cycles         │ None (iff bipartite)          │
+│ Chromatic number   │ χ(G) = 2                     │
+│ Check algorithm    │ BFS/DFS coloring O(V+E)      │
+│ Trees              │ Always bipartite             │
+│ Max matching       │ = min vertex cover (König)   │
+│ Applications       │ Matching, scheduling         │
+└────────────────────┴──────────────────────────────┘
+
+  Bipartite:          NOT Bipartite:
+  0 ─ 1               0 ─ 1
+  │   │                 \ │
+  3 ─ 2                  2
+  (even cycle)        (odd cycle / triangle)
 ```
 
 ---

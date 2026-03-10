@@ -60,6 +60,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Full Path Compression (Recursive): chain 0→1→2→3→4→5
+
+  BEFORE Find(0):                  AFTER Find(0):
+  parent = [1, 2, 3, 4, 5, 5]     parent = [5, 5, 5, 5, 5, 5]
+
+    ┌───┐                            ┌───┐
+    │ 5 │ ← root                    │ 5 │ ← root
+    └─┬─┘                            └─┬─┘
+    ┌─┴─┐                       ┌──┬──┼──┬──┬──┐
+    │ 4 │                     ┌─┴┐┌┴┐┌┴┐┌┴┐┌┴┐
+    └─┬─┘                     │0││1││2││3││4│
+    ┌─┴─┐                     └─┘└─┘└─┘└─┘└─┘
+    │ 3 │
+    └─┬─┘                     Height: 5 → 1
+    ┌─┴─┐
+    │ 2 │                     Recursive trace:
+    └─┬─┘                       Find(0) → Find(1) → Find(2)
+    ┌─┴─┐                       → Find(3) → Find(4) → Find(5)=5
+    │ 1 │                       Unwind: p[4]=5, p[3]=5,
+    └─┬─┘                       p[2]=5, p[1]=5, p[0]=5
+    ┌─┴─┐
+    │ 0 │
+    └───┘
+```
+
 ---
 
 ## Example 2: Path Compression (Iterative)
@@ -101,6 +128,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Iterative Path Compression: Two-pass approach
+
+  parent = [1, 2, 3, 4, 5, 5]   chain: 0→1→2→3→4→5
+
+  Pass 1 — Find root:
+    x=0 → p[0]=1 → p[1]=2 → p[2]=3 → p[3]=4 → p[4]=5 → p[5]=5 STOP
+    root = 5
+
+  Pass 2 — Compress path:
+    ┌──────┬────────────┬───────────────┬─────────┐
+    │ Node │ Old parent │ Set to root=5 │ Next    │
+    ├──────┼────────────┼───────────────┼─────────┤
+    │  0   │    1       │ parent[0]=5   │ x=1     │
+    │  1   │    2       │ parent[1]=5   │ x=2     │
+    │  2   │    3       │ parent[2]=5   │ x=3     │
+    │  3   │    4       │ parent[3]=5   │ x=4     │
+    │  4   │    5       │ parent[4]=5   │ x=5=root│
+    └──────┴────────────┴───────────────┴─────────┘
+
+  Result: parent = [5, 5, 5, 5, 5, 5]
+            ┌───┐
+            │ 5 │   All nodes point directly to root
+            └─┬─┘
+       ┌──┬──┼──┬──┐
+     ┌─┴┐┌┴┐┌┴┐┌┴┐┌┴┐
+     │0││1││2││3││4│
+     └─┘└─┘└─┘└─┘└─┘
+```
+
 ---
 
 ## Example 3: Path Halving
@@ -140,6 +198,50 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Path Halving: parent[x] = parent[parent[x]], then x = parent[x]
+  Skips every other node to grandparent (single pass)
+
+  parent = [1, 2, 3, 4, 5, 6, 7, 7]   chain: 0→1→2→3→4→5→6→7
+
+  Find(0) trace:
+  ┌──────┬────────────────────────────┬───────────┬──────────┐
+  │ x    │ Action                     │ parent[x] │ next x   │
+  ├──────┼────────────────────────────┼───────────┼──────────┤
+  │  0   │ p[0]=p[p[0]]=p[1]=2       │  0 → 2   │ x=2      │
+  │  2   │ p[2]=p[p[2]]=p[3]=4       │  2 → 4   │ x=4      │
+  │  4   │ p[4]=p[p[4]]=p[5]=6       │  4 → 6   │ x=6      │
+  │  6   │ p[6]=p[p[6]]=p[7]=7       │  6 → 7   │ x=7=root │
+  └──────┴────────────────────────────┴───────────┴──────────┘
+
+  BEFORE:                         AFTER halving:
+    ┌─┐                              ┌─┐
+    │7│ root                         │7│ root
+    └┬┘                              └┬┘
+    ┌┴┐                             ┌─┴─┐
+    │6│                           ┌─┴┐ ┌┴─┐
+    └┬┘                           │4│ │6 │   Nodes 0,2,4,6 jumped
+    ┌┴┐                           └┬┘ └──┘   to grandparents
+    │5│                           ┌┴┐
+    └┬┘                           │2│       Nodes 1,3,5 unchanged
+    ┌┴┐                           └┬┘
+    │4│                           ┌┴┐
+    └┬┘                           │0│
+    ┌┴┐                           └─┘
+    │3│
+    └┬┘                           Height: 7 → 4
+    ┌┴┐                           (halved, roughly)
+    │2│
+    └┬┘
+    ┌┴┐
+    │1│
+    └┬┘
+    ┌┴┐
+    │0│
+    └─┘
+```
+
 ---
 
 ## Example 4: Path Splitting
@@ -177,6 +279,52 @@ func main() {
 	fmt.Println("Root:", root)
 	fmt.Println("After splitting:", uf.parent)
 }
+```
+
+**Textual Figure:**
+```
+  Path Splitting: each node points to its grandparent
+  parent[x] = parent[next], then x = next (single pass)
+
+  parent = [1, 2, 3, 4, 5, 6, 7, 7]   chain: 0→1→2→3→4→5→6→7
+
+  Find(0) trace:
+  ┌──────┬─────────────────────────────┬───────────┬─────────┐
+  │ x    │ Action                      │ parent[x] │ next x  │
+  ├──────┼─────────────────────────────┼───────────┼─────────┤
+  │  0   │ next=1, p[0]=p[1]=2         │  0 → 2   │ x=1     │
+  │  1   │ next=2, p[1]=p[2]=3         │  1 → 3   │ x=2     │
+  │  2   │ next=3, p[2]=p[3]=4         │  2 → 4   │ x=3     │
+  │  3   │ next=4, p[3]=p[4]=5         │  3 → 5   │ x=4     │
+  │  4   │ next=5, p[4]=p[5]=6         │  4 → 6   │ x=5     │
+  │  5   │ next=6, p[5]=p[6]=7         │  5 → 7   │ x=6     │
+  │  6   │ next=7, p[6]=p[7]=7         │  6 → 7   │ x=7=root│
+  └──────┴─────────────────────────────┴───────────┴─────────┘
+
+  AFTER splitting: parent = [2, 3, 4, 5, 6, 7, 7, 7]
+
+        ┌─┐
+        │7│ root
+        └┬┘
+      ┌──┴──┐
+    ┌─┴┐  ┌┴─┐       Every node now points
+    │5│  │6 │       to its grandparent
+    └┬┘  └──┘
+    ┌┴┐                Difference from halving:
+    │4│                path splitting modifies
+    └┬┘                ALL nodes on path,
+    ┌┴┐                halving modifies every OTHER
+    │3│
+    └┬┘
+    ┌┴┐
+    │2│
+    └┬┘
+    ┌┴┐
+    │1│
+    └┬┘
+    ┌┴┐
+    │0│
+    └─┘
 ```
 
 ---
@@ -219,6 +367,35 @@ func main() {
 	findWithTrace(parent, 1)
 	fmt.Println("Already compressed:", parent)
 }
+```
+
+**Textual Figure:**
+```
+  Visualizing Compression Effects:
+  Chain: 0→1→2→3→4→5  parent = [1, 2, 3, 4, 5, 5]
+
+  Find(0) — first call traces full path:
+    Path to root: [0, 1, 2, 3, 4, 5]
+
+  BEFORE:              AFTER Find(0):         AFTER Find(1):
+    ┌─┐                   ┌─┐                    ┌─┐
+    │5│ root              │5│ root               │5│ root
+    └┬┘                   └┬┘                    └┬┘
+    ┌┴┐              ┌─┬──┼─┬──┐          ┌─┬──┼─┬──┐
+    │4│            ┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐     ┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐
+    └┬┘            │0││1││2││3││4│     │0││1││2││3││4│
+    ┌┴┐            └─┘└─┘└─┘└─┘└─┘     └─┘└─┘└─┘└─┘└─┘
+    │3│
+    └┬┘           All compressed        Already flat!
+    ┌┴┐           parent=[5,5,5,5,5,5]  Find(1)=5 in O(1)
+    │2│
+    └┬┘           First Find(0): 5 hops (O(n))
+    ┌┴┐           Second Find(1): 1 hop  (O(1))
+    │1│
+    └┬┘           Amortized: expensive first call
+    ┌┴┐           pays for all future O(1) calls
+    │0│
+    └─┘
 ```
 
 ---
@@ -272,6 +449,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Benchmark: n=100,000 chain, n Find operations
+
+  WITHOUT compression (each Find traverses full chain):
+    Find(0):     0→1→2→...→99999      99999 steps
+    Find(1):     1→2→3→...→99999      99998 steps
+    Find(2):     2→3→4→...→99999      99997 steps
+    ...                              ...
+    Find(99999): already root          0 steps
+    Total: n(n-1)/2 ≈ 5×10⁹ steps     O(n²)
+
+  WITH compression (Find + flatten):
+    Find(0):     99999 steps + compress all          (O(n))
+    Find(1):     1 step (already points to root)     (O(1))
+    Find(2):     1 step                              (O(1))
+    ...          1 step each                         (O(1))
+    Find(99999): already root                        (O(1))
+    Total: n + (n-1) ≈ 2n steps                      O(n)
+
+  ┌──────────────────────┬──────────────┬──────────────┐
+  │                      │ No Compress  │ Compressed   │
+  ├──────────────────────┼──────────────┼──────────────┤
+  │ Total operations      │ O(n²)        │ O(n)         │
+  │ First Find            │ O(n)         │ O(n)         │
+  │ Subsequent Finds      │ O(n) each    │ O(1) each    │
+  │ Speedup at n=100K     │ ~5×10⁹       │ ~2×10⁵       │
+  └──────────────────────┴──────────────┴──────────────┘
+```
+
 ---
 
 ## Example 7: Path Compression with Connected Components
@@ -308,6 +515,34 @@ func main() {
 	edges := [][2]int{{0,1},{1,2},{3,4},{5,6},{6,7},{7,3}}
 	fmt.Println("Components:", connectedComponents(8, edges)) // 2
 }
+```
+
+**Textual Figure:**
+```
+  n=8, edges: {0,1},{1,2},{3,4},{5,6},{6,7},{7,3}
+
+  ┌─────────┬────────────┬───────────────────┬───────┐
+  │ Edge    │ find(u,v)  │ Action            │ count │
+  ├─────────┼────────────┼───────────────────┼───────┤
+  │ {0,1}   │ 0 ≠ 1     │ parent[0]=1       │ 8→7  │
+  │ {1,2}   │ 1 ≠ 2     │ parent[1]=2       │ 7→6  │
+  │ {3,4}   │ 3 ≠ 4     │ parent[3]=4       │ 6→5  │
+  │ {5,6}   │ 5 ≠ 6     │ parent[5]=6       │ 5→4  │
+  │ {6,7}   │ 6 ≠ 7     │ parent[6]=7       │ 4→3  │
+  │ {7,3}   │ 7 ≠ 4     │ parent[7]=4       │ 3→2  │
+  └─────────┴────────────┴───────────────────┴───────┘
+
+  Before forced compression:    After find(i) for all i:
+    ┌───┐      ┌───┐            ┌───┐     ┌───┐
+    │ 2 │      │ 4 │            │ 2 │     │ 4 │
+    └─┬─┘      └─┬─┘            └─┬─┘     └─┬─┘
+    ┌─┴─┐     ┌──┴──┐         ┌──┴──┐ ┌──┬┴─┬──┐
+    │ 1 │     │ 3  7│       ┌─┴┐┌┴┐┌┴┐┌┴┐┌┴┐┌┴┐
+    └─┬─┘     └──┬──┘       │0││1││3││5││6││7│
+    ┌─┴─┐     ┌─┴─┐         └─┘└─┘└─┘└─┘└─┘└─┘
+    │ 0 │     │ 5 6│
+    └───┘     └───┘         parent = [2,2,2,4,4,4,4,4]
+                              All flat! 2 components
 ```
 
 ---
@@ -352,6 +587,34 @@ func main() {
 	edges := [][3]int{{0,1,4},{0,2,3},{1,2,1},{1,3,2},{2,3,5}}
 	fmt.Println("MST weight:", kruskalMST(4, edges)) // 6
 }
+```
+
+**Textual Figure:**
+```
+  Kruskal's MST with path compression: n=4, 5 edges
+
+  Sorted edges: {1,2,w=1}, {1,3,w=2}, {0,2,w=3}, {0,1,w=4}, {2,3,w=5}
+
+  ┌────────┬────┬───────────────────────────────┬──────────────────┐
+  │ Edge   │ W  │ Action                        │ parent[]         │
+  ├────────┼────┼───────────────────────────────┼──────────────────┤
+  │ {1,2}  │  1 │ find(1)=1≠find(2)=2 → MST ✓ │ [0,2,2,3]        │
+  │ {1,3}  │  2 │ find(1)=2≠find(3)=3 → MST ✓ │ [0,2,3,3]        │
+  │        │    │ (compression: p[1]→2→3)      │ p[1] compressed→3│
+  │ {0,2}  │  3 │ find(0)=0≠find(2)=3 → MST ✓ │ [3,3,3,3]        │
+  │        │    │ 3 MST edges = n-1 → DONE    │                  │
+  └────────┴────┴───────────────────────────────┴──────────────────┘
+
+  Final UF forest (fully compressed):
+        ┌───┐
+        │ 3 │ (root)
+        └─┬─┘
+     ┌───┼───┐
+   ┌─┴─┐┌┴─┐┌┴─┐
+   │ 0 ││ 1 ││ 2 │     MST weight = 1+2+3 = 6
+   └───┘└───┘└───┘
+
+  MST edges: 1─2, 1─3, 0─2  (weight 6)
 ```
 
 ---
@@ -406,6 +669,49 @@ func main() {
 	}
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+  Amortized Analysis: n=16 chain, compressed by Find(0)
+
+  BEFORE Find(0): chain 0→1→2→...→15
+    ┌──┐
+    │15│ ← root
+    └┬─┘
+    ┌┴─┐
+    │14│
+    └┬─┘
+     ...          Height = 15
+    ┌┴┐
+    │1│
+    └┬┘
+    ┌┴┐
+    │0│
+    └─┘
+
+  First Find(0): 15 parent updates (O(n))
+    parent = [15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15]
+
+  AFTER Find(0): completely flat
+             ┌──┐
+             │15│ root
+             └┬─┘
+    ┌─┬─┬─┬─┬┼┬─┬─┬─┬─┬─┬─┬─┬─┐
+    0 1 2 3 4 5 6 7 8 9 ...14
+    All point directly to 15
+
+  ┌───────────┬────────────────┬─────────────────┐
+  │ Call      │ Parent updates │ Cost            │
+  ├───────────┼────────────────┼─────────────────┤
+  │ Find(0)   │      15       │ O(n) expensive  │
+  │ Find(0)   │       0       │ O(1) free       │
+  │ Find(1)   │       0       │ O(1) free       │
+  │ ...       │       0       │ O(1) free       │
+  │ Find(14)  │       0       │ O(1) free       │
+  └───────────┴────────────────┴─────────────────┘
+
+  Amortized cost: 15 total updates / 16 finds = O(1) per find
 ```
 
 ---
@@ -465,6 +771,50 @@ func main() {
 	fmt.Println("when combined with union by rank/size.")
 	fmt.Println("Full compression is most common in competitive programming.")
 }
+```
+
+**Textual Figure:**
+```
+  Compression Variants Comparison on chain 0→1→2→3→4→5→6→7:
+
+  1. Full Compression        2. Path Halving       3. Path Splitting
+     (All → root)              (skip nodes)          (all → grandparent)
+
+  BEFORE (all same):            BEFORE:               BEFORE:
+    ┌─┐                          ┌─┐                    ┌─┐
+    │7│ root                     │7│                    │7│
+    └┬┘                          └┬┘                    └┬┘
+    ...                          ...                    ...
+    ┌┴┐                          ┌┴┐                    ┌┴┐
+    │0│                          │0│                    │0│
+    └─┘                          └─┘                    └─┘
+
+  AFTER Find(0):              AFTER Find(0):         AFTER Find(0):
+      ┌─┐                        ┌─┐                    ┌─┐
+      │7│                        │7│                    │7│
+      └┬┘                        └┬┘                    └┬┘
+  ┌┬┬┬┼┬┬┐                   ┌─┴─┐                ┌──┴──┐
+  0123456                     │4 6│              ┌─┴─┐ ┌┴─┐
+                              └─┬─┘              │5  │ │6 │
+  Height: 1                   ┌┴┐               └─┬─┘ └──┘
+  All nodes → root            │2│               ┌┴┐
+  Best flattening             └┬┘               │4│
+                              ┌┴┐               └┬┘
+                              │0│               ┌┴┐
+                              └─┘               │3│
+                              nodes 1,3,5        └┬┘
+                              unchanged          ...
+                              Height: 4          Height: halved
+
+  ┌─────────────────────────┬────────────┬──────────┬───────────────┐
+  │ Variant                 │ Amortized  │ Passes   │ Nodes modified │
+  ├─────────────────────────┼────────────┼──────────┼───────────────┤
+  │ Full (recursive)        │ O(α(n))   │ 2 (rec)  │ All on path    │
+  │ Full (iterative)        │ O(α(n))   │ 2        │ All on path    │
+  │ Path halving            │ O(α(n))   │ 1        │ Every other    │
+  │ Path splitting          │ O(α(n))   │ 1        │ All on path    │
+  │ No compression          │ O(n)      │ 1        │ None           │
+  └─────────────────────────┴────────────┴──────────┴───────────────┘
 ```
 
 ---

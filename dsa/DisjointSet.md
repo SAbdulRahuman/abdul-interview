@@ -57,6 +57,50 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Initial: parent[i] = i  (each element is its own set)
+  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+  │ 0 │ │ 1 │ │ 2 │ │ 3 │ │ 4 │ │ 5 │
+  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘
+
+  Union(0,1): Find(0)=0, Find(1)=1 → parent[0] = 1
+    ┌───┐         ┌───┐  ┌───┐  ┌───┐
+    │ 1 │         │ 3 │  │ 4 │  │ 5 │
+    └─┬─┘         └───┘  └───┘  └───┘
+    ┌─┴─┐  ┌───┐
+    │ 0 │  │ 2 │
+    └───┘  └───┘
+
+  Union(2,3): Find(2)=2, Find(3)=3 → parent[2] = 3
+    ┌───┐  ┌───┐  ┌───┐  ┌───┐
+    │ 1 │  │ 3 │  │ 4 │  │ 5 │
+    └─┬─┘  └─┬─┘  └───┘  └───┘
+    ┌─┴─┐  ┌─┴─┐
+    │ 0 │  │ 2 │
+    └───┘  └───┘
+
+  Union(1,3): Find(1)=1, Find(3)=3 → parent[1] = 3
+        ┌───┐
+        │ 3 │ (root)        ┌───┐  ┌───┐
+        └─┬─┘               │ 4 │  │ 5 │
+      ┌──┬┴──┐              └───┘  └───┘
+    ┌─┴─┐  ┌─┴─┐
+    │ 1 │  │ 2 │
+    └─┬─┘  └───┘
+    ┌─┴─┐
+    │ 0 │
+    └───┘
+
+  Connected(0,3): Find(0) → 0→1→3 (root=3)
+                  Find(3) → 3 (root=3)
+                  Same root → true ✓
+
+  Connected(0,4): Find(0) → 0→1→3 (root=3)
+                  Find(4) → 4 (root=4)
+                  Different roots → false ✓
+```
+
 ---
 
 ## Example 2: Number of Connected Components
@@ -91,6 +135,43 @@ func main() {
 	edges := [][2]int{{0,1},{1,2},{3,4}}
 	fmt.Println("Components:", countComponents(5, edges)) // 2
 }
+```
+
+**Textual Figure:**
+```
+  n=5, edges: {0,1}, {1,2}, {3,4}
+
+  ┌──────────┬────────────┬──────────────────────┬────────────────┐
+  │  Edge    │ find(u,v)  │ Action               │ Components     │
+  ├──────────┼────────────┼──────────────────────┼────────────────┤
+  │ (0, 1)   │ 0 ≠ 1     │ parent[0] = 1        │ 5 → 4          │
+  │ (1, 2)   │ 1 ≠ 2     │ parent[1] = 2        │ 4 → 3          │
+  │ (3, 4)   │ 3 ≠ 4     │ parent[3] = 4        │ 3 → 2          │
+  └──────────┴────────────┴──────────────────────┴────────────────┘
+
+  Final forest (2 components):
+
+    Component 1:       Component 2:
+      ┌───┐              ┌───┐
+      │ 2 │ (root)       │ 4 │ (root)
+      └─┬─┘              └─┬─┘
+      ┌─┴─┐              ┌─┴─┐
+      │ 1 │              │ 3 │
+      └─┬─┘              └───┘
+      ┌─┴─┐
+      │ 0 │
+      └───┘
+
+  Path compression on Find(0): 0→1→2 → parent[0]=2, parent[1]=2
+    After:  ┌───┐
+            │ 2 │
+            └─┬─┘
+           ┌──┴──┐
+         ┌─┴─┐ ┌─┴─┐
+         │ 0 │ │ 1 │   (both now point directly to 2)
+         └───┘ └───┘
+
+  Result: 2 components
 ```
 
 ---
@@ -148,6 +229,46 @@ func main() {
 	}
 	fmt.Println("Islands:", numIslands(grid)) // 3
 }
+```
+
+**Textual Figure:**
+```
+  Grid (4×5):                    Cell IDs (i*5 + j):
+  ┌───┬───┬───┬───┬───┐         0   1   2   3   4
+  │ 1 │ 1 │ 0 │ 0 │ 0 │         5   6   7   8   9
+  ├───┼───┼───┼───┼───┤         10  11  12  13  14
+  │ 1 │ 1 │ 0 │ 0 │ 0 │         15  16  17  18  19
+  ├───┼───┼───┼───┼───┤
+  │ 0 │ 0 │ 1 │ 0 │ 0 │
+  ├───┼───┼───┼───┼───┤
+  │ 0 │ 0 │ 0 │ 1 │ 1 │
+  └───┴───┴───┴───┴───┘
+
+  Initial count = 7 (number of '1' cells)
+
+  Union operations on adjacent '1' cells:
+  ┌──────────────┬────────────────────────┬───────┐
+  │ Adjacent pair│ Action                 │ count │
+  ├──────────────┼────────────────────────┼───────┤
+  │ (0,0)→(0,1) │ Union(0, 1)            │ 7→6   │
+  │ (0,0)→(1,0) │ Union(0, 5)            │ 6→5   │
+  │ (0,1)→(1,1) │ Union(1, 6)            │ 5→4   │
+  │ (1,0)→(1,1) │ find(5)==find(6) skip  │  4    │
+  │ (3,3)→(3,4) │ Union(18, 19)          │ 4→3   │
+  └──────────────┴────────────────────────┴───────┘
+
+  Final 3 islands (3 trees in union-find forest):
+    Island A          Island B      Island C
+    {0,1,5,6}        {12}          {18,19}
+      ┌────┐         ┌────┐        ┌────┐
+      │  6 │ root     │ 12 │ root   │ 19 │ root
+      └──┬─┘         └────┘        └──┬─┘
+    ┌──┬─┴──┐                      ┌──┴──┐
+  ┌─┴┐┌┴─┐┌┴┐                     │ 18  │
+  │ 1││ 5││0│                     └─────┘
+  └──┘└──┘└─┘
+
+  Result: 3 islands
 ```
 
 ---
@@ -216,6 +337,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Input accounts:
+    Account 0: ["John", "j1@ex.com", "j2@ex.com"]
+    Account 1: ["John", "j2@ex.com", "j3@ex.com"]
+    Account 2: ["Mary", "m1@ex.com"]
+
+  Processing emails → building emailToID + unions:
+  ┌───────────┬────────────────────────────────────────┐
+  │  Email    │ Processing                             │
+  ├───────────┼────────────────────────────────────────┤
+  │ j1@ex.com │ New → emailToID[j1@]=0                 │
+  │ j2@ex.com │ New → emailToID[j2@]=0                 │
+  │ j2@ex.com │ Seen at acct 0 → Union(1, 0)           │
+  │ j3@ex.com │ New → emailToID[j3@]=1                 │
+  │ m1@ex.com │ New → emailToID[m1@]=2                 │
+  └───────────┴────────────────────────────────────────┘
+
+  Union-Find forest after processing:
+    ┌───┐        ┌───┐
+    │ 0 │ root   │ 2 │ root (Mary)
+    └─┬─┘        └───┘
+    ┌─┴─┐
+    │ 1 │   (accounts 0 and 1 merged)
+    └───┘
+
+  Group emails by root:
+    root 0 → {j1@, j2@, j3@} → ["John", "j1@ex", "j2@ex", "j3@ex"]
+    root 2 → {m1@}            → ["Mary", "m1@ex"]
+```
+
 ---
 
 ## Example 5: Redundant Connection (LeetCode 684)
@@ -253,6 +405,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Test 1: edges = [[1,2], [1,3], [2,3]]
+
+  ┌────────┬────────────┬──────────────────────────────────┐
+  │ Edge   │ find(u,v)  │ Action                           │
+  ├────────┼────────────┼──────────────────────────────────┤
+  │ [1,2]  │ 1 ≠ 2     │ parent[1] = 2                    │
+  │ [1,3]  │ find(1)=2  │ 2 ≠ 3 → parent[2] = 3           │
+  │        │ find(3)=3  │                                  │
+  │ [2,3]  │ find(2)=3  │ 3 == 3 → CYCLE! Return [2,3]    │
+  │        │ find(3)=3  │                                  │
+  └────────┴────────────┴──────────────────────────────────┘
+
+  Forest when cycle detected:
+      ┌───┐
+      │ 3 │ ← root
+      └─┬─┘
+      ┌─┴─┐
+      │ 2 │     Edge [2,3]: both find → root 3
+      └─┬─┘     → cycle! Return [2, 3]
+      ┌─┴─┐
+      │ 1 │
+      └───┘
+
+  Test 2: edges = [[1,2],[2,3],[3,4],[1,4],[1,5]]
+  ┌────────┬────────────┬──────────────────────────────────┐
+  │ [1,2]  │ 1 ≠ 2     │ parent[1] = 2                    │
+  │ [2,3]  │ 2 ≠ 3     │ parent[2] = 3                    │
+  │ [3,4]  │ 3 ≠ 4     │ parent[3] = 4                    │
+  │ [1,4]  │ find(1)=4  │ 4 == 4 → CYCLE! Return [1,4]    │
+  │        │ find(4)=4  │                                  │
+  └────────┴────────────┴──────────────────────────────────┘
+  Result: [1, 4]
+```
+
 ---
 
 ## Example 6: Graph Valid Tree (LeetCode 261)
@@ -286,6 +474,34 @@ func main() {
 	fmt.Println(validTree(5, [][]int{{0,1},{0,2},{0,3},{1,4}})) // true
 	fmt.Println(validTree(5, [][]int{{0,1},{1,2},{2,3},{1,3},{1,4}})) // false
 }
+```
+
+**Textual Figure:**
+```
+  Test 1: n=5, edges=[[0,1],[0,2],[0,3],[1,4]]
+  Check: len(edges)=4 == n-1=4 ✓
+
+  ┌────────┬────────────┬────────────────────────┐
+  │ Edge   │ find(u,v)  │ Action                 │
+  ├────────┼────────────┼────────────────────────┤
+  │ [0,1]  │ 0 ≠ 1     │ Union ✓                  │
+  │ [0,2]  │ 1 ≠ 2     │ Union ✓                  │
+  │ [0,3]  │ 1 ≠ 3     │ Union ✓                  │
+  │ [1,4]  │ 1 ≠ 4     │ Union ✓                  │
+  └────────┴────────────┴────────────────────────┘
+  No cycle → valid tree → true ✓
+
+  Resulting tree:         ┌───┐
+                          │ 1 │ (root)
+                          └─┬─┘
+                      ┌───┼───┬───┐
+                    ┌─┴─┐┌┴─┐┌┴─┐┌┴─┐
+                    │ 0 ││ 2││ 3││ 4│
+                    └───┘└──┘└──┘└──┘
+
+  Test 2: n=5, edges=[[0,1],[1,2],[2,3],[1,3],[1,4]]
+  Check: len(edges)=5 ≠ n-1=4 → false immediately
+  (too many edges for a tree)
 ```
 
 ---
@@ -330,6 +546,33 @@ func main() {
 	fmt.Println("Earliest:", earliestAcq(logs, 4)) // 3? let's see...
 	// Actually: t=0: {0,2}, t=1: {0,1,2}, t=3: {0,1,2,3} → answer = 3
 }
+```
+
+**Textual Figure:**
+```
+  n=4 people, logs sorted by time:
+  ┌──────┬────────┬────────────────────────┬────────────┐
+  │ Time │ Pair   │ Action                 │ Components │
+  ├──────┼────────┼────────────────────────┼────────────┤
+  │  t=0 │ (2, 0) │ Union(2,0): {0,2}      │  4 → 3     │
+  │  t=1 │ (0, 1) │ Union(0,1): {0,1,2}    │  3 → 2     │
+  │  t=3 │ (0, 3) │ Union(0,3): {0,1,2,3}  │  2 → 1 ✓   │
+  │  t=4 │ (1, 2) │ Already same root      │  (skip)    │
+  │  t=7 │ (3, 1) │ Already same root      │  (skip)    │
+  └──────┴────────┴────────────────────────┴────────────┘
+
+  Timeline visualization:
+    t=0:  {0,2}  {1}  {3}    │ 3 components
+           ┌─┐              │
+           │0│─┐            │
+           └─┘ │            │
+           ┌─┐ │            │
+           │2│─┘            │
+           └─┘              │
+    t=1:  {0,1,2}  {3}     │ 2 components
+    t=3:  {0,1,2,3}        │ 1 component ← ALL FRIENDS!
+
+  Answer: t=3 (earliest time with 1 component)
 ```
 
 ---
@@ -380,6 +623,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Dynamic Connectivity: n=5, operations: {0,1}, {2,3}, {1,3}, {0,4}
+
+  ┌────────────┬────────┬────────────┬────────────────────────────┐
+  │ Operation  │ merged │ components │ Forest state               │
+  ├────────────┼────────┼────────────┼────────────────────────────┤
+  │ Union(0,1) │  true  │     4      │ {0,1} {2} {3} {4}          │
+  │ Union(2,3) │  true  │     3      │ {0,1} {2,3} {4}            │
+  │ Union(1,3) │  true  │     2      │ {0,1,2,3} {4}              │
+  │ Union(0,4) │  true  │     1      │ {0,1,2,3,4}                │
+  └────────────┴────────┴────────────┴────────────────────────────┘
+
+  Final forest (1 component, rank-balanced):
+        ┌───┐
+        │ 0 │ (root, rank=2)
+        └─┬─┘
+      ┌──┼──┬──┐
+    ┌─┴─┐┌┴┐┌┴─┐
+    │ 1 ││2││ 4 │
+    └───┘└┬┘└───┘
+         │
+        ┌┴─┐
+        │3 │
+        └──┘
+
+  All nodes connected via root 0.
+  count tracks components: 5 → 4 → 3 → 2 → 1
+```
+
 ---
 
 ## Example 9: Satisfiability of Equality Equations (LeetCode 990)
@@ -424,6 +697,46 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Test 1: ["a==b", "b!=a"]
+    Phase 1 (==): a==b → Union(a, b)
+      ┌───┐
+      │ b │ (root)     {a, b} in same set
+      └─┬─┘
+      ┌─┴─┐
+      │ a │
+      └───┘
+    Phase 2 (!=): b!=a → Find(b)=b, Find(a)=b → same root!
+    Contradiction! → false ✗
+
+  Test 2: ["a==b", "b==c", "a==c"]
+    Phase 1: Union(a,b), Union(b,c)
+      ┌───┐
+      │ c │ (root)
+      └─┬─┘
+      ┌─┴─┐       All in same set: {a, b, c}
+      │ b │
+      └─┬─┘
+      ┌─┴─┐
+      │ a │
+      └───┘
+    Phase 2: a==c → equality confirmed, no != to check
+    → true ✓
+
+  Test 3: ["a==b", "b!=c", "c==a"]
+    Phase 1: a==b → Union(a,b), c==a → Union(c,a)
+      ┌───┐
+      │ b │ (root)    {a, b, c} all connected
+      └─┬─┘
+     ┌──┴──┐
+   ┌─┴─┐ ┌─┴─┐
+   │ a │ │ c │
+   └───┘ └───┘
+    Phase 2: b!=c → Find(b)=b, Find(c)=b → same root!
+    Contradiction! → false ✗
+```
+
 ---
 
 ## Example 10: Disjoint Set Operations Summary
@@ -454,6 +767,53 @@ func main() {
 		fmt.Printf("%2d. %-20s %s\n", i+1, r.topic, r.detail)
 	}
 }
+```
+
+**Textual Figure:**
+```
+  Disjoint Set Operations Overview:
+  ════════════════════════════════
+
+  Make-Set(x): each element starts as its own root
+    parent[x] = x
+    ┌─┐ ┌─┐ ┌─┐ ┌─┐
+    │0│ │1│ │2│ │3│     4 singletons
+    └─┘ └─┘ └─┘ └─┘
+
+  Union(0,1) + Union(2,3):
+    ┌─┐  ┌─┐
+    │1│  │3│              2 sets
+    └┬┘  └┬┘
+    ┌┴┐  ┌┴┐
+    │0│  │2│
+    └─┘  └─┘
+
+  Find(0): follow parent pointers to root
+    0 → 1 (root)     → return 1
+
+  Union(1,3): merge the two sets
+      ┌─┐
+      │3│               1 set
+      └┬┘
+     ┌─┴─┐
+    ┌┴┐ ┌┴┐
+    │1│ │2│
+    └┬┘ └─┘
+    ┌┴┐
+    │0│
+    └─┘
+
+  Path Compression on Find(0):
+    Before: 0 → 1 → 3    After: 0 → 3 (flat!)
+            1 → 3               1 → 3
+
+  ┌────────────────────┬──────────┬──────────────┐
+  │ Operation          │ Naive    │ Optimized    │
+  ├────────────────────┼──────────┼──────────────┤
+  │ Find               │ O(n)     │ O(α(n)) ≈ O(1)│
+  │ Union              │ O(n)     │ O(α(n)) ≈ O(1)│
+  │ Space              │ O(n)     │ O(n)         │
+  └────────────────────┴──────────┴──────────────┘
 ```
 
 ---

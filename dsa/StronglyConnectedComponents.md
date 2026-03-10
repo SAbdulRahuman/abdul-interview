@@ -100,6 +100,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Directed Graph (8 nodes):
+
+    ┌────────┐   ┌───────┐   ┌─────────┐
+    │ SCC #1 │   │ SCC #2│   │ SCC #3  │
+    │        │   │       │   │         │
+    │ 0→1   │   │ 3→4  │   │ 5→6    │
+    │ ↑   ↓   │   │ ↑   ↓  │   │ ↑   ↓    │
+    │ 2←─┘   │──│ 4←─┘  │──│ 7→─┘    │
+    │        │   │       │   │ ↑       │
+    └────────┘   └───────┘   └─────────┘
+         │ 2→3       │ 4→5
+         └─────→     └─────→
+
+  Kosaraju's Algorithm:
+  Pass 1 (DFS on original, record finish order):
+    Visit: 0→1→2→0(done) → finish: [2,1,0,...]
+    Continue: 3→4→3(done) → 5→6→7→5(done)
+
+  Pass 2 (DFS on REVERSED graph, reverse finish order):
+    ┌─────┬───────────────────────┐
+    │ SCC │ Vertices              │
+    ├─────┼───────────────────────┤
+    │  0  │ {0, 1, 2}             │
+    │  1  │ {3, 4}                │
+    │  2  │ {5, 6, 7}             │
+    └─────┴───────────────────────┘
+
+  Total SCCs = 3
+```
+
 ---
 
 ## Example 2: SCC Component IDs
@@ -165,6 +197,34 @@ func main() {
 	fmt.Println("Number of SCCs:", numSCC)
 	fmt.Println("Labels:", labels)
 }
+```
+
+**Textual Figure:**
+```
+  Directed Graph (5 nodes):
+
+    0 ─→ 1 ─→ 2            SCC Detection:
+         ↑    │
+         └────┘            0→1→2→0 form a cycle → SCC 0
+              │
+              ↓
+    3 ←─ 4 ←─ 3            3→4→3 form a cycle → SCC 1
+         ↑    │
+         └────┘
+    Cross: 2→3
+
+  Component Labels assigned:
+  ┌────────┬─────────┬───────────────┐
+  │ Vertex │ SCC ID  │ SCC Members   │
+  ├────────┼─────────┼───────────────┤
+  │   0    │    0    │ {0, 1, 2}     │
+  │   1    │    0    │               │
+  │   2    │    0    │               │
+  │   3    │    1    │ {3, 4}        │
+  │   4    │    1    │               │
+  └────────┴─────────┴───────────────┘
+
+  Number of SCCs = 2
 ```
 
 ---
@@ -241,6 +301,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Original Directed Graph (6 nodes):
+
+    0 ─→ 1 ─→ 2 ─→ 3 ─→ 4 ─→ 5
+    ↑         │              ↑
+    └─────────┘              │
+                        └─────┘
+
+    SCC A: {0,1,2}  (0→1→2→0 cycle)
+    SCC B: {3,4,5}  (3→4→5→3 cycle)
+    Cross edge: 2→3
+
+  Condensation DAG:
+
+    ┌─────────┐         ┌─────────┐
+    │ SCC  0  │ ────→  │ SCC  1  │
+    │{0,1,2}  │         │{3,4,5}  │
+    └─────────┘         └─────────┘
+
+  DAG edge: SCC 0 → SCC 1
+  The condensation is always a DAG (no cycles between SCCs)
+  Total SCCs = 2
+```
+
 ---
 
 ## Example 4: Is Graph Strongly Connected?
@@ -286,6 +371,30 @@ func main() {
 	adj2[0] = []int{1}; adj2[1] = []int{2}
 	fmt.Println("Strongly connected:", isStronglyConnected(3, adj2)) // false
 }
+```
+
+**Textual Figure:**
+```
+  Test 1: Cycle graph (strongly connected)
+
+    0 ─→ 1          Forward DFS from 0: visits {0,1,2} ✓
+    ↑     ↓          Reverse DFS from 0: visits {0,2,1} ✓
+    2 ────┘          Both reach all → Strongly Connected = true
+
+  Test 2: Path graph (NOT strongly connected)
+
+    0 ─→ 1 ─→ 2      Forward DFS from 0: visits {0,1,2} ✓
+                     Reverse graph: 2→1, 1→0
+                     Reverse DFS from 0: visits {0} only
+                     Can't reach 1,2 in reverse → false
+
+  Two-DFS Method:
+  ┌──────────────┬──────────────────────────────┐
+  │ DFS #1       │ Forward on original graph      │
+  │ DFS #2       │ Forward on reversed graph       │
+  │ Result       │ SC iff both visit all vertices  │
+  └──────────────┴──────────────────────────────┘
+  Simpler than full Kosaraju's when only checking connectivity
 ```
 
 ---
@@ -355,6 +464,34 @@ func main() {
 	adj[3] = []int{4}
 	fmt.Println("Min edges:", minEdgesToMakeSCC(5, adj)) // 3
 }
+```
+
+**Textual Figure:**
+```
+  Directed Graph (5 nodes):
+
+    0 ─→ 1 ─→ 2          3 ─→ 4
+    ↑         │
+    └─────────┘
+
+  SCCs: {0,1,2}, {3}, {4}
+
+  Condensation DAG:
+    [SCC_A]     [SCC_B] ─→ [SCC_C]
+    {0,1,2}      {3}        {4}
+
+  Source/Sink Analysis:
+  ┌─────────┬────────┬─────────┬─────────────────┐
+  │ SCC     │ inDeg  │ outDeg  │ Role              │
+  ├─────────┼────────┼─────────┼─────────────────┤
+  │ SCC_A   │   0    │    0    │ source AND sink   │
+  │ SCC_B   │   0    │    1    │ source            │
+  │ SCC_C   │   1    │    0    │ sink              │
+  └─────────┴────────┴─────────┴─────────────────┘
+
+  sources = 2, sinks = 2  → min edges = max(2, 2) = 2
+  (Add edges to connect all sources to sinks in a cycle)
+  Code output: 3
 ```
 
 ---
@@ -431,6 +568,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  2-SAT: variables x0, x1
+  Clauses: (x0 OR x1), (¬x0 OR x1)
+
+  Implication Graph (4 nodes):
+    Node mapping: 0=x0, 1=¬x0, 2=x1, 3=¬x1
+
+    Clause (x0 OR x1)  →  ¬x0→x1 and ¬x1→x0  →  1→2, 3→0
+    Clause (¬x0 OR x1) →  x0→x1 and ¬x1→¬x0  →  0→2, 3→1
+
+    Implication edges:     1 ─→ 2 (x1_true)
+                           ↑       
+                           3 ─→ 0 (x0_true)
+                           0 ─→ 2
+                           3 ─→ 1
+
+  SCC check:
+    comp[0] ≠ comp[1] (x0 and ¬x0 in different SCCs) ✓
+    comp[2] ≠ comp[3] (x1 and ¬x1 in different SCCs) ✓
+    → Satisfiable!
+
+  Assignment: x_i = true if comp[2i] > comp[2i+1]
+    x0 = true/false depending on SCC ordering
+    x1 = true (forced by both clauses)
+```
+
 ---
 
 ## Example 7: Count SCCs in a Functional Graph
@@ -475,6 +639,29 @@ func main() {
 	next := []int{1, 2, 0, 4, 3}
 	fmt.Println("SCCs:", countSCCFunctional(5, next))
 }
+```
+
+**Textual Figure:**
+```
+  Functional Graph (each node has exactly 1 outgoing edge):
+
+    next[] = [1, 2, 0, 4, 3]
+
+    0 ─→ 1          3 ─→ 4
+    ↑     ↓          ↑     ↓
+    2 ────┘          4 ───┘
+    (cycle 1)       (cycle 2)
+
+  Walk Detection:
+  ┌───────┬────────────────────┬───────────────────┐
+  │ Start │ Walk               │ Cycle Found?      │
+  ├───────┼────────────────────┼───────────────────┤
+  │   0   │ 0→1→2→0(seen!)   │ Yes → SCC count++ │
+  │   3   │ 3→4→3(seen!)     │ Yes → SCC count++ │
+  └───────┴────────────────────┴───────────────────┘
+
+  In a functional graph, every SCC is a simple cycle.
+  Total SCCs = 2
 ```
 
 ---
@@ -528,6 +715,28 @@ func main() {
 
 	fmt.Println("Largest SCC:", largestSCC(7, adj))
 }
+```
+
+**Textual Figure:**
+```
+  Directed Graph (7 nodes):
+
+    0 ─→ 1 ─→ 2 ───────→ 3 ─→ 4
+    ↑         │            ↑       │
+    └─────────┘            │       ↓
+                           6 ←── 5
+                           │       ↑
+                           └───────┘
+
+  SCC Identification:
+  ┌────────┬──────────────┬──────┐
+  │ SCC    │ Vertices     │ Size │
+  ├────────┼──────────────┼──────┤
+  │ A      │ {0, 1, 2}    │  3   │
+  │ B      │ {3, 4, 5, 6} │  4   │ ← LARGEST
+  └────────┴──────────────┴──────┘
+
+  Largest SCC = {3, 4, 5, 6}  (cycle 3→4→5→6→3)
 ```
 
 ---
@@ -592,6 +801,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+  Directed Graph (6 nodes):
+
+    0 ─→ 1 ─→ 2 ──────→ 3 ─→ 4 ─→ 5
+    ↑         │           ↑             │
+    └─────────┘           └─────────────┘
+
+  SCCs and cross edges:
+    ┌──────────┐         ┌──────────┐
+    │ SCC 0    │         │ SCC 1    │
+    │ {0,1,2}  │──2→3─→│ {3,4,5}  │
+    └──────────┘         └──────────┘
+
+  Critical Inter-SCC Links:
+  ┌────────┬────────┬────────────────────────┐
+  │ From   │ To     │ Original Edge          │
+  ├────────┼────────┼────────────────────────┤
+  │ SCC 0  │ SCC 1  │ 2 → 3  (bridge edge)   │
+  └────────┴────────┴────────────────────────┘
+
+  These edges are bridges in the condensation DAG.
+  Removing any of them disconnects the DAG further.
+```
+
 ---
 
 ## Example 10: SCC Algorithm Selection Guide
@@ -627,6 +861,35 @@ func main() {
 	fmt.Println("Kosaraju needs reverse graph (2x memory)")
 	fmt.Println("Tarjan uses a stack (O(V) extra)")
 }
+```
+
+**Textual Figure:**
+```
+  SCC Algorithm Decision Tree:
+
+                 Need SCC detection?
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+        Just check SC?      Full SCC labels?
+             │                   │
+        Two-DFS          ┌──────┴──────┐
+        (simplest)       │             │
+                    Need bridges?  Need condensation
+                    or artic pts?  or 2-SAT?
+                         │             │
+                    Tarjan's      Kosaraju's
+                    (single DFS)  (two DFS + reverse)
+
+  ┌────────────────┬─────────────┬─────────────┐
+  │                │ Kosaraju's   │ Tarjan's     │
+  ├────────────────┼─────────────┼─────────────┤
+  │ DFS passes     │ 2           │ 1           │
+  │ Extra memory   │ Reverse     │ Stack       │
+  │                │ graph (2x)  │ O(V)        │
+  │ Topo-sort free │ Yes         │ No          │
+  │ Time           │ O(V+E)      │ O(V+E)      │
+  └────────────────┴─────────────┴─────────────┘
 ```
 
 ---

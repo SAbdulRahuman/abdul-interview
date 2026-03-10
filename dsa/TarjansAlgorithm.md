@@ -85,6 +85,46 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Directed graph (8 nodes):
+
+    0 → 1 → 2 → 3 → 4 → 5
+    ↑       │       ↑
+    └───────┘       └── 5
+
+    6 ⇄ 7
+
+DFS with disc/low/stack:
+┌──────┬──────┬─────┬────────┬─────────────────────┐
+│ Node │ disc │ low │ stack  │ SCC pop?            │
+├──────┼──────┼─────┼────────┼─────────────────────┤
+│  0   │  0   │  0  │ [0]    │                     │
+│  1   │  1   │  0  │ [0,1]  │                     │
+│  2   │  2   │  0  │ [0,1,2]│ back edge 2→0       │
+│      │      │     │        │ low[2]→0, low[1]←0  │
+│  0   │      │  0  │        │ low==disc → pop SCC  │
+│      │      │     │        │ SCC: {2, 1, 0}      │
+│  3   │  3   │  3  │ [3]    │                     │
+│  4   │  4   │  3  │ [3,4]  │                     │
+│  5   │  5   │  3  │ [3,4,5]│ 5→3, low[5]←3      │
+│  3   │      │  3  │        │ low==disc → pop SCC  │
+│      │      │     │        │ SCC: {5, 4, 3}      │
+│  6   │  6   │  6  │ [6]    │                     │
+│  7   │  7   │  6  │ [6,7]  │ 7→6, low[7]←6      │
+│  6   │      │  6  │        │ low==disc → pop SCC  │
+│      │      │     │        │ SCC: {7, 6}         │
+└──────┴──────┴─────┴────────┴─────────────────────┘
+
+Result: 3 SCCs
+  SCC 0: {2,1,0}    ┌───────┐
+  SCC 1: {5,4,3}    │ 0→1→2│ → ┌───────┐
+  SCC 2: {7,6}      │  ←──┘ │    │ 3→4→5│    ┌────┐
+                    └───────┘    │  ←──┘ │    │ 6⇄7│
+                                  └───────┘    └────┘
+```
+
 ---
 
 ## Example 2: Find Bridges (Critical Connections — LeetCode 1192)
@@ -138,6 +178,38 @@ func main() {
 	bridges := criticalConnections(n, connections)
 	fmt.Println("Bridges:", bridges) // [[1 3]]
 }
+```
+
+**Textual Figure:**
+
+```
+Undirected graph: n=4, connections {0-1, 1-2, 2-0, 1-3}
+
+    0 ── 1 ── 3
+     \  /
+      2
+
+DFS with disc/low (start at 0, parent=-1):
+┌──────┬──────┬─────┬───────────────────────────┐
+│ Node │ disc │ low │ Action                    │
+├──────┼──────┼─────┼───────────────────────────┤
+│  0   │  0   │  0  │                           │
+│  1   │  1   │  1  │                           │
+│  2   │  2   │  0  │ back edge to 0: low←0    │
+│  1   │      │  0  │ low[2]=0 < low[1] → 0    │
+│  3   │  3   │  3  │ leaf, no back edges      │
+└──────┴──────┴─────┴───────────────────────────┘
+
+Bridge check: low[u] > disc[v]?
+  Edge (0,1): low[1]=0, disc[0]=0 → 0 > 0? No
+  Edge (1,2): low[2]=0, disc[1]=1 → 0 > 1? No
+  Edge (1,3): low[3]=3, disc[1]=1 → 3 > 1? Yes → BRIDGE!
+
+    0 ── 1 ┃┃ 3
+     \  /   ↑↑
+      2    bridge
+
+Result: [[1, 3]]
 ```
 
 ---
@@ -199,6 +271,43 @@ func main() {
 	aps := articulationPoints(5, adj)
 	fmt.Println("Articulation points:", aps) // [2 3]
 }
+```
+
+**Textual Figure:**
+
+```
+Undirected graph (5 nodes):
+
+    0 ── 1
+    │  / │
+    │ /  │
+    2    │
+    │    │
+    3 ── 4    (wait, adj: 2 connects to 0,1,3)
+
+Actual structure:
+    0 ── 1             adj[0]=[1,2]
+     \  /              adj[1]=[0,2]
+      2 ─── 3 ─── 4    adj[2]=[0,1,3]
+                       adj[3]=[2,4]
+                       adj[4]=[3]
+
+DFS disc/low:
+┌──────┬──────┬─────┬──────────────────────────────┐
+│ Node │ disc │ low │ AP check                       │
+├──────┼──────┼─────┼──────────────────────────────┤
+│  0   │  0   │  0  │ root, only 1 child → no       │
+│  1   │  1   │  0  │ back edge to 0                 │
+│  2   │  2   │  0  │ low[3]=2 >= disc[2]=2 → AP ✓  │
+│  3   │  3   │  3  │ low[4]=4 >= disc[3]=3 → AP ✓  │
+│  4   │  4   │  4  │ leaf                           │
+└──────┴──────┴─────┴──────────────────────────────┘
+
+AP verification:
+  Remove node 2:   0─1     3─4   → disconnected ✓
+  Remove node 3:   0─1─2   4     → disconnected ✓
+
+Result: [2, 3]
 ```
 
 ---
@@ -265,6 +374,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Undirected graph:
+    0 ── 1
+     \  /
+      2 ─── 3 ─── 4
+    adj[0]=[1,2], adj[1]=[0,2], adj[2]=[0,1,3],
+    adj[3]=[2,4], adj[4]=[3]
+
+Biconnected component detection:
+  Edge stack tracks DFS tree + back edges.
+  When low[u] >= disc[v], pop edges to form component.
+
+  DFS from 0:
+    Visit 0 → push edge (0,1)
+    Visit 1 → push edge (1,2)  (skip 0 = parent)
+    Visit 2 → back edge (2,0), push it
+              low[2] < disc[2], update low
+    Return to 1: low[2]=0 < low[1] → update low[1]=0
+    Return to 0: low[1]=0 >= disc[0]=0 → pop component!
+      Pop: (2,0), (1,2), (0,1) → Component 0: {0,1,2}
+    Continue from 2: visit 3 → push (2,3)
+    Visit 3 → visit 4, push (3,4)
+    Return to 3: low[4]=4 >= disc[3]=3 → pop!
+      Pop: (3,4) → Component 1: {3,4}
+    Return to 2: low[3]=3 >= disc[2]=2 → pop!
+      Pop: (2,3) → Component 2: {2,3}
+
+  Biconnected components:
+  ┌───────────┐  ┌───────┐  ┌───────┐
+  │ 0─1─2   │  │ 2─3  │  │ 3─4  │
+  └───────────┘  └───────┘  └───────┘
+    Comp 0          Comp 1      Comp 2
+```
+
 ---
 
 ## Example 5: Low-Link Values Step-by-Step Trace
@@ -321,6 +466,54 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Undirected graph:
+    adj[0]=[1,3], adj[1]=[0,2], adj[2]=[1,3],
+    adj[3]=[0,2,4], adj[4]=[3]
+
+    0 ── 1
+    │    │
+    │    2
+    │    │
+    3 ──┘
+    │
+    4
+
+DFS trace step-by-step:
+  Visit 0: disc=0, low=0
+  ├─ Visit 1: disc=1, low=1
+  │  ├─ Visit 2: disc=2, low=2
+  │  │  └─ neighbor 3: unvisited → recurse
+  │  │     Visit 3: disc=3, low=3
+  │  │     ├─ neighbor 0: visited, back edge
+  │  │     │  Update low[3]: 3 → 0
+  │  │     ├─ neighbor 2: parent, skip
+  │  │     └─ Visit 4: disc=4, low=4
+  │  │        Finish 4: disc=4, low=4
+  │  │     Update low[3]: 0 (no change, 4>0)
+  │  │     Finish 3: disc=3, low=0
+  │  │  Update low[2]: 2 → 0 (from child 3)
+  │  │  Finish 2: disc=2, low=0
+  │  Update low[1]: 1 → 0 (from child 2)
+  │  Finish 1: disc=1, low=0
+  Finish 0: disc=0, low=0
+
+Final values:
+┌──────┬──────┬─────┐
+│ Node │ disc │ low │
+├──────┼──────┼─────┤
+│  0   │  0   │  0  │
+│  1   │  1   │  0  │
+│  2   │  2   │  0  │
+│  3   │  3   │  0  │
+│  4   │  4   │  4  │
+└──────┴──────┴─────┘
+  Node 4: low=4≠low of others → bridge edge (3,4)
+  Nodes 0-3: all have low=0 → same 2-edge-connected block
+```
+
 ---
 
 ## Example 6: Count Bridges in a Graph
@@ -367,6 +560,39 @@ func main() {
 	edges := [][2]int{{0,1},{1,2},{2,0},{1,3},{3,4},{4,5},{5,3}}
 	fmt.Println("Number of bridges:", countBridges(6, edges)) // 1 (edge 1-3)
 }
+```
+
+**Textual Figure:**
+
+```
+Undirected graph (6 nodes):
+  edges: {0-1, 1-2, 2-0, 1-3, 3-4, 4-5, 5-3}
+
+    0 ── 1 ─── 3 ── 4
+     \  /       │    │
+      2         └─ 5 ─┘
+
+DFS disc/low:
+┌──────┬──────┬─────┬────────────────────────┐
+│ Node │ disc │ low │ Notes                  │
+├──────┼──────┼─────┼────────────────────────┤
+│  0   │  0   │  0  │                        │
+│  1   │  1   │  0  │ cycle via 2→0         │
+│  2   │  2   │  0  │ back edge to 0        │
+│  3   │  3   │  3  │ cycle via 4→5→3      │
+│  4   │  4   │  3  │ 5 has back edge to 3  │
+│  5   │  5   │  3  │ back edge to 3        │
+└──────┴──────┴─────┴────────────────────────┘
+
+Bridge check (low[u] > disc[v]):
+  (1,3): low[3]=3 > disc[1]=1 → BRIDGE ✓
+  All other edges: low[u] ≤ disc[v] → not bridges
+
+    ┌───────┐       ┌─────────┐
+    │ 0─1─2│─bridge─│ 3─4─5 │
+    └───────┘       └─────────┘
+
+Result: 1 bridge (edge 1-3)
 ```
 
 ---
@@ -421,6 +647,39 @@ func main() {
 	bridges := bridgesWithParallelEdges(3, edges)
 	fmt.Println("Bridges:", bridges) // [[1 2]]
 }
+```
+
+**Textual Figure:**
+
+```
+Graph with parallel edges:
+  edges: {0-1, 0-1, 1-2} (edge indices: 0, 1, 2)
+
+    0 ═══ 1 ─── 2
+    (two parallel edges between 0 and 1)
+
+Key: track by EDGE INDEX, not parent vertex.
+  This prevents skipping all edges to parent.
+
+DFS (skip by edge index, not vertex):
+┌──────┬──────┬─────┬─────────────────────────────┐
+│ Node │ disc │ low │ Notes                       │
+├──────┼──────┼─────┼─────────────────────────────┤
+│  0   │  0   │  0  │ use edge idx=0 to reach 1   │
+│  1   │  1   │  0  │ skip edge idx=0 (same edge) │
+│      │      │     │ edge idx=1 to 0: back edge  │
+│      │      │     │ low[1]←0 (parallel edge!)   │
+│  2   │  2   │  2  │ leaf, no back edges         │
+└──────┴──────┴─────┴─────────────────────────────┘
+
+Bridge check:
+  (0,1): low[1]=0, disc[0]=0 → 0>0? No (parallel edge saves it)
+  (1,2): low[2]=2, disc[1]=1 → 2>1? Yes → BRIDGE!
+
+  Without edge-index tracking, 0-1 would be
+  wrongly detected as a bridge.
+
+Result: [[1, 2]]
 ```
 
 ---
@@ -494,6 +753,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Undirected graph (6 nodes):
+    adj[0]=[1,2], adj[1]=[0,2,3], adj[2]=[0,1],
+    adj[3]=[1,4,5], adj[4]=[3,5], adj[5]=[3,4]
+
+    0 ── 1 ─── 3 ── 4
+     \  /       │    │
+      2         └─ 5 ─┘
+
+Step 1: Find bridges using Tarjan’s
+  Bridge: edge (1,3) → low[3]=3 > disc[1]=1
+
+    0 ── 1 ┃┃ 3 ── 4
+     \  /  ↑↑  │    │
+      2  bridge └─ 5 ─┘
+
+Step 2: BFS ignoring bridges to find components
+
+  Component 0: BFS from 0, skip bridge (1,3)
+    Visit: 0 → 1 → 2       → comp = {0, 1, 2}
+
+  Component 1: BFS from 3, skip bridge (1,3)
+    Visit: 3 → 4 → 5       → comp = {3, 4, 5}
+
+  ┌─────────┐          ┌─────────┐
+  │ 0─1─2  │──bridge──│ 3─4─5  │
+  │ comp=0  │          │ comp=1  │
+  └─────────┘          └─────────┘
+
+Result: 2 components, labels=[0,0,0,1,1,1]
+```
+
 ---
 
 ## Example 9: Find All Bridges and Articulation Points Together
@@ -553,6 +846,46 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Undirected graph (7 nodes):
+    adj[0]=[1,2], adj[1]=[0,2], adj[2]=[0,1,3],
+    adj[3]=[2,4,5], adj[4]=[3,5], adj[5]=[3,4,6],
+    adj[6]=[5]
+
+    0 ── 1
+     \  /
+      2 ─── 3 ── 4
+              │    │
+              └─ 5 ─┘
+                 │
+                 6
+
+DFS disc/low:
+┌──────┬──────┬─────┬─────────────────────────────┐
+│ Node │ disc │ low │ Result                      │
+├──────┼──────┼─────┼─────────────────────────────┤
+│  0   │  0   │  0  │                             │
+│  1   │  1   │  0  │ back edge via 2→0           │
+│  2   │  2   │  0  │ AP: low[3]=2 >= disc[2]=2   │
+│  3   │  3   │  3  │ cycle 3→4→5→3             │
+│  4   │  4   │  3  │                             │
+│  5   │  5   │  3  │ AP: low[6]=6 >= disc[5]=5   │
+│  6   │  6   │  6  │ leaf                        │
+└──────┴──────┴─────┴─────────────────────────────┘
+
+Bridges (low[u] > disc[v]):
+  (2,3): low[3]=3 > disc[2]=2 → BRIDGE
+  (5,6): low[6]=6 > disc[5]=5 → BRIDGE
+
+Articulation Points (low[u] >= disc[v]):
+  Node 2: low[3]=3 >= disc[2]=2 → AP ✓
+  Node 5: low[6]=6 >= disc[5]=5 → AP ✓
+
+Result: Bridges=[(2,3),(5,6)], APs=[2,5]
+```
+
 ---
 
 ## Example 10: Tarjan's vs Kosaraju's Comparison
@@ -592,6 +925,44 @@ func main() {
 	fmt.Println("  AP:      low[u] >= disc[v] (subtree can't escape)")
 	fmt.Println("  SCC root: low[v] == disc[v] (head of component)")
 }
+```
+
+**Textual Figure:**
+
+```
+Tarjan’s vs Kosaraju’s — Visual Comparison:
+
+Same directed graph:
+    0 → 1 → 2       Tarjan’s: 1 DFS pass
+    ↑       │       Kosaraju’s: 2 DFS passes
+    └───────┘
+
+Tarjan’s (single DFS + stack):
+  DFS: 0→1→2→(back to 0)
+  Stack: [0, 1, 2]
+  At node 0: low[0]==disc[0] → pop SCC: {2,1,0}
+
+Kosaraju’s (two DFS + reverse graph):
+  Pass 1: DFS to get finish order: [2, 1, 0]
+  Reverse graph: 1→0, 2→1, 0→2
+  Pass 2: DFS in reverse finish order on reversed graph
+    Start at 0: visits 0→2→1 → SCC: {0,2,1}
+
+┌────────────────────┬───────────────┬───────────────┐
+│ Aspect             │ Tarjan’s       │ Kosaraju’s     │
+├────────────────────┼───────────────┼───────────────┤
+│ DFS passes         │ 1             │ 2             │
+│ Extra structure     │ Stack+low-link│ Reverse graph │
+│ Space              │ O(V)          │ O(V+E)        │
+│ Bridges/APs        │ Yes           │ No            │
+│ Complexity         │ O(V+E)        │ O(V+E)        │
+└────────────────────┴───────────────┴───────────────┘
+
+low-link key insight:
+  low[v] = min disc[t] reachable from subtree(v)
+  Bridge:  low[u] > disc[v]    (no bypass)
+  AP:      low[u] >= disc[v]   (subtree trapped)
+  SCC:     low[v] == disc[v]   (component root)
 ```
 
 ---

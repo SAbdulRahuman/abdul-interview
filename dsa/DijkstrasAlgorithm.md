@@ -73,6 +73,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Graph (directed, weighted):
+
+       0
+      / \
+   4/    \1
+    /      \
+   1───────2
+   │  2↑    │
+  1│       │5
+   │       │
+   3──────4
+      3
+
+Dijkstra from source 0:
+┌──────┬─────────────┬─────────────┬──────────────────────────────┐
+│ Step │ Pop (node,d) │ Relax edges │ dist = [0, 1, 2, 3, 4]       │
+├──────┼─────────────┼─────────────┼──────────────────────────────┤
+│ init │             │             │ [0, ∞, ∞, ∞, ∞]             │
+│  1   │   (0, 0)    │ 0→1:4 0→2:1 │ [0, 4, 1, ∞, ∞]             │
+│  2   │   (2, 1)    │ 2→1:3 2→3:6 │ [0, 3, 1, 6, ∞]             │
+│  3   │   (1, 3)    │ 1→3:4       │ [0, 3, 1, 4, ∞]             │
+│  4   │   (3, 4)    │ 3→4:7       │ [0, 3, 1, 4, 7]             │
+│  5   │   (4, 7)    │ (none)      │ [0, 3, 1, 4, 7]  ← final    │
+└──────┴─────────────┴─────────────┴──────────────────────────────┘
+
+Shortest paths from 0:
+  0→0: 0    0→1: 0→2→1 = 3    0→2: 1    0→3: 0→2→1→3 = 4    0→4: 7
+```
+
 ---
 
 ## Example 2: Dijkstra with Path Reconstruction
@@ -142,6 +174,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Same graph, source=0, destination=4:
+
+       0
+      / \
+   4/    \1
+    /      \
+   1───────2
+   │  2↑    │
+  1│       │5
+   │       │
+   3──────4
+      3
+
+Path reconstruction via prev[] array:
+┌──────┬───────┬────────────────────────┐
+│ Node │ dist  │ prev                   │
+├──────┼───────┼────────────────────────┤
+│  0   │   0   │ -1  (source)           │
+│  1   │   3   │  2  (via 0→2→1)       │
+│  2   │   1   │  0  (via 0→2)          │
+│  3   │   4   │  1  (via 0→2→1→3)    │
+│  4   │   7   │  3  (via 0→2→1→3→4) │
+└──────┴───────┴────────────────────────┘
+
+Trace back from dst=4:
+  4 → prev[4]=3 → prev[3]=1 → prev[1]=2 → prev[2]=0 → prev[0]=-1
+
+Reverse: Path = [0, 2, 1, 3, 4]   Distance = 7
+
+  0 ──1─→ 2 ──2─→ 1 ──1─→ 3 ──3─→ 4
+```
+
 ---
 
 ## Example 3: Network Delay Time (LeetCode 743)
@@ -205,6 +272,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Network: n=4, k=2 (source), times = [(2,1,1),(2,3,1),(3,4,1)]
+
+       2
+      / \
+   1/    \1
+    /      \
+   1       3
+            \
+           1 \
+              \
+               4
+
+Dijkstra from node 2:
+┌──────┬───────────┬─────────────────┐
+│ Step │ Pop       │ dist[1..4]        │
+├──────┼───────────┼─────────────────┤
+│ init │           │ [∞, 0, ∞, ∞]     │
+│  1   │ (2, 0)    │ [1, 0, 1, ∞]     │
+│  2   │ (1, 1)    │ [1, 0, 1, ∞]     │
+│  3   │ (3, 1)    │ [1, 0, 1, 2]     │
+│  4   │ (4, 2)    │ [1, 0, 1, 2]     │
+└──────┴───────────┴─────────────────┘
+
+Max delay = max(1, 0, 1, 2) = 2  (all nodes reached)
+Answer: 2
+```
+
 ---
 
 ## Example 4: Cheapest Flights Within K Stops (LeetCode 787)
@@ -260,6 +357,34 @@ func main() {
 	fmt.Println(findCheapestPrice(3, flights, 0, 2, 1)) // 200
 	fmt.Println(findCheapestPrice(3, flights, 0, 2, 0)) // 500
 }
+```
+
+**Textual Figure:**
+
+```
+Flights: 0──100─▒1, 1──100─▒2, 0──500─▒2
+src=0, dst=2
+
+       0
+      / \
+  100/   \500
+    /     \
+   1─────2
+     100
+
+Case 1: k=1 (at most 1 stop)
+┌──────┬───────────────┬─────────┬────────┐
+│ Step │ State(n,c,s)  │ Action  │ Result │
+├──────┼───────────────┼─────────┼────────┤
+│  1   │ (0, 0, 0)     │ expand  │        │
+│  2   │ (1, 100, 1)   │ expand  │        │
+│  3   │ (2, 200, 2)   │ dst!    │  200   │
+└──────┴───────────────┴─────────┴────────┘
+  Path: 0 → 1 → 2, cost = 200  (1 stop ≤ k=1) ✓
+
+Case 2: k=0 (no stops allowed, must be direct)
+  Only direct flight: 0 → 2 = 500
+  Answer: 500
 ```
 
 ---
@@ -324,6 +449,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Grid heights:
+  ┌───┬───┬───┐
+  │ 1 │ 2 │ 2 │
+  ├───┼───┼───┤
+  │ 3 │ 8 │ 2 │
+  ├───┼───┼───┤
+  │ 5 │ 3 │ 5 │
+  └───┴───┴───┘
+
+Effort = max absolute height difference along path
+Modified Dijkstra (minimize max-edge):
+
+  Path: (0,0)→(0,1)→(0,2)→(1,2)→(2,2)
+  Diffs:  |1-2|=1  |2-2|=0  |2-2|=0  |2-5|=3
+  Max effort = 3
+
+  Path: (0,0)→(0,1)→(0,2)→(1,2)→(1,1)→(2,1)→(2,2)
+  Diffs:    1      0       0       6      5      2
+  Max effort = 6
+
+  Optimal: (0,0)→(0,1)→(0,2)→(1,2)→(2,2)
+  But also: (0,0)→(1,0)→(2,0)→(2,1)→(2,2)
+  Diffs:       2      2       2      2
+  Max effort = 2  ← optimal!
+
+  Answer: 2
+```
+
 ---
 
 ## Example 6: Swim in Rising Water (LeetCode 778)
@@ -375,6 +531,33 @@ func main() {
 	grid := [][]int{{0,2},{1,3}}
 	fmt.Println(swimInWater(grid)) // 3
 }
+```
+
+**Textual Figure:**
+
+```
+Grid elevations:
+  ┌───┬───┐
+  │ 0 │ 2 │
+  ├───┼───┤
+  │ 1 │ 3 │
+  └───┴───┘
+
+Swim at time t: can traverse cells with elevation ≤ t
+
+Modified Dijkstra (minimize max elevation along path):
+┌──────┬────────────┬────────────────┐
+│ Step │ Pop (r,c,t) │ Action          │
+├──────┼────────────┼────────────────┤
+│  1   │ (0,0, 0)   │ push neighbors  │
+│  2   │ (1,0, 1)   │ push (1,1,t=3)  │
+│  3   │ (0,1, 2)   │ push (1,1,t=3)  │
+│  4   │ (1,1, 3)   │ destination!    │
+└──────┴────────────┴────────────────┘
+
+  Path: (0,0) → (1,0) → (1,1)
+  Max elevation = max(0, 1, 3) = 3
+  Answer: 3  (must wait until t=3 to swim through)
 ```
 
 ---
@@ -434,6 +617,43 @@ func main() {
 	dist := dijkstraUndirected(6, edges, 0)
 	fmt.Println(dist) // [0 7 9 20 26 11]
 }
+```
+
+**Textual Figure:**
+
+```
+Undirected weighted graph (6 nodes):
+
+        0
+       /|\
+    7/ 9| \14
+     /  |  \
+    1   2   5
+    |\  |  /
+  15| \2| /2
+    |  \|/
+    3  (2)──
+    |   |  \
+   11  11  2\
+    |   |    5
+    3────
+     6\
+       4──9──5
+
+Dijkstra from source 0:
+┌──────┬───────────┬───────────────────────────────┐
+│ Step │ Pop       │ dist = [0, 1, 2, 3, 4, 5]    │
+├──────┼───────────┼───────────────────────────────┤
+│ init │           │ [0, ∞, ∞, ∞, ∞, ∞]          │
+│  1   │ (0, 0)    │ [0, 7, 9, ∞, ∞, 14]         │
+│  2   │ (1, 7)    │ [0, 7, 9, 22, ∞, 14]        │
+│  3   │ (2, 9)    │ [0, 7, 9, 20, ∞, 11]        │
+│  4   │ (5, 11)   │ [0, 7, 9, 20, 20, 11]       │
+│  5   │ (3, 20)   │ [0, 7, 9, 20, 26, 11]       │
+│  6   │ (4, 26)   │ [0, 7, 9, 20, 26, 11] final │
+└──────┴───────────┴───────────────────────────────┘
+
+Result: [0, 7, 9, 20, 26, 11]
 ```
 
 ---
@@ -497,6 +717,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Undirected graph:
+
+  0 ──3── 1 ──1── 2 ──4── 3 ──2── 4
+  │                             │
+  └──────────10────────────┘
+
+Multi-source Dijkstra with sources = {0, 4}:
+  Initialize: dist[0]=0, dist[4]=0, others=∞
+  Heap: [(0,0), (4,0)]
+
+┌──────┬─────────┬────────────────────────┐
+│ Step │ Pop     │ dist = [0,1,2,3,4]     │
+├──────┼─────────┼────────────────────────┤
+│ init │         │ [0, ∞, ∞, ∞, 0]       │
+│  1   │ (0, 0)  │ [0, 3, ∞, ∞, 0]       │
+│  2   │ (4, 0)  │ [0, 3, ∞, 2, 0]        │
+│  3   │ (3, 2)  │ [0, 3, 6, 2, 0]        │
+│  4   │ (1, 3)  │ [0, 3, 4, 2, 0]        │
+│  5   │ (2, 4)  │ [0, 3, 4, 2, 0] final  │
+└──────┴─────────┴────────────────────────┘
+
+Each node's distance = min dist to nearest source:
+  Node 2: dist=4 (closer to source 0 via 0→1→2)
+  Node 3: dist=2 (closer to source 4 via 4→3)
+```
+
 ---
 
 ## Example 9: 0-1 BFS (Deque-based Dijkstra for 0/1 weights)
@@ -543,6 +792,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+0-1 BFS graph (edge weights are 0 or 1):
+
+   0 ──0── 1
+   │         │
+  1│        1│
+   │         │
+   2 ──0── 3
+
+Deque-based Dijkstra (0-weight → push front, 1-weight → push back):
+┌──────┬──────────────┬────────────────────┬────────────────┐
+│ Step │ Pop          │ Deque              │ dist           │
+├──────┼──────────────┼────────────────────┼────────────────┤
+│ init │              │ [0]                │ [0,∞,∞,∞]     │
+│  1   │ 0            │ [1, 2] (1→front)  │ [0, 0, 1, ∞]   │
+│  2   │ 1 (w=0)      │ [2, 3]             │ [0, 0, 1, 1]   │
+│  3   │ 2 (w=1)      │ [3]                │ [0, 0, 1, 1]   │
+│  4   │ 3            │ []                 │ [0, 0, 1, 1]   │
+└──────┴──────────────┴────────────────────┴────────────────┘
+
+Result: [0, 0, 1, 1]
+  0→1: weight 0 (same region)
+  0→2: weight 1 (cross boundary)
+  0→3: weight 1 (via 0→1→3 = 0+1 = 1)
+```
+
 ---
 
 ## Example 10: When NOT to Use Dijkstra (Negative Weights)
@@ -580,6 +857,38 @@ func main() {
 	fmt.Println("Bellman-Ford:", bellmanFord(3, edges, 0)) // [0 4 1] ← correct
 	fmt.Println("(Dijkstra would give [0 4 5] — WRONG)")
 }
+```
+
+**Textual Figure:**
+
+```
+Graph with negative edge:
+
+  0 ──4─→ 1
+  │       │
+  5\    /-3    (negative!)
+   \ \ / /
+    \v/v
+     2
+
+Dijkstra (WRONG with negative edges):
+  Pop (0,0): dist[1]=4, dist[2]=5
+  Pop (1,4): no improvement to 2 (4+(-3)=1 but 1 already finalized ✗)
+  Pop (2,5): finalized
+  Result: [0, 4, 5] ← WRONG (dist[2] should be 1)
+
+Bellman-Ford (CORRECT):
+┌───────┬───────────────┬───────────────────────┐
+│ Pass  │ Relax         │ dist = [0, 1, 2]      │
+├───────┼───────────────┼───────────────────────┤
+│ init  │               │ [0, ∞, ∞]             │
+│   1   │ 0→1:4, 0→2:5 │ [0, 4, 5]              │
+│       │ 1→2: 4-3=1   │ [0, 4, 1]  ← updated! │
+│   2   │ no changes    │ [0, 4, 1]  final      │
+└───────┴───────────────┴───────────────────────┘
+
+Bellman-Ford correctly finds: [0, 4, 1]
+  0→2: via 0→1→2 = 4+(-3) = 1  (not direct 5)
 ```
 
 ---

@@ -51,6 +51,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Undirected Graph (4 vertices):
+  Edges: {0,1}, {1,2}, {2,3}, {3,1}
+
+    ┌───┐     ┌───┐
+    │ 0 │─────│ 1 │
+    └───┘     └─┬─┘
+               │ │
+             ┌─┘ └─┐
+             │     │
+           ┌─┴─┐ ┌─┴─┐
+           │ 2 │─│ 3 │  ← edge 2─3 completes cycle
+           └───┘ └───┘
+
+DFS Cycle Detection (parent tracking):
+  dfs(0, parent=-1):
+    └→ dfs(1, parent=0):
+        └→ dfs(2, parent=1):
+            └→ dfs(3, parent=2):
+                neighbor 1: visited AND 1 ≠ parent(2)
+                → BACK EDGE to non-parent → CYCLE!
+
+Result: true
+```
+
 ---
 
 ## Example 2: Directed Cycle Detection (3-State DFS)
@@ -95,6 +121,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Test 1: Directed cycle  0→1→2→0
+
+    ┌───┐     ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │────→│ 2 │
+    └───┘     └───┘     └─┬─┘
+      ↑                   │
+      └───────────────────┘  back edge!
+
+  3-State Coloring:  W=white, G=gray, B=black
+    dfs(0): 0=G → dfs(1): 1=G → dfs(2): 2=G
+            neighbor 0 is GRAY → back edge → CYCLE!
+    Result: true
+
+Test 2: No cycle  0→1→2
+    0 ──→ 1 ──→ 2
+    All nodes finish: 2=B, 1=B, 0=B
+    No gray→gray edge found
+    Result: false
+```
+
 ---
 
 ## Example 3: Cycle Detection with Union-Find (Undirected)
@@ -129,6 +177,26 @@ func main() {
 	fmt.Println(hasCycleUF(4, [][2]int{{0,1},{1,2},{2,3},{3,1}})) // true
 	fmt.Println(hasCycleUF(4, [][2]int{{0,1},{1,2},{2,3}}))        // false
 }
+```
+
+**Textual Figure:**
+```
+Test 1: Edges {0,1}, {1,2}, {2,3}, {3,1}
+
+  Union-Find process:
+  ┌──────┬───────────┬───────────────────────────────┐
+  │ Edge │ find(u,v) │ Action                        │
+  ├──────┼───────────┼───────────────────────────────┤
+  │ 0─1 │ 0 ≠ 1     │ Union(0,1) → {0,1}           │
+  │ 1─2 │ 0 ≠ 2     │ Union(0,2) → {0,1,2}         │
+  │ 2─3 │ 0 ≠ 3     │ Union(0,3) → {0,1,2,3}       │
+  │ 3─1 │ 0 == 0    │ Same component → CYCLE!      │
+  └──────┴───────────┴───────────────────────────────┘
+  Result: true
+
+Test 2: Edges {0,1}, {1,2}, {2,3}  (tree)
+  All unions succeed, no same-component edge
+  Result: false
 ```
 
 ---
@@ -170,6 +238,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Test 1: prerequisites=[[1,0]]  (take 0 before 1)
+    Directed graph:  0 → 1
+    Kahn's: indegree=[0,1] → queue=[0]
+      Process 0 → indeg[1]-- → queue=[1]
+      Process 1 → done. count=2 == numCourses ✓
+    Result: true (can finish)
+
+Test 2: prerequisites=[[1,0],[0,1]]  (mutual dependency)
+    ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │
+    └───┘←────└───┘
+           cycle!
+
+    3-State DFS:
+      dfs(0): 0=gray → dfs(1): 1=gray
+              neighbor 0 is gray → CYCLE!
+    Result: false (cannot finish)
+```
+
 ---
 
 ## Example 5: Cycle Detection Using BFS (Kahn's — Directed)
@@ -206,6 +295,29 @@ func main() {
 	fmt.Println(hasCycleBFS(3, [][]int{{1},{2},{0}})) // true
 	fmt.Println(hasCycleBFS(3, [][]int{{1},{2},{}}))   // false
 }
+```
+
+**Textual Figure:**
+```
+Kahn's BFS Cycle Detection:
+
+Test 1: adj = [[1],[2],[0]]   (0→1→2→0)
+    ┌───┐     ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │────→│ 2 │
+    └───┘     └───┘     └─┬─┘
+      ↑                   │
+      └───────────────────┘
+
+    indegree: [1, 1, 1]  → No node with indegree 0!
+    queue starts empty → processed=0 ≠ 3
+    Result: true (cycle exists)
+
+Test 2: adj = [[1],[2],[]]   (0→1→2)
+    0 ──→ 1 ──→ 2
+
+    indegree: [0, 1, 1]  → queue=[0]
+    Process 0 → 1 → 2 → processed=3 == n
+    Result: false (no cycle)
 ```
 
 ---
@@ -252,6 +364,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Directed Graph: 0→1, 1→2, 2→0, 3→1
+
+     ┌───┐
+     │ 3 │
+     └─┬─┘
+       │
+       ↓
+    ┌───┐     ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │────→│ 2 │
+    └───┘     └───┘     └─┬─┘
+      ↑                   │
+      └───────────────────┘  cycle: 0→1→2→0
+
+Kahn's algorithm to find non-cycle nodes:
+  indegree: [1, 2, 1, 0]  → queue=[3]
+  Process 3 → indeg[1]-- → indeg=[1,1,1,0]
+  No more indeg-0 nodes → stop
+  removed = {3}
+  Remaining (in cycle): {0, 1, 2}
+
+Result: [0, 1, 2]
+```
+
 ---
 
 ## Example 7: Redundant Connection (LeetCode 684)
@@ -287,6 +424,26 @@ func main() {
 	fmt.Println(findRedundantConnection([][]int{{1,2},{1,3},{2,3}}))   // [2 3]
 	fmt.Println(findRedundantConnection([][]int{{1,2},{2,3},{3,4},{1,4},{1,5}})) // [1 4]
 }
+```
+
+**Textual Figure:**
+```
+Test 1: edges [[1,2],[1,3],[2,3]]
+
+  Union-Find process:
+  ┌───────┬───────────┬──────────────────────────┐
+  │ Edge  │ find(u,v) │ Action                   │
+  ├───────┼───────────┼──────────────────────────┤
+  │ [1,2] │ 1 ≠ 2     │ Union → {1,2}           │
+  │ [1,3] │ 1 ≠ 3     │ Union → {1,2,3}         │
+  │ [2,3] │ 1 == 1    │ Same root → REDUNDANT!  │
+  └───────┴───────────┴──────────────────────────┘
+
+     1 ── 2       1 ── 2
+     |         →   | / |
+     3             3  redundant [2,3]
+
+  Result: [2, 3]
 ```
 
 ---
@@ -326,6 +483,31 @@ func main() {
 	fmt.Println(validTree(5, [][]int{{0,1},{0,2},{0,3},{1,4}}))     // true
 	fmt.Println(validTree(5, [][]int{{0,1},{1,2},{2,3},{1,3},{1,4}})) // false
 }
+```
+
+**Textual Figure:**
+```
+Tree conditions: connected + no cycles = exactly n-1 edges
+
+Test 1: n=5, edges=[[0,1],[0,2],[0,3],[1,4]]  (4 edges = n-1 ✓)
+    ┌───┐
+    │ 0 │
+    └─┬─┘
+   ┌──┼──┐
+   ↓  ↓  ↓
+  ┌┴┐┌┴┐┌┴┐
+  │1││2││3│
+  └┬┘└─┘└─┘
+   ↓
+  ┌┴┐
+  │4│
+  └─┘
+  BFS from 0: visits all 5 nodes → connected ✓
+  Result: true (valid tree)
+
+Test 2: n=5, edges=[[0,1],[1,2],[2,3],[1,3],[1,4]]  (5 edges ≠ n-1)
+  len(edges)=5 ≠ 4 → immediately false
+  Result: false
 ```
 
 ---
@@ -383,6 +565,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Directed Graph: 0→1→2→3→1
+
+    ┌───┐     ┌───┐     ┌───┐     ┌───┐
+    │ 0 │────→│ 1 │────→│ 2 │────→│ 3 │
+    └───┘     └───┘     └───┘     └─┬─┘
+               ↑                   │
+               └───────────────────┘  back edge!
+
+DFS 3-State Trace (finding cycle path):
+  dfs(0): 0=gray → dfs(1): 1=gray → dfs(2): 2=gray → dfs(3): 3=gray
+          neighbor 1 is GRAY → cycleStart=1, cycleEnd=3
+
+Reconstructing cycle path via parent array:
+  par: [_, 0, 1, 2]  (par[1]=0, par[2]=1, par[3]=2)
+  Start from cycleEnd=3, trace back to cycleStart=1:
+    3 → par[3]=2 → par[2]=1 = cycleStart → stop
+  Cycle: [1, 2, 3, 1]  (reversed)
+
+Result: [1, 2, 3, 1]
+```
+
 ---
 
 ## Example 10: Detect Cycle in Grid (LeetCode 1559)
@@ -429,6 +634,31 @@ func main() {
 	}
 	fmt.Println(containsCycle(grid)) // true
 }
+```
+
+**Textual Figure:**
+```
+Input Grid (4×4):
+┌───┬───┬───┬───┐
+│ a │ a │ a │ a │
+├───┼───┼───┼───┤
+│ a │ b │ b │ a │
+├───┼───┼───┼───┤
+│ a │ b │ b │ a │
+├───┼───┼───┼───┤
+│ a │ a │ a │ a │
+└───┴───┴───┴───┘
+
+Cycle Detection in 'a' component (DFS + parent):
+  The 'a' cells form a ring around the border:
+  (0,0)→(0,1)→(0,2)→(0,3)→(1,3)→(2,3)→(3,3)
+    ↑                                       │
+  (1,0)←(2,0)←(3,0)←(3,1)←(3,2)←─────────┘
+
+  DFS from (0,0) eventually reaches an already-visited
+  cell that isn’t the parent → CYCLE found!
+
+Result: true
 ```
 
 ---
