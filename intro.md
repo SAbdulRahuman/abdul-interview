@@ -25,7 +25,7 @@ My core strengths are in **Go, Python, Kubernetes, DevSecOps, and building scala
 
 ## Expanded Version (~3–4 min)
 
-Hi, I'm **Abdul Rahuman S**, a software engineer with over **15 years of experience** in designing high-performance distributed systems, Kubernetes platforms, and cloud-native microservices. My career spans from low-level systems programming all the way up to leading cloud-native platform engineering at scale.
+Hi, I'm **Abdul Rahuman S**, a software engineer with over **15 years of experience** in developing cloud native microservices on Kubernetes / Openshift clusters. Experienced designing high-performance distributed systems. My career spans from low-level systems programming all the way up to leading cloud-native platform engineering at scale.
 
 ### Early Career — Firmware & Systems (Wipro / IBM, 2010–2014)
 
