@@ -32,6 +32,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Collision Demonstration (hash = key % 7):**
+
+```
+  Key   hash(key)    Bucket
+  ───   ─────────    ──────
+   10   10 % 7 = 3   ──┐
+   17   17 % 7 = 3   ──┤  ← All four collide
+   24   24 % 7 = 3   ──┤     at bucket 3!
+   31   31 % 7 = 3   ──┘
+    5    5 % 7 = 5   ──┐
+   12   12 % 7 = 5   ──┤  ← Collide at bucket 5
+   19   19 % 7 = 5   ──┘
+
+  Hash Table (size=7):
+  ┌───────┬──────────────────────┐
+  │ Index │ Keys mapped          │
+  ├───────┼──────────────────────┤
+  │   0   │                      │
+  │   1   │                      │
+  │   2   │                      │
+  │   3   │ 10, 17, 24, 31  ← 4 collisions! │
+  │   4   │                      │
+  │   5   │ 5, 12, 19       ← 3 collisions! │
+  │   6   │                      │
+  └───────┴──────────────────────┘
+```
+
 ---
 
 ## Example 2: Separate Chaining (Linked List)
@@ -142,6 +169,41 @@ func main() {
 }
 ```
 
+**Textual Figure — Separate Chaining step-by-step (capacity=7):**
+
+```
+  Insert: apple(1), banana(2), cherry(3), date(4), elderberry(5), fig(6)
+
+  Step 1: Put("apple",1)   → hash="apple" → idx=i₁
+  Step 2: Put("banana",2)  → hash="banana" → idx=i₂
+  Step 3: Put("cherry",3)  → hash="cherry" → idx=i₃  (may collide)
+  Step 4: Put("date",4)    → hash="date" → idx=i₄
+  Step 5: Put("elderberry",5) → idx=i₅
+  Step 6: Put("fig",6)     → idx=i₆
+
+  Resulting Bucket Chains:
+  ┌─────────┐
+  │Bucket 0 │──→ nil
+  ├─────────┤
+  │Bucket 1 │──→ [fig:6] ──→ nil
+  ├─────────┤
+  │Bucket 2 │──→ [elderberry:5] ──→ [banana:2] ──→ nil
+  ├─────────┤
+  │Bucket 3 │──→ [date:4] ──→ [apple:1] ──→ nil
+  ├─────────┤
+  │Bucket 4 │──→ nil
+  ├─────────┤
+  │Bucket 5 │──→ [cherry:3] ──→ nil
+  ├─────────┤
+  │Bucket 6 │──→ nil
+  └─────────┘
+
+  Delete("banana"):
+  Bucket 2: [elderberry:5] ──→ [banana:2] ──→ nil
+                                    ↓  (remove)
+  Bucket 2: [elderberry:5] ──→ nil
+```
+
 ---
 
 ## Example 3: Linear Probing (Open Addressing)
@@ -237,6 +299,43 @@ func main() {
 }
 ```
 
+**Textual Figure — Linear Probing trace (capacity=11):**
+
+```
+  Insert words: cat, dog, rat, bat, hat, mat, sat
+  hash(key) = (polynomial hash) % 11
+
+  Step-by-step probe sequences:
+  ┌──────┬──────────┬───────────────────────────────┐
+  │ Key  │ hash(key)│ Probe sequence (idx+0,+1,+2…) │
+  ├──────┼──────────┼───────────────────────────────┤
+  │ cat  │    5     │ [5]  ← empty, place here      │
+  │ dog  │    8     │ [8]  ← empty, place here      │
+  │ rat  │    5     │ [5]→ occupied! [6] ← place     │
+  │ bat  │    5     │ [5]→[6]→ [7] ← place          │
+  │ hat  │    8     │ [8]→ occupied! [9] ← place     │
+  │ mat  │    5     │ [5]→[6]→[7]→ [8]→[9]→ [10]    │
+  │ sat  │    5     │ [5]→[6]→[7]→[8]→[9]→[10]→ [0] │
+  └──────┴──────────┴───────────────────────────────┘
+
+  Final table state:
+  ┌───────┬───────┐
+  │ Index │ Key   │
+  ├───────┼───────┤
+  │   0   │ sat   │  ← wrapped around (primary cluster!)
+  │   1   │ empty │
+  │   2   │ empty │
+  │   3   │ empty │
+  │   4   │ empty │
+  │   5   │ cat   │  ← cluster starts here
+  │   6   │ rat   │  │
+  │   7   │ bat   │  │  primary cluster
+  │   8   │ dog   │  │  (contiguous block)
+  │   9   │ hat   │  │
+  │  10   │ mat   │  ← cluster wraps to 0
+  └───────┴───────┘
+```
+
 ---
 
 ## Example 4: Quadratic Probing
@@ -321,6 +420,36 @@ func main() {
         }
     }
 }
+```
+
+**Textual Figure — Quadratic Probing trace (capacity=11):**
+
+```
+  Insert: abc, bca, cab, bac, acb  (anagrams — likely similar hashes)
+  Probe formula: probe = (hash + i²) % 11,  i = 0, 1, 2, 3…
+
+  Step-by-step (assume hash("abc")=h, anagrams may share hash):
+  ┌──────┬──────┬──────────────────────────────────────┐
+  │ Key  │ hash │ Quadratic probes: h+0, h+1, h+4, h+9 │
+  ├──────┼──────┼──────────────────────────────────────┤
+  │ abc  │  h   │ [h+0] ← empty, place                 │
+  │ bca  │  h   │ [h+0]→ skip, [h+1] ← place           │
+  │ cab  │  h   │ [h+0]→[h+1]→ skip, [h+4] ← place     │
+  │ bac  │  h   │ [h+0]→[h+1]→[h+4]→ skip, [h+9] place │
+  │ acb  │  h   │ [h+0]→[h+1]→[h+4]→[h+9]→ [h+16]     │
+  └──────┴──────┴──────────────────────────────────────┘
+
+  Linear vs Quadratic — probe spread comparison:
+
+  Linear:     h, h+1, h+2, h+3, h+4   ← contiguous (clustering)
+  Quadratic:  h, h+1, h+4, h+9, h+16  ← spread out (less clustering)
+
+               0  1  2  3  4  5  6  7  8  9  10
+  Linear:     [·][·][·][·][·][ ][ ][ ][ ][ ][ ]
+               ▲  ▲  ▲  ▲  ▲
+  Quadratic:  [·][ ][ ][ ][·][ ][ ][ ][ ][·][ ]
+               ▲           ▲              ▲
+              h+0         h+4            h+9
 ```
 
 ---
@@ -423,6 +552,40 @@ func main() {
 }
 ```
 
+**Textual Figure — Double Hashing probe sequences (capacity=13):**
+
+```
+  Insert: alpha, beta, gamma, delta, epsilon
+  Probe formula: probe = (h1(key) + i * h2(key)) % 13
+
+  h1 = polynomial hash % 13
+  h2 = 1 + (polynomial hash % 12)   ← always ≥ 1, coprime to 13
+
+  ┌─────────┬────┬────┬────────────────────────────────┐
+  │  Key    │ h1 │ h2 │ Probe sequence                 │
+  ├─────────┼────┼────┼────────────────────────────────┤
+  │ alpha   │  3 │  5 │ [3] ← empty, place             │
+  │ beta    │  7 │  3 │ [7] ← empty, place             │
+  │ gamma   │  3 │  4 │ [3]→ skip, [3+4=7]→ skip,      │
+  │         │    │    │  [7+4=11] ← place              │
+  │ delta   │  7 │  9 │ [7]→ skip, [7+9=3]→ skip,      │
+  │         │    │    │  [3+9=12] ← place              │
+  │ epsilon │  3 │  2 │ [3]→ skip, [3+2=5] ← place     │
+  └─────────┴────┴────┴────────────────────────────────┘
+
+  Final table (only occupied slots shown):
+  ┌───────┬─────────┐
+  │ Index │  Key    │
+  ├───────┼─────────┤
+  │   3   │ alpha   │  ← h1=3
+  │   5   │ epsilon │  ← h1=3, probed via h2=2
+  │   7   │ beta    │  ← h1=7
+  │  11   │ gamma   │  ← h1=3, probed via h2=4
+  │  12   │ delta   │  ← h1=7, probed via h2=9
+  └───────┴─────────┘
+  Note: No clustering! Each key has a unique step size.
+```
+
 ---
 
 ## Example 6: Robin Hood Hashing
@@ -516,6 +679,41 @@ func main() {
     m.Display()
     // Robin Hood hashing reduces variance in probe lengths
 }
+```
+
+**Textual Figure — Robin Hood Hashing with PSL (capacity=11):**
+
+```
+  Insert: cat, dog, rat, bat, hat
+  Robin Hood rule: if inserting key’s PSL > existing key’s PSL,
+                   swap them (steal from the rich).
+
+  Step-by-step trace:
+  ┌──────┬──────┬───────────────────────────────────────────┐
+  │ Key  │ hash │ Action                                    │
+  ├──────┼──────┼───────────────────────────────────────────┤
+  │ cat  │  h   │ Place at [h], PSL=0                       │
+  │ dog  │  h'  │ Place at [h'], PSL=0                      │
+  │ rat  │  h   │ [h] occupied (cat PSL=0), rat PSL=0        │
+  │      │      │ Equal PSL → move to [h+1], rat PSL=1      │
+  │ bat  │  h   │ [h] cat PSL=0, bat PSL=0 → move            │
+  │      │      │ [h+1] rat PSL=1, bat PSL=1 → move          │
+  │      │      │ [h+2] empty, place bat PSL=2               │
+  │ hat  │  h'  │ [h'] dog PSL=0, hat PSL=0 → move           │
+  │      │      │ [h'+1] empty, place hat PSL=1              │
+  └──────┴──────┴───────────────────────────────────────────┘
+
+  Result — PSL variance is minimized:
+  ┌───────┬───────┬─────┐
+  │ Index │ Key   │ PSL │
+  ├───────┼───────┼─────┤
+  │   h   │ cat   │  0  │
+  │  h+1  │ rat   │  1  │
+  │  h+2  │ bat   │  2  │  ← Max PSL = 2
+  │  h'   │ dog   │  0  │
+  │ h'+1  │ hat   │  1  │  ← Max PSL = 1
+  └───────┴───────┴─────┘
+  Without Robin Hood, worst PSL could be much higher.
 ```
 
 ---
@@ -627,6 +825,38 @@ func main() {
     }
     // Cuckoo: O(1) worst-case lookup!
 }
+```
+
+**Textual Figure — Cuckoo Hashing with two tables (capacity=7):**
+
+```
+  Insert: "go", "rust", "java", "python"
+  Two hash functions: h1, h2  →  Two tables: Table1, Table2
+  Rule: Try Table1[h1]. If occupied, evict → try Table2[h2]. Repeat.
+
+  Step-by-step:
+  1. Put("go")     → h1("go")=i     → Table1[i] empty   → place
+  2. Put("rust")   → h1("rust")=j   → Table1[j] empty   → place
+  3. Put("java")   → h1("java")=i   → Table1[i] has "go"
+                   → evict "go", place "java" in Table1[i]
+                   → h2("go")=k    → Table2[k] empty   → place "go"
+  4. Put("python") → h1("python")=m → Table1[m] empty   → place
+
+  Final state:
+  Table1 (h1)                 Table2 (h2)
+  ┌───────┬─────────┐       ┌───────┬─────────┐
+  │ Index │   Key   │       │ Index │   Key   │
+  ├───────┼─────────┤       ├───────┼─────────┤
+  │   i   │  java   │       │   k   │   go    │  ← evicted here
+  │   j   │  rust   │       │  ...  │  empty  │
+  │   m   │ python  │       └───────┴─────────┘
+  └───────┴─────────┘
+
+  Lookup("go"):  Table1[h1("go")]=Table1[i]="java" ≠ "go"
+                 Table2[h2("go")]=Table2[k]="go"   ✓ Found! O(1)
+
+  Lookup("c++"): Table1[h1("c++")]=? ≠ "c++"
+                 Table2[h2("c++")]=? ≠ "c++"  → Not found. O(1)
 ```
 
 ---
@@ -765,6 +995,48 @@ func main() {
 }
 ```
 
+**Textual Figure — Tombstone Deletion trace (capacity=7):**
+
+```
+  Insert a(1), b(2), c(3), d(4) → all via linear probing
+  Assume: hash(a)=2, hash(b)=2, hash(c)=2, hash(d)=2
+
+  After insertions (all collide at bucket 2):
+  ┌───────┬───────────┬─────────────┐
+  │ Index │   State   │    Key    │
+  ├───────┼───────────┼─────────────┤
+  │   0   │   EMPTY   │           │
+  │   1   │   EMPTY   │           │
+  │   2   │ OCCUPIED  │  a = 1    │  ← hash(a)=2
+  │   3   │ OCCUPIED  │  b = 2    │  ← probed to 3
+  │   4   │ OCCUPIED  │  c = 3    │  ← probed to 4
+  │   5   │ OCCUPIED  │  d = 4    │  ← probed to 5
+  │   6   │   EMPTY   │           │
+  └───────┴───────────┴─────────────┘
+
+  Delete("b") → mark slot 3 as TOMBSTONE:
+  ┌───────┬───────────┬─────────────┐
+  │ Index │   State   │    Key    │
+  ├───────┼───────────┼─────────────┤
+  │   2   │ OCCUPIED  │  a = 1    │
+  │   3   │ TOMBSTONE │  ─────    │  ← deleted, but NOT empty
+  │   4   │ OCCUPIED  │  c = 3    │
+  │   5   │ OCCUPIED  │  d = 4    │
+  └───────┴───────────┴─────────────┘
+
+  Get("c") probe trace:
+    probe[2] = a ≠ c     → continue
+    probe[3] = TOMBSTONE → skip (don’t stop!)
+    probe[4] = c         → ✓ found!
+
+  Why not just set EMPTY?
+    If slot 3 were EMPTY, Get("c") would stop at slot 3
+    and never reach slot 4 → c would be "lost"!
+
+  Insert reuse: new Put("e",5) with hash(e)=2:
+    probe[2] = occupied, probe[3] = TOMBSTONE → reuse slot 3!
+```
+
 ---
 
 ## Example 9: Collision Statistics
@@ -827,6 +1099,43 @@ func main() {
     fmt.Println()
     collisionStats(keys, 16)
 }
+```
+
+**Textual Figure — Collision Statistics visualization:**
+
+```
+  15 keys hashed into table of size 7 vs size 16
+  hash = polynomial hash % tableSize
+
+  Table size = 7 (load factor = 15/7 = 2.14):
+  ┌────────┬───────┬───────────────────────────────────┐
+  │ Bucket │ Count │ Distribution                     │
+  ├────────┼───────┼───────────────────────────────────┤
+  │   0    │   2   │ ██                                │
+  │   1    │   3   │ ███   ← collisions here         │
+  │   2    │   1   │ █                                 │
+  │   3    │   3   │ ███   ← collisions here         │
+  │   4    │   2   │ ██                                │
+  │   5    │   2   │ ██                                │
+  │   6    │   2   │ ██                                │
+  └────────┴───────┴───────────────────────────────────┘
+  Total collisions: 8    Max chain: 3
+
+  Table size = 16 (load factor = 15/16 = 0.94):
+  ┌────────┬───────┬───────────────────────────────────┐
+  │ Bucket │ Count │ Distribution                     │
+  ├────────┼───────┼───────────────────────────────────┤
+  │  0–15  │  0–2  │ Most buckets have 0 or 1 key     │
+  └────────┴───────┴───────────────────────────────────┘
+  Fewer collisions, lower max chain  ← larger table helps!
+
+  Key insight:
+  ┌─────────────┬────────────┬───────────────┬─────────────┐
+  │ Table Size  │ Load Factor│ Collisions    │ Max Chain   │
+  ├─────────────┼────────────┼───────────────┼─────────────┤
+  │      7      │    2.14    │     ~8        │     ~3      │
+  │     16      │    0.94    │     ~3        │     ~2      │
+  └─────────────┴────────────┴───────────────┴─────────────┘
 ```
 
 ---
@@ -899,6 +1208,40 @@ func main() {
     fmt.Printf("Linear probing — max:    %d\n", simulateLinearProbing(keys, tableSize))
     fmt.Printf("Quadratic probing — max: %d\n", simulateQuadraticProbing(keys, tableSize))
 }
+```
+
+**Textual Figure — Side-by-side comparison of strategies (70 keys, table=101):**
+
+```
+  Keys: 0, 7, 14, 21, … (multiples of 7, all hash to same bucket mod 7)
+  Table size: 101 (prime)
+
+  Chaining:
+  Bucket 0: [0]→[7]→[14]→[21]→[28]→…  (long chain)
+  ┌─────┬─────┬─────┬─────┬─────┬───┐
+  │  0  │  7  │ 14  │ 21  │ 28  │...│  ← chain at bucket 0
+  └─────┴─────┴─────┴─────┴─────┴───┘
+
+  Linear Probing (primary clustering):
+  Index: [ 0][ 1][ 2][ 3][ 4][ 5][ 6][ 7][ 8]...
+  Key:   [0 ][7 ][14][21][28][35][42][49][56]...
+          └────────────────────────────────┘
+          Massive contiguous cluster! Max probes = O(n)
+
+  Quadratic Probing (secondary clustering):
+  Index: [ 0][ 1][ 4][ 9][16][25][36][49][64]...
+  Key:   [0 ][7 ][14][21][28][35][42][49][56]...
+          Spread out via i² but still same pattern for same-hash keys
+
+  ┌─────────────────────┬───────────┐
+  │ Strategy            │ Max Probes│
+  ├─────────────────────┼───────────┤
+  │ Chaining            │ ~chain   │  (max chain length)
+  │ Linear Probing      │ HIGH     │  (contiguous cluster)
+  │ Quadratic Probing   │ MODERATE │  (spread, but shared)
+  └─────────────────────┴───────────┘
+  Conclusion: Sequential keys amplify clustering in open addressing.
+  Chaining degrades linearly; linear probing degrades quadratically.
 ```
 
 ---

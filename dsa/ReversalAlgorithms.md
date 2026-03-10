@@ -64,6 +64,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Iterative reversal of [1, 2, 3, 4, 5]:
+
+Initial: prev=nil, curr=1
+  nil   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  prev  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→ nil
+        └───┘   └───┘   └───┘   └───┘   └───┘
+        curr
+
+Step 1: save next=2, curr.Next=prev(nil), prev=1, curr=2
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→nil  │ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘        └───┘   └───┘   └───┘   └───┘
+  prev         curr
+
+Step 2: save next=3, curr.Next=prev(1), prev=2, curr=3
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │←──│ 2 │   │ 3 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
+          prev    curr
+
+Steps 3-5: continue reversing...
+
+Final: curr=nil, prev=5
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 5 │──→│ 4 │──→│ 3 │──→│ 2 │──→│ 1 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
+  prev (returned as new head)
+```
+
 ---
 
 ## Example 2: Recursive Full Reversal
@@ -128,6 +159,38 @@ func main() {
     // 1.Next.Next = 1 → 2→1, 1.Next = nil
     // returns 3→2→1
 }
+```
+
+**Textual Figure:**
+```
+Recursive reversal of [1, 2, 3]:
+
+Call stack (dive down):
+  reverseRecursive(1→2→3)
+    └─→ reverseRecursive(2→3)
+          └─→ reverseRecursive(3) → base case, return 3
+
+Unwinding (build reversed links):
+
+  Return from reverseRecursive(3): newHead = 3
+    ┌───┐
+    │ 3 │──→ nil     (newHead)
+    └───┘
+
+  Back in reverseRecursive(2→3):
+    head=2, head.Next=3, head.Next.Next = head → 3.Next = 2
+    head.Next = nil
+    ┌───┐   ┌───┐
+    │ 3 │──→│ 2 │──→ nil
+    └───┘   └───┘
+
+  Back in reverseRecursive(1→2→3):
+    head=1, head.Next=2, head.Next.Next = head → 2.Next = 1
+    head.Next = nil
+    ┌───┐   ┌───┐   ┌───┐
+    │ 3 │──→│ 2 │──→│ 1 │──→ nil
+    └───┘   └───┘   └───┘
+    newHead (returned all the way up)
 ```
 
 ---
@@ -196,6 +259,30 @@ func main() {
         printList(reverseBetween(head, t.left, t.right))
     }
 }
+```
+
+**Textual Figure:**
+```
+Reverse positions [2, 4] in [1, 2, 3, 4, 5]:
+
+Initial: prev positioned before node 2
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ D │──→│ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+          prev    curr
+
+i=0: move nodeToMove(3) to prev.Next:
+  D──→[1]──→[3]──→[2]──→[4]──→[5]──→nil
+        prev              curr
+
+i=1: move nodeToMove(4) to prev.Next:
+  D──→[1]──→[4]──→[3]──→[2]──→[5]──→nil
+        prev                    curr
+
+Result:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 4 │──→│ 3 │──→│ 2 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
 ```
 
 ---
@@ -269,6 +356,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Reverse in groups of K=3: [1, 2, 3, 4, 5, 6, 7, 8]
+
+Original:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │─→│ 2 │─→│ 3 │─→│ 4 │─→│ 5 │─→│ 6 │─→│ 7 │─→│ 8 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+  ├── group 1 ──┤├── group 2 ──┤├─ remaining ─┤
+
+Group 1: reverse [1,2,3] → [3,2,1]
+  ┌───┐  ┌───┐  ┌───┐
+  │ 3 │─→│ 2 │─→│ 1 │─→ (recurse on rest)
+  └───┘  └───┘  └───┘
+                  tail  ──→ head.Next = reverseKGroup(4→5→6→7→8)
+
+Group 2: reverse [4,5,6] → [6,5,4]
+
+[7,8]: only 2 nodes < k=3 → leave as is
+
+Final:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 3 │─→│ 2 │─→│ 1 │─→│ 6 │─→│ 5 │─→│ 4 │─→│ 7 │─→│ 8 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+  ├─ reversed ─┤├─ reversed ─┤├─ as-is ─┤
+```
+
 ---
 
 ## Example 5: Reverse K-Group Iterative
@@ -337,6 +451,28 @@ func main() {
         printList(reverseKGroupIterative(head, k))
     }
 }
+```
+
+**Textual Figure:**
+```
+Iterative K-group reversal of [1,2,3,4,5,6,7,8] with K=2:
+
+Initial:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │─→│ 2 │─→│ 3 │─→│ 4 │─→│ 5 │─→│ 6 │─→│ 7 │─→│ 8 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+
+Group 1: find kth=[2], groupNext=[3]
+  Reverse [1,2]: prev=groupNext(3), curr=1
+  → 2─→ 1─→ 3...
+  Connect: groupPrev(D).Next=kth(2), groupPrev=tmp(1)
+
+Group 2: reverse [3,4], Group 3: reverse [5,6], Group 4: reverse [7,8]
+
+K=2 Result:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 2 │─→│ 1 │─→│ 4 │─→│ 3 │─→│ 6 │─→│ 5 │─→│ 8 │─→│ 7 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
 ```
 
 ---
@@ -417,6 +553,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Reverse alternating K=3 groups in [1..10]:
+
+Original:
+  [1]─→[2]─→[3]─→[4]─→[5]─→[6]─→[7]─→[8]─→[9]─→[10]─→nil
+  ├─ reverse ─┤├── skip ──┤├─ reverse ─┤├ skip┤
+
+Group 1 (reverse): [1,2,3] → [3,2,1]
+  ┌───┐  ┌───┐  ┌───┐
+  │ 3 │─→│ 2 │─→│ 1 │─→ [4,5,6]...
+  └───┘  └───┘  └───┘
+                  tail connects to curr(4)
+
+Group 2 (skip): [4,5,6] kept as-is, skip pointer walks to [6]
+
+Group 3 (reverse): [7,8,9] → [9,8,7]
+
+Group 4 (skip): [10] kept as-is
+
+Final:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌────┐
+  │ 3 │─→│ 2 │─→│ 1 │─→│ 4 │─→│ 5 │─→│ 6 │─→│ 9 │─→│ 8 │─→│ 7 │─→│ 10 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └────┘
+  ├─ reversed ─┤├── kept ──┤├─ reversed ─┤├─kept─┤
+```
+
 ---
 
 ## Example 7: Reverse First N Nodes
@@ -470,6 +633,29 @@ func main() {
     printList(head)
     // 3 → 2 → 1 → 4 → 5 → nil
 }
+```
+
+**Textual Figure:**
+```
+Reverse first N=3 nodes of [1, 2, 3, 4, 5]:
+
+Initial:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
+  ├── reverse these ──┤ successor=[4]
+
+Recursive unwinding:
+  n=3: base case → successor = head.Next = [4]
+  n=2: 3.Next.Next=3? No, 3.Next=successor(4), so 2.Next.Next=2
+       → 3─→2, 2.Next=successor(4)
+  n=1: 2.Next.Next=1 → 2─→1, 1.Next=successor(4)
+
+Result:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 3 │──→│ 2 │──→│ 1 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
+  ├─── reversed ───┤├── unchanged ──┤
 ```
 
 ---
@@ -548,6 +734,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Step-by-step reversal of [1, 2, 3, 4]:
+
+Step 0: prev=nil, curr=1, next=2
+  nil ←── [1]    [2]──→[3]──→[4]──→nil
+         prev   curr
+
+Step 1: prev=1, curr=2, next=3
+  nil ←── [1] ←── [2]    [3]──→[4]──→nil
+                  prev   curr
+
+Step 2: prev=2, curr=3, next=4
+  nil ←── [1] ←── [2] ←── [3]    [4]──→nil
+                         prev   curr
+
+Step 3: prev=3, curr=4, next=nil
+  nil ←── [1] ←── [2] ←── [3] ←── [4]    nil
+                                prev   curr
+
+Final (prev returned):
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 4 │──→│ 3 │──→│ 2 │──→│ 1 │──→ nil
+  └───┘   └───┘   └───┘   └───┘
+```
+
 ---
 
 ## Example 9: Reverse Using Stack
@@ -610,6 +822,39 @@ func main() {
     printList(head)
     // Note: O(n) space — prefer iterative O(1) space in interviews
 }
+```
+
+**Textual Figure:**
+```
+Reverse [1, 2, 3, 4, 5] using a stack:
+
+Phase 1 — Push all nodes onto stack:
+  List: [1]─→[2]─→[3]─→[4]─→[5]─→nil
+
+  Stack (top → bottom):
+  ┌─────┐
+  │ [5] │ ← top
+  ├─────┤
+  │ [4] │
+  ├─────┤
+  │ [3] │
+  ├─────┤
+  │ [2] │
+  ├─────┤
+  │ [1] │ ← bottom
+  └─────┘
+
+Phase 2 — Pop and rebuild:
+  Pop [5] → newHead = [5]
+  Pop [4] → [5].Next = [4]
+  Pop [3] → [4].Next = [3]
+  Pop [2] → [3].Next = [2]
+  Pop [1] → [2].Next = [1], [1].Next = nil
+
+Result:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 5 │──→│ 4 │──→│ 3 │──→│ 2 │──→│ 1 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
 ```
 
 ---
@@ -682,6 +927,30 @@ func main() {
     }
     fmt.Println("nil")
 }
+```
+
+**Textual Figure:**
+```
+Reverse doubly linked list [1, 2, 3, 4, 5]:
+
+Before:
+  nil ←── ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ nil
+         │ 1 │ ←── │ 2 │ ←── │ 3 │ ←── │ 4 │ ←── │ 5 │
+         └───┘     └───┘     └───┘     └───┘     └───┘
+         head
+
+For each node: swap Prev and Next pointers
+  curr=[1]: Prev=nil, Next=[2] → swap → Prev=[2], Next=nil
+  curr=[2]: Prev=[1], Next=[3] → swap → Prev=[3], Next=[1]
+  curr=[3]: Prev=[2], Next=[4] → swap → Prev=[4], Next=[2]
+  curr=[4]: Prev=[3], Next=[5] → swap → Prev=[5], Next=[3]
+  curr=[5]: Prev=[4], Next=nil → swap → Prev=nil, Next=[4]
+
+After (newHead = last visited node = [5]):
+  nil ←── ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ ┌───┐ ──→ nil
+         │ 5 │ ←── │ 4 │ ←── │ 3 │ ←── │ 2 │ ←── │ 1 │
+         └───┘     └───┘     └───┘     └───┘     └───┘
+         head
 ```
 
 ---

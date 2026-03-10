@@ -64,6 +64,44 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Find middle using slow (1 step) and fast (2 steps):
+
+Odd list [1, 2, 3, 4, 5]:
+  Init:   S              F
+          │              │
+         [1] → [2] → [3] → [4] → [5] → nil
+
+  Step 1:      S                   F
+               │                   │
+         [1] → [2] → [3] → [4] → [5] → nil
+
+  Step 2:           S                        F
+                    │                        │
+         [1] → [2] → [3] → [4] → [5] → nil
+                          fast.Next=nil → STOP
+  Result: slow = 3 (middle) ✓
+
+Even list [1, 2, 3, 4, 5, 6]:
+  Init:   S              F
+         [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 1:      S                   F
+         [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 2:           S                        F
+         [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 3:                S                        F
+         [1] → [2] → [3] → [4] → [5] → [6] → nil
+                              fast=nil → STOP
+  Result: slow = 4 (second middle) ✓
+
+First middle of [1,2,3,4]:
+  Stop when fast.Next.Next=nil → slow = 2 ✓
+```
+
 ---
 
 ## Example 2: Detect Cycle (Floyd's Algorithm)
@@ -106,6 +144,29 @@ func main() {
     n4.Next = n2 // cycle back to n2
     fmt.Println("Has cycle:", hasCycle(n1)) // true
 }
+```
+
+**Textual Figure:**
+```
+Floyd's Cycle Detection:
+
+No cycle: 1 → 2 → 3 → nil
+  S,F start at 1
+  Step 1: S=2, F=3
+  Step 2: F.Next=nil → STOP → no cycle ✓
+
+With cycle: 1 → 2 → 3 → 4 → back to 2
+  ┌──────────────────────┐
+  │                      │
+ [1] ─→ [2] ─→ [3] ─→ [4]
+         ↑                 │
+         └───────────────┘
+
+  Step 0: S=1, F=1
+  Step 1: S=2, F=3   (slow +1, fast +2)
+  Step 2: S=3, F=2   (fast: 3→4→2)
+  Step 3: S=4, F=4   (slow: 3→4, fast: 2→3→4)
+          S == F → CYCLE DETECTED ✓
 ```
 
 ---
@@ -170,6 +231,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Find Cycle Start Node (Floyd's two-phase):
+
+List: 1 → 2 → 3 → 4 → 5 → back to 3
+              a=2         b
+  ┌───────────────────┐
+  │                   │
+ [1] ─→ [2] ─→ [3] ─→ [4] ─→ [5]
+                ↑                 │
+                └───────────────┘
+                cycle start    c=3 (cycle length)
+
+Phase 1: Detect meeting point
+  S=1,F=1 → S=2,F=3 → S=3,F=5 → S=4,F=4
+  Meet at node 4!
+
+Phase 2: Find cycle start
+  Reset slow to head, both move at speed 1:
+  S=1,F=4 → S=2,F=5 → S=3,F=3
+  Meet at node 3 = cycle start! ✓
+
+Why it works:
+  slow traveled: a + b = 2 + 1 = 3
+  fast traveled: a + b + c = 2 + 1 + 3 = 6 = 2×3
+  a = c - b = 3 - 1 = 2 steps from meeting point to cycle start
+  2 steps from head also reaches cycle start!
+```
+
 ---
 
 ## Example 4: Find Cycle Length
@@ -217,6 +307,31 @@ func main() {
 
     fmt.Println("Cycle length:", cycleLength(nodes[0])) // 3
 }
+```
+
+**Textual Figure:**
+```
+Find Cycle Length:
+
+List: 1 → 2 → 3 → 4 → 5 → back to 3
+  ┌───────────────────┐
+  │                   │
+ [1] ─→ [2] ─→ [3] ─→ [4] ─→ [5]
+                ↑                 │
+                └───────────────┘
+
+Step 1: Detect meeting point (Floyd's)
+  S and F meet somewhere in cycle
+
+Step 2: Count cycle length from meeting point
+  Start at meeting point, walk until we return:
+  meeting → +1 → +1 → back to meeting
+        ┌─────────────┐
+        ↓             │
+       [3] ─→ [4] ─→ [5]
+  count: 1      2      3 → back to 3, stop!
+
+  Cycle length = 3 (nodes: 3, 4, 5) ✓
 ```
 
 ---
@@ -290,6 +405,35 @@ func main() {
         fmt.Printf("%v → palindrome=%v\n", t, isPalindrome(fromSlice(t)))
     }
 }
+```
+
+**Textual Figure:**
+```
+Check Palindrome: [1, 2, 3, 2, 1]
+
+Step 1: Find middle with slow/fast
+  [1] → [2] → [3] → [2] → [1] → nil
+   S         F
+        S              F
+             S                   F(nil)
+  slow stops at 3 (middle)
+
+Step 2: Reverse second half (after slow)
+  Before: slow.Next = [2] → [1] → nil
+  After:  reversed   = [1] → [2] → nil
+
+  ┌───┐  ┌───┐  ┌───┐      ┌───┐  ┌───┐
+  │ 1 │→ │ 2 │→ │ 3 │      │ 1 │→ │ 2 │→ nil
+  └───┘  └───┘  └───┘      └───┘  └───┘
+  first half              reversed 2nd half
+
+Step 3: Compare
+  first=1, second=1  ✓
+  first=2, second=2  ✓
+  second=nil → done
+  Result: TRUE (palindrome) ✓
+
+[1, 2, 3]: first=1 vs second=3 ✗ → FALSE
 ```
 
 ---
@@ -370,6 +514,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Find Nth from end — gap technique:
+
+List: [1] → [2] → [3] → [4] → [5] → nil
+
+nthFromEnd(head, 2):
+  Step 1: Advance fast by n=2 steps
+     slow          fast
+      │              │
+     [1] → [2] → [3] → [4] → [5] → nil
+
+  Step 2: Move both until fast=nil
+           slow          fast
+            │              │
+     [1] → [2] → [3] → [4] → [5] → nil
+                  slow          fast
+                   │              │
+     [1] → [2] → [3] → [4] → [5] → nil
+                        slow          fast(nil)
+                         │
+     [1] → [2] → [3] → [4] → [5] → nil
+  Result: slow = 4 (2nd from end) ✓
+
+removeNthFromEnd(head, 2) — remove node 4:
+  Use dummy node, advance fast by n+1=3:
+     [D] → [1] → [2] → [3] → [4] → [5] → nil
+      S                   F
+  Move both until fast=nil:
+                   S              F(nil)
+     [D] → [1] → [2] → [3] ────→ [5] → nil
+                         slow.Next = slow.Next.Next (skip 4)
+  Result: 1 → 2 → 3 → 5 → nil ✓
+```
+
 ---
 
 ## Example 7: Happy Number (Fast-Slow on Sequence)
@@ -414,6 +593,29 @@ func main() {
     fmt.Println("\n19 is happy:", isHappy(19))
     fmt.Println("2 is happy:", isHappy(2))
 }
+```
+
+**Textual Figure:**
+```
+Happy Number — Floyd's on digit-square-sum sequence:
+
+19 is happy? Trace the sequence:
+  19 → 1²+9² = 82
+  82 → 8²+2² = 68
+  68 → 6²+8² = 100
+  100 → 1²+0²+0² = 1  ✓ Happy!
+
+  Sequence: 19 → 82 → 68 → 100 → 1 → 1 → 1 ...
+  slow and fast both reach 1 → return true
+
+2 is happy? Trace:
+  2 → 4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 → 4 ...
+  ┌─────────────────────────────────────────────┐
+  ↓                                             │
+  4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 ──┘
+  Cycle detected but not at 1 → return false (not happy)
+
+  Floyd's detects cycle in the sequence without using a hash set!
 ```
 
 ---
@@ -474,6 +676,30 @@ func main() {
     d := &Node{Val: 3, Next: &Node{Val: 4}}
     fmt.Println("Intersection:", getIntersectionNode(c, d)) // nil
 }
+```
+
+**Textual Figure:**
+```
+Find Intersection of Two Lists:
+
+List A: 1 → 3 ─┐
+                ├─→ [8] → [10] → nil  (shared tail)
+List B: 2 → 4 → 6 ─┘
+
+Two-pointer technique (redirect to other list's head at end):
+  a starts at A's head, b starts at B's head
+
+  a: 1 → 3 → 8 → 10 → nil → [switch to B] 2 → 4 → 6 → 8
+  b: 2 → 4 → 6 → 8 → 10 → nil → [switch to A] 1 → 3 → 8
+                                                           ↑
+                                              a == b at node 8! ✓
+
+Why it works:
+  a traverses: len(A) + len(B shared prefix) = 2 + 2 + 3 + 2 = equal
+  b traverses: len(B) + len(A shared prefix) = 3 + 2 + 2 + 2 = equal
+  Both travel same total distance → meet at intersection!
+
+No intersection: both become nil at the same time → return nil
 ```
 
 ---
@@ -563,6 +789,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Reorder List: L0→Ln→L1→Ln-1→...
+
+Input: [1] → [2] → [3] → [4] → [5] → nil
+
+Step 1: Find middle with slow/fast
+  slow stops at node 3
+  [1] → [2] → [3] | [4] → [5]
+
+Step 2: Reverse second half
+  [4] → [5]  becomes  [5] → [4] → nil
+  Cut: [3].Next = nil
+
+  First:  [1] → [2] → [3] → nil
+  Second: [5] → [4] → nil
+
+Step 3: Merge alternately
+  Take from first, then second:
+  [1] → [5] → [2] → [4] → [3] → nil
+   ↑     ↑     ↑     ↑     ↑
+  1st   2nd   1st   2nd   1st
+
+Result: 1 → 5 → 2 → 4 → 3 → nil ✓
+```
+
 ---
 
 ## Example 10: Sort Linked List (Merge Sort with Slow/Fast Split)
@@ -642,6 +894,40 @@ func main() {
     printList(head)
     // 1 → 2 → 3 → 4 → 5 → nil
 }
+```
+
+**Textual Figure:**
+```
+Merge Sort on Linked List using slow/fast split:
+
+Input: [4] → [2] → [1] → [3] → [5] → nil
+
+Recursive split (slow/fast finds middle):
+                    sortList
+                   /        \
+         [4]→[2]→[1]        [3]→[5]
+            /    \           /    \
+      [4]→[2]   [1]      [3]    [5]
+       /    \
+     [4]   [2]
+
+Merge back up:
+     merge([4],[2]) → [2]→[4]
+     merge([2]→[4], [1]) → [1]→[2]→[4]
+     merge([3],[5]) → [3]→[5]
+     merge([1]→[2]→[4], [3]→[5]):
+       compare 1<3: take 1
+       compare 2<3: take 2
+       compare 4>3: take 3
+       compare 4<5: take 4
+       take 5
+
+Result:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │→ │ 2 │→ │ 3 │→ │ 4 │→ │ 5 │→ nil
+  └───┘  └───┘  └───┘  └───┘  └───┘
+
+Output: 1 → 2 → 3 → 4 → 5 → nil
 ```
 
 ---
@@ -725,6 +1011,38 @@ func main() {
     Since a = (n-1)c + (c-b), both pointers meet at cycle start!
     */
 }
+```
+
+**Textual Figure:**
+```
+Cycle II — Complete proof with concrete example:
+
+List: 1 → 2 → 3 → 4 → 5 → 6 → back to 3
+  a=2 (head to cycle start)
+              ┌─────────────────────────┐
+              │                         │
+ [1] → [2] → [3] → [4] → [5] → [6] ──┘
+              ↑ cycle                c=4
+              start
+
+Phase 1: Floyd's detection
+  S=1,F=1 → S=2,F=3 → S=3,F=5 → S=4,F=3
+  → S=5,F=5  → MEET at node 5
+
+Measure cycle length from meeting point:
+  5 → 6 → 3 → 4 → 5  → count = 4
+
+Phase 2: Find cycle start
+  Reset slow to head:
+  S=1,F=5 → S=2,F=6 → S=3,F=3  → MEET at node 3
+  Cycle start = node 3 ✓
+
+Proof:
+  a = distance head → cycle start = 2
+  b = distance cycle start → meeting = 2  (3→4→5)
+  c = cycle length = 4
+  2(a+b) = a+b+nc  →  a+b = nc  →  a = nc-b
+  a = 4-2 = 2  ✓  (2 steps from head = 2 steps from meeting in cycle)
 ```
 
 ---

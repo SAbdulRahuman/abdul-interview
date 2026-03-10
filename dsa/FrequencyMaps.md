@@ -54,6 +54,37 @@ func main() {
 }
 ```
 
+**Textual Figure — Frequency Counter Step-by-Step:**
+
+```
+  charFrequency("abracadabra"):
+
+  Char  │ a  b  r  a  c  a  d  a  b  r  a
+  Index │ 0  1  2  3  4  5  6  7  8  9  10
+
+  Building freq map:
+   'a': +1 +1 +1 +1 +1 = 5       ┌───────┬───────┐
+   'b':    +1       +1  = 2       │ Char  │ Count │
+   'r':       +1       +1 = 2     ├───────┼───────┤
+   'c':          +1        = 1    │  'a'  │   5   │
+   'd':             +1     = 1    │  'b'  │   2   │
+                                  │  'r'  │   2   │
+                                  │  'c'  │   1   │
+                                  │  'd'  │   1   │
+                                  └───────┴───────┘
+
+  intFrequency([1, 2, 3, 2, 1, 3, 3, 4]):
+
+  ┌───────┬───────┐
+  │ Value │ Count │   Pattern: freq[v]++
+  ├───────┼───────┤   Go zero-value for int is 0,
+  │   1   │   2   │   so freq[v]++ works without init
+  │   2   │   2   │
+  │   3   │   3   │   ← most frequent
+  │   4   │   1   │
+  └───────┴───────┘
+```
+
 ---
 
 ## Example 2: Most Frequent Element (Mode)
@@ -119,6 +150,45 @@ func main() {
 }
 ```
 
+**Textual Figure — Most Frequent Element and Top-K via Bucket Sort:**
+
+```
+  arr = [1, 1, 1, 2, 2, 3, 3, 3, 3, 4]
+
+  Step 1: Build frequency map
+  ┌───────┬───────┐
+  │ Value │ Count │
+  ├───────┼───────┤
+  │   1   │   3   │
+  │   2   │   2   │
+  │   3   │   4   │  ← maxCount
+  │   4   │   1   │
+  └───────┴───────┘
+
+  Step 2: mostFrequent → scan for max count
+    maxVal=3, maxCount=4
+
+  topK([1,1,1,2,2,3], k=2):
+
+  Frequency map:  {1:3, 2:2, 3:1}
+
+  Step 1: Bucket sort by frequency  (index = count)
+  ┌─────────┬───────────────┐
+  │ Bucket  │ Values          │
+  ├─────────┼───────────────┤
+  │  [3]    │ [1]             │  ← frequency 3
+  │  [2]    │ [2]             │  ← frequency 2
+  │  [1]    │ [3]             │  ← frequency 1
+  │  [0]    │ []              │
+  └─────────┴───────────────┘
+
+  Step 2: Collect from highest bucket, k=2
+    Bucket[3] → take 1        result = [1]
+    Bucket[2] → take 2        result = [1, 2]   ← done (k=2)
+
+  Result: [1, 2]  (top 2 most frequent)
+```
+
 ---
 
 ## Example 3: Check Anagram
@@ -172,6 +242,40 @@ func main() {
         fmt.Println(" ", group)
     }
 }
+```
+
+**Textual Figure — Anagram Check and Grouping:**
+
+```
+  isAnagram("listen", "silent"):
+
+  Step 1: Build freq from s1="listen"
+  ┌─────┬───┐
+  │ l   │ 1 │   After processing "listen":
+  │ i   │ 1 │   freq = {l:1, i:1, s:1, t:1, e:1, n:1}
+  │ s   │ 1 │
+  │ t   │ 1 │   Step 2: Decrement for each char in s2="silent"
+  │ e   │ 1 │    s → {s:0}   i → {i:0}   l → {l:0}
+  │ n   │ 1 │    e → {e:0}   n → {n:0}   t → {t:0}
+  └─────┴───┘   All zero → true ✓
+
+  groupAnagrams(["eat","tea","tan","ate","nat","bat"]):
+
+  Key = [26]int (letter frequency array)
+  ┌────────┬────────────────────────┬────────────────────────┐
+  │  Word  │  Key [a,e,t,...]        │  Group                  │
+  ├────────┼────────────────────────┼────────────────────────┤
+  │ "eat"  │  a:1, e:1, t:1          │  ["eat","tea","ate"]    │
+  │ "tea"  │  a:1, e:1, t:1          │    (same key)            │
+  │ "ate"  │  a:1, e:1, t:1          │    (same key)            │
+  ├────────┼────────────────────────┼────────────────────────┤
+  │ "tan"  │  a:1, n:1, t:1          │  ["tan","nat"]          │
+  │ "nat"  │  a:1, n:1, t:1          │    (same key)            │
+  ├────────┼────────────────────────┼────────────────────────┤
+  │ "bat"  │  a:1, b:1, t:1          │  ["bat"]               │
+  └────────┴────────────────────────┴────────────────────────┘
+
+  Result: [["eat","tea","ate"], ["tan","nat"], ["bat"]]
 ```
 
 ---
@@ -233,6 +337,37 @@ func main() {
         fmt.Printf("nums=%v → BM=(%d,%v), freq=(%d,%v)\n", nums, v1, ok1, v2, ok2)
     }
 }
+```
+
+**Textual Figure — Boyer-Moore Voting Algorithm (nums = [2,2,1,1,1,2,2]):**
+
+```
+  Phase 1: Find candidate
+  ┌───────┬───────┬────────────┬────────────────────────────────────┐
+  │ Index │ n     │ candidate  │ count (after)                      │
+  ├───────┼───────┼────────────┼────────────────────────────────────┤
+  │   0   │  2    │  2         │  1  (count=0, new candidate)      │
+  │   1   │  2    │  2         │  2  (match, count++)               │
+  │   2   │  1    │  2         │  1  (mismatch, count--)             │
+  │   3   │  1    │  2         │  0  (mismatch, count--)             │
+  │   4   │  1    │  1         │  1  (count=0, new candidate)       │
+  │   5   │  2    │  1         │  0  (mismatch, count--)             │
+  │   6   │  2    │  2         │  1  (count=0, new candidate)       │
+  └───────┴───────┴────────────┴────────────────────────────────────┘
+  Candidate = 2
+
+  Phase 2: Verify (count occurrences of 2)
+    [2, 2, 1, 1, 1, 2, 2]  →  count of 2 = 4
+     ✓  ✓              ✓  ✓
+    4 > 7/2 = 3  →  true, 2 is the majority element
+
+  Frequency map approach comparison:
+  ┌───────┬───────┬────────────┐
+  │ Value │ Count │ > n/2 = 3? │
+  ├───────┼───────┼────────────┤
+  │   2   │   4   │    Yes ✓   │  → return (2, true)
+  │   1   │   3   │    No      │
+  └───────┴───────┴────────────┘
 ```
 
 ---
@@ -305,6 +440,39 @@ func main() {
 }
 ```
 
+**Textual Figure — Frequency-Based Sorting:**
+
+```
+  sortByFrequency([1, 1, 2, 2, 2, 3]):
+
+  Step 1: Build frequency map
+  ┌───────┬───────┐
+  │ Value │ Count │
+  ├───────┼───────┤
+  │   1   │   2   │
+  │   2   │   3   │  ← highest frequency
+  │   3   │   1   │
+  └───────┴───────┘
+
+  Step 2: Sort by frequency (desc), tie-break by value (asc)
+    Input:  [1, 1, 2, 2, 2, 3]
+    Output: [2, 2, 2, 1, 1, 3]
+             │─freq=3─│ │─f=2─│ f=1
+
+  sortStringByFrequency("tree"):
+
+  Step 1: Frequency map     Step 2: Sort pairs by count desc
+  ┌─────┬───┐               ┌─────┬───┐
+  │ 't' │ 1 │               │ 'e' │ 2 │  ← highest
+  │ 'r' │ 1 │               │ 't' │ 1 │
+  │ 'e' │ 2 │               │ 'r' │ 1 │
+  └─────┴───┘               └─────┴───┘
+
+  Step 3: Build result string by repeating each char
+    'e' × 2 = "ee"    't' × 1 = "t"    'r' × 1 = "r"
+    Result: "eetr"
+```
+
 ---
 
 ## Example 6: Sliding Window with Frequency Map
@@ -365,6 +533,34 @@ func main() {
     fmt.Printf("Anagram positions of %q in %q: %v\n", p2, s2, findAnagrams(s2, p2))
     // [0, 1, 2]
 }
+```
+
+**Textual Figure — Sliding Window Anagram Detection:**
+
+```
+  s = "cbaebabacd",  p = "abc"  (len=3)
+  pFreq = {a:1, b:1, c:1}
+
+  Slide window of size 3 across s:
+  ┌───┬──────────────┬────────────────────┬──────────┐
+  │ i │   Window     │ wFreq              │  Match?  │
+  ├───┼──────────────┼────────────────────┼──────────┤
+  │ 2 │ [c,b,a]      │ {c:1,b:1,a:1}      │  ✓ pos=0 │
+  │ 3 │ [b,a,e]      │ {b:1,a:1,e:1}      │  ✗       │
+  │ 4 │ [a,e,b]      │ {a:1,e:1,b:1}      │  ✗       │
+  │ 5 │ [e,b,a]      │ {e:1,b:1,a:1}      │  ✗       │
+  │ 6 │ [b,a,b]      │ {b:2,a:1}          │  ✗       │
+  │ 7 │ [a,b,a]      │ {a:2,b:1}          │  ✗       │
+  │ 8 │ [b,a,c]      │ {b:1,a:1,c:1}      │  ✓ pos=6 │
+  │ 9 │ [a,c,d]      │ {a:1,c:1,d:1}      │  ✗       │
+  └───┴──────────────┴────────────────────┴──────────┘
+
+  Positions:  c b a e b a b a c d
+              0 1 2 3 4 5 6 7 8 9
+              ╰─────╯               ╰─────╯
+              match 0             match 6
+
+  Result: [0, 6]
 ```
 
 ---
@@ -436,6 +632,39 @@ func main() {
         fmt.Printf("minWindow(%q, %q) = %q\n", t[0], t[1], minWindow(t[0], t[1]))
     }
 }
+```
+
+**Textual Figure — Minimum Window Substring (s="ADOBECODEBANC", t="ABC"):**
+
+```
+  need = {A:1, B:1, C:1},  total = 3 (distinct chars needed)
+
+  Two-pointer expansion and contraction:
+
+  s: A  D  O  B  E  C  O  D  E  B  A  N  C
+     0  1  2  3  4  5  6  7  8  9  10 11 12
+
+  ┌─────┬───────┬───────┬──────┬───────────────────────────────────┐
+  │ L   │ R     │ have  │ best │ Action                            │
+  ├─────┼───────┼───────┼──────┼───────────────────────────────────┤
+  │  0  │   0   │  1/3  │  --  │ add A, have A                     │
+  │  0  │   3   │  2/3  │  --  │ add B, have A+B                   │
+  │  0  │   5   │  3/3  │  6   │ add C, have=total! window="ADOBEC"│
+  │  1  │   5   │  2/3  │  6   │ shrink: remove A, have drops      │
+  │  1  │   9   │  2/3  │  6   │ expand: add B (extra)             │
+  │  1  │  10   │  3/3  │  6   │ add A, have=total! len=10         │
+  │  3  │  10   │  3/3  │  6   │ shrink: skip D,O                  │
+  │  5  │  10   │  3/3  │  6   │ window="CODEBA" len=6             │
+  │  6  │  10   │  2/3  │  6   │ shrink: remove C, have drops      │
+  │  6  │  12   │  3/3  │  4   │ add C, window="ODEBANC" → shrink  │
+  │  9  │  12   │  3/3  │  4   │ window="BANC" len=4 ← new best!  │
+  │ 10  │  12   │  2/3  │  4   │ shrink: remove B, done            │
+  └─────┴───────┴───────┴──────┴───────────────────────────────────┘
+
+  Result: "BANC" (indices 9..12, length 4)
+   A  D  O  B  E  C  O  D  E [B  A  N  C]
+   0  1  2  3  4  5  6  7  8  9  10 11 12
+                              └──────────┘
 ```
 
 ---
@@ -512,6 +741,36 @@ func main() {
 }
 ```
 
+**Textual Figure — First Non-Repeating Character:**
+
+```
+  firstUniqChar("leetcode"):
+
+  Step 1: Build frequency map
+  ┌─────┬───┐     s = l  e  e  t  c  o  d  e
+  │ 'l' │ 1 │         0  1  2  3  4  5  6  7
+  │ 'e' │ 3 │
+  │ 't' │ 1 │     Step 2: Scan left-to-right for freq==1
+  │ 'c' │ 1 │       i=0: 'l' freq=1 → return 0  ✓
+  │ 'o' │ 1 │
+  │ 'd' │ 1 │     Result: index 0 ('l')
+  └─────┴───┘
+
+  firstUniqChar("aabb"):
+    freq = {a:2, b:2}  →  no char with freq==1  →  return -1
+
+  Streaming FirstUnique:
+  ┌──────────────────┬──────────────────┬────────────────┬────────────┐
+  │ Action           │ freq             │ order          │ 1st unique │
+  ├──────────────────┼──────────────────┼────────────────┼────────────┤
+  │ Init([2,3,5])    │ {2:1,3:1,5:1}    │ [2,3,5]        │     2      │
+  │ Add(5)           │ {2:1,3:1,5:2}    │ [2,3,5]        │     2      │
+  │ Add(2)           │ {2:2,3:1,5:2}    │ [2,3,5]        │     3      │
+  │ Add(3)           │ {2:2,3:2,5:2}    │ [2,3,5]        │    -1      │
+  └──────────────────┴──────────────────┴────────────────┴────────────┘
+    All elements now have freq > 1 → no unique element
+```
+
 ---
 
 ## Example 9: Subarray Sum Equals K (Prefix Sum + Freq Map)
@@ -554,6 +813,32 @@ func main() {
         fmt.Printf("subarraySum(%v, %d) = %d\n", t.nums, t.k, subarraySum(t.nums, t.k))
     }
 }
+```
+
+**Textual Figure — Subarray Sum Equals K via Prefix Sum + Freq Map:**
+
+```
+  nums = [1, 1, 1],  k = 2
+
+  Key insight: if prefixSum[j] - prefixSum[i] == k,
+               then subarray [i+1..j] sums to k.
+               Equivalently: look for (currentSum - k) in prefixFreq.
+
+  ┌─────┬──────┬───────┬─────────┬─────────┬───────────────────────────┐
+  │  i  │ n    │  sum  │ sum-k   │ in freq?│ count  │  prefixFreq          │
+  ├─────┼──────┼───────┼─────────┼─────────┼───────────────────────────┤
+  │init│  --  │   0   │   --    │   --    │   0    │  {0:1}                │
+  │  0 │  1   │   1   │  1-2=-1 │   No    │   0    │  {0:1, 1:1}           │
+  │  1 │  1   │   2   │  2-2=0  │  Yes(1) │   1    │  {0:1, 1:1, 2:1}      │
+  │  2 │  1   │   3   │  3-2=1  │  Yes(1) │   2    │  {0:1, 1:1, 2:1, 3:1} │
+  └─────┴──────┴───────┴─────────┴─────────┴───────────────────────────┘
+
+  The 2 valid subarrays:
+    [1, 1, 1]
+     ╰───╯        sum=2  (indices 0..1)
+        ╰───╯     sum=2  (indices 1..2)
+
+  Result: count = 2
 ```
 
 ---
@@ -636,6 +921,39 @@ func main() {
 }
 ```
 
+**Textual Figure — Ransom Note and Multiset Operations:**
+
+```
+  canConstruct("aa", "aab"):
+
+  Step 1: Build freq from magazine "aab"
+    freq = {a:2, b:1}
+
+  Step 2: Decrement for each char in ransomNote "aa"
+    ┌─────┬──────────┬───────────┐
+    │ i   │ char     │ freq      │
+    ├─────┼──────────┼───────────┤
+    │  0  │  'a'     │ {a:1,b:1} │  a:2→1, ≥ 0 ✓
+    │  1  │  'a'     │ {a:0,b:1} │  a:1→0, ≥ 0 ✓
+    └─────┴──────────┴───────────┘
+    All ≥ 0 → return true
+
+  multisetIntersection([1,2,2,3,3,3], [2,2,2,3,3,4]):
+
+  freqA = {1:1, 2:2, 3:3}      freqB = {2:3, 3:2, 4:1}
+
+  For each key in freqA, take min(countA, countB):
+  ┌─────┬────────┬────────┬────────────┐
+  │ Key │ freqA  │ freqB  │ min(A,B)   │
+  ├─────┼────────┼────────┼────────────┤
+  │  1  │   1    │   0    │  not in B  │
+  │  2  │   2    │   3    │     2      │
+  │  3  │   3    │   2    │     2      │
+  └─────┴────────┴────────┴────────────┘
+
+  Result: {2:2, 3:2}
+```
+
 ---
 
 ## Example 11: Word Frequency Counter
@@ -698,6 +1016,35 @@ func main() {
 
     fmt.Printf("\nTotal unique words: %d\n", len(freq))
 }
+```
+
+**Textual Figure — Word Frequency Counter:**
+
+```
+  Input text (lowercased, punctuation stripped):
+  "go is an open-source programming language go makes it easy to
+   build simple reliable and efficient software go is designed at
+   google go supports concurrency go has garbage collection go is fast"
+
+  Word counting: freq[word]++
+
+  Top 5 words (sorted by count desc):
+  ┌─────────────────┬───────┬──────────────────────────┐
+  │  Word            │ Count │ Bar                      │
+  ├─────────────────┼───────┼──────────────────────────┤
+  │ "go"            │   6   │ ████████████████████████ │
+  │ "is"            │   3   │ ████████████             │
+  │ "an"            │   1   │ ████                      │
+  │ "open-source"   │   1   │ ████                      │
+  │ "programming"   │   1   │ ████                      │
+  └─────────────────┴───────┴──────────────────────────┘
+
+  Processing pipeline:
+    raw text ──→ ToLower() ──→ Fields() ──→ Trim(punct) ──→ freq[w]++
+
+  topNWords sorts pairs by count (desc), returns first n:
+    sort.Slice: [{go,6},{is,3},{an,1},{open-source,1},...]
+    return [:5]
 ```
 
 ---

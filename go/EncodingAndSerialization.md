@@ -510,6 +510,456 @@ func main() {
 
 ---
 
+## Protocol Buffers (Protobuf) — Deep Dive
+
+**Tutorial: Schema-Driven Binary Serialization for Microservices**
+
+Protocol Buffers (protobuf) is Google's language-neutral, platform-neutral binary serialization format. You define data schemas in `.proto` files, then generate type-safe Go code using `protoc` with `protoc-gen-go`. Protobuf is 3-10x smaller and 20-100x faster than JSON. It's the standard serialization for gRPC.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Protobuf Workflow                                      │
+│                                                          │
+│  1. Define schema (.proto file)                          │
+│  ┌──────────────────────────────────────────┐            │
+│  │ syntax = "proto3";                       │            │
+│  │ package user;                            │            │
+│  │ message User {                           │            │
+│  │   int32 id = 1;        // field number   │            │
+│  │   string name = 2;                       │            │
+│  │   string email = 3;                      │            │
+│  │   repeated string tags = 4;              │            │
+│  │ }                                        │            │
+│  └──────────────────┬───────────────────────┘            │
+│                     │ protoc --go_out=.                   │
+│                     ▼                                    │
+│  2. Generated Go code (user.pb.go)                      │
+│  ┌──────────────────────────────────────────┐            │
+│  │ type User struct {                       │            │
+│  │   Id    int32    `protobuf:"varint,1"`   │            │
+│  │   Name  string   `protobuf:"bytes,2"`    │            │
+│  │   Email string   `protobuf:"bytes,3"`    │            │
+│  │   Tags  []string `protobuf:"bytes,4,rep"`│            │
+│  │ }                                        │            │
+│  │ func (u *User) ProtoReflect() ...        │            │
+│  └──────────────────┬───────────────────────┘            │
+│                     │                                    │
+│                     ▼                                    │
+│  3. Use in Go code                                      │
+│  ┌──────────────────────────────────────────┐            │
+│  │ proto.Marshal(&user)   → []byte (binary) │            │
+│  │ proto.Unmarshal(data, &user)              │            │
+│  └──────────────────────────────────────────┘            │
+│                                                          │
+│  Field numbers (1, 2, 3...) are part of the wire format.│
+│  NEVER reuse or change field numbers after deployment.   │
+│  Delete fields → mark as reserved.                      │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Proto3 Schema Basics
+
+```protobuf
+// user.proto
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/myapp/proto/user";
+
+// Scalar types: int32, int64, uint32, float, double,
+//               bool, string, bytes
+
+message User {
+  int32 id = 1;           // field number 1
+  string name = 2;        // field number 2
+  string email = 3;
+  int32 age = 4;
+  repeated string tags = 5;      // repeated = slice/list
+  Address address = 6;           // nested message
+  Role role = 7;                 // enum
+  optional string bio = 8;      // explicit optional (Go: *string)
+  map<string, string> metadata = 9;  // map
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string country = 3;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;  // proto3 requires 0 as default
+  ROLE_ADMIN = 1;
+  ROLE_USER = 2;
+  ROLE_MODERATOR = 3;
+}
+
+// Oneof — exactly one field set (Go: interface with concrete types)
+message Notification {
+  string id = 1;
+  oneof content {
+    string text = 2;
+    bytes image = 3;
+    string video_url = 4;
+  }
+}
+
+// Reserved fields — prevent reuse of deleted field numbers
+message OldMessage {
+  reserved 2, 15, 9 to 11;
+  reserved "old_field", "deprecated_field";
+  string name = 1;
+}
+```
+
+### Code Generation
+
+```bash
+# Install protoc compiler + Go plugins
+# protoc: https://github.com/protocolbuffers/protobuf/releases
+
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Generate Go code from .proto
+protoc --go_out=. --go_opt=paths=source_relative \
+       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+       proto/user.proto
+
+# Output: proto/user.pb.go       (message types)
+#         proto/user_grpc.pb.go   (gRPC service stubs)
+```
+
+### Using Generated Code in Go
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"google.golang.org/protobuf/proto"
+)
+
+// Assume generated User type from proto/user.pb.go
+
+func main() {
+	// Create a protobuf message
+	user := &User{
+		Id:    1,
+		Name:  "Alice",
+		Email: "alice@example.com",
+		Tags:  []string{"admin", "developer"},
+		Role:  Role_ROLE_ADMIN,
+		Address: &Address{
+			City:    "NYC",
+			Country: "US",
+		},
+	}
+
+	// Marshal — struct to binary
+	data, err := proto.Marshal(user)
+	if err != nil {
+		log.Fatal("marshal:", err)
+	}
+	fmt.Printf("Protobuf size: %d bytes\n", len(data))
+	// Typically ~40 bytes vs ~150+ bytes for equivalent JSON
+
+	// Unmarshal — binary to struct
+	var decoded User
+	if err := proto.Unmarshal(data, &decoded); err != nil {
+		log.Fatal("unmarshal:", err)
+	}
+	fmt.Printf("Name: %s, Role: %s\n", decoded.Name, decoded.Role)
+}
+```
+
+### Backward Compatibility Rules
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Protobuf Backward/Forward Compatibility Rules          │
+│                                                          │
+│  ✅ SAFE changes (won't break existing clients):         │
+│  ├── Add new fields (with new field numbers)             │
+│  ├── Remove fields (mark number as reserved)             │
+│  ├── Rename fields (wire format uses numbers, not names) │
+│  └── Add new enum values                                 │
+│                                                          │
+│  ❌ BREAKING changes (will corrupt data):                │
+│  ├── Change a field number                               │
+│  ├── Change a field's type (int32 → string)              │
+│  ├── Reuse a deleted field number                        │
+│  └── Remove the 0 value from an enum                    │
+│                                                          │
+│  Best practices:                                        │
+│  • Field numbers 1-15: use 1 byte on wire → use for     │
+│    frequently set fields                                 │
+│  • Field numbers 16-2047: use 2 bytes                   │
+│  • Mark deleted fields/numbers as `reserved`             │
+│  • Always have ENUM_UNSPECIFIED = 0                      │
+│  • Use `optional` for fields that need presence tracking │
+└──────────────────────────────────────────────────────────┘
+```
+
+### JSON vs Protobuf Performance
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  JSON vs Protobuf Comparison                            │
+│                                                          │
+│  ┌─────────────┬───────────────┬─────────────────────┐   │
+│  │ Aspect      │ JSON          │ Protobuf            │   │
+│  ├─────────────┼───────────────┼─────────────────────┤   │
+│  │ Format      │ Text (UTF-8)  │ Binary (compact)    │   │
+│  │ Size        │ Large         │ 3-10x smaller       │   │
+│  │ Speed       │ Slow (parse)  │ 20-100x faster      │   │
+│  │ Schema      │ None (loose)  │ Required (.proto)   │   │
+│  │ Readable    │ Yes           │ No                  │   │
+│  │ Versioning  │ Manual        │ Built-in (numbers)  │   │
+│  │ Cross-lang  │ Universal     │ codegen per language│   │
+│  │ Debug       │ Easy          │ Need tools          │   │
+│  │ Browser     │ Native        │ Needs library       │   │
+│  └─────────────┴───────────────┴─────────────────────┘   │
+│                                                          │
+│  Use JSON for: public APIs, browser clients, configs     │
+│  Use Protobuf for: microservice comms, high throughput,  │
+│                    gRPC services, mobile apps             │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## gRPC in Go — Overview
+
+**Tutorial: RPC Framework Built on Protobuf and HTTP/2**
+
+gRPC is Google's high-performance RPC framework. Services are defined in `.proto` files and the `protoc` compiler generates both client and server stubs. gRPC uses HTTP/2 (multiplexed streams, header compression) and protobuf (binary encoding) for significantly better performance than REST+JSON.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  gRPC Architecture                                      │
+│                                                          │
+│  .proto file                                             │
+│  ┌─────────────────────────────────────────────┐         │
+│  │ service UserService {                       │         │
+│  │   rpc GetUser(GetUserReq) returns (User);   │← Unary  │
+│  │   rpc ListUsers(Filter) returns             │         │
+│  │       (stream User);                        │← Server │
+│  │   rpc UploadLogs(stream LogEntry)           │  stream │
+│  │       returns (Summary);                    │← Client │
+│  │   rpc Chat(stream Msg)                      │  stream │
+│  │       returns (stream Msg);                 │← Bidi   │
+│  │ }                                           │  stream │
+│  └──────────────────┬──────────────────────────┘         │
+│                     │ protoc --go-grpc_out=.              │
+│                     ▼                                    │
+│  ┌────────────────────────┐ ┌─────────────────────────┐  │
+│  │ Server Stub            │ │ Client Stub             │  │
+│  │ (implement interface)  │ │ (auto-generated)        │  │
+│  │ RegisterUserService    │ │ NewUserServiceClient(cc) │  │
+│  │ Server(s, &myImpl{})   │ │ client.GetUser(ctx, req)│  │
+│  └────────────────────────┘ └─────────────────────────┘  │
+│                                                          │
+│  4 RPC Patterns:                                        │
+│  ┌──────────────────────────────────────────────┐        │
+│  │ Unary:           Request ──► Response         │       │
+│  │ Server Stream:   Request ──► Stream of Resp   │       │
+│  │ Client Stream:   Stream of Req ──► Response   │       │
+│  │ Bidirectional:   Stream ◄──► Stream            │       │
+│  └──────────────────────────────────────────────┘        │
+└──────────────────────────────────────────────────────────┘
+```
+
+### gRPC Service Definition
+
+```protobuf
+// service.proto
+syntax = "proto3";
+package api;
+option go_package = "github.com/myapp/proto/api";
+
+service UserService {
+  // Unary — single request, single response
+  rpc GetUser(GetUserRequest) returns (User);
+
+  // Server streaming — single request, stream of responses
+  rpc ListUsers(ListUsersRequest) returns (stream User);
+
+  // Client streaming — stream of requests, single response
+  rpc UploadActivity(stream ActivityEvent) returns (UploadSummary);
+
+  // Bidirectional streaming — both stream simultaneously
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}
+
+message GetUserRequest {
+  int32 id = 1;
+}
+
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ActivityEvent {
+  string user_id = 1;
+  string action = 2;
+  int64 timestamp = 3;
+}
+
+message UploadSummary {
+  int32 events_received = 1;
+}
+
+message ChatMessage {
+  string sender = 1;
+  string text = 2;
+}
+```
+
+### gRPC Server Implementation
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+	// pb "github.com/myapp/proto/api" // generated code
+)
+
+// Server implements the generated UserServiceServer interface
+type userServer struct {
+	// pb.UnimplementedUserServiceServer // embed for forward compatibility
+	users map[int32]*User
+}
+
+// Unary RPC
+func (s *userServer) GetUser(ctx context.Context, req *GetUserRequest) (*User, error) {
+	user, ok := s.users[req.Id]
+	if !ok {
+		return nil, fmt.Errorf("user %d not found", req.Id)
+		// In production: return nil, status.Errorf(codes.NotFound, "user %d not found", req.Id)
+	}
+	return user, nil
+}
+
+// Server streaming RPC
+func (s *userServer) ListUsers(req *ListUsersRequest, stream UserService_ListUsersServer) error {
+	for _, user := range s.users {
+		if err := stream.Send(user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func main() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	grpcServer := grpc.NewServer()
+	// pb.RegisterUserServiceServer(grpcServer, &userServer{...})
+
+	log.Println("gRPC server listening on :50051")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal(err)
+	}
+}
+```
+
+### gRPC Interceptors (Middleware)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  gRPC Interceptors = HTTP Middleware equivalent          │
+│                                                          │
+│  Unary Interceptor:                                     │
+│  Request ──► [Logging] ──► [Auth] ──► Handler ──► Resp   │
+│                                                          │
+│  Stream Interceptor:                                    │
+│  Stream opened ──► [Logging] ──► [Auth] ──► Handler      │
+│                                                          │
+│  Server-side:                                            │
+│  grpc.NewServer(                                         │
+│    grpc.UnaryInterceptor(loggingInterceptor),            │
+│    grpc.StreamInterceptor(streamLoggingInterceptor),     │
+│  )                                                       │
+│                                                          │
+│  Client-side:                                            │
+│  grpc.Dial(addr,                                         │
+│    grpc.WithUnaryInterceptor(clientLogInterceptor),      │
+│  )                                                       │
+│                                                          │
+│  Chain multiple: grpc.ChainUnaryInterceptor(a, b, c)    │
+└──────────────────────────────────────────────────────────┘
+```
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"google.golang.org/grpc"
+)
+
+// Unary server interceptor — logging
+func loggingInterceptor(
+	ctx context.Context,
+	req any,
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (any, error) {
+	start := time.Now()
+	log.Printf("gRPC call: %s", info.FullMethod)
+
+	resp, err := handler(ctx, req) // call actual handler
+
+	log.Printf("gRPC %s completed in %v, err=%v",
+		info.FullMethod, time.Since(start), err)
+	return resp, err
+}
+
+// Auth interceptor
+func authInterceptor(
+	ctx context.Context,
+	req any,
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (any, error) {
+	// Extract token from metadata
+	// md, ok := metadata.FromIncomingContext(ctx)
+	// token := md.Get("authorization")
+	// Validate token...
+	return handler(ctx, req)
+}
+
+func main() {
+	// Chain interceptors
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			loggingInterceptor,
+			authInterceptor,
+		),
+	)
+	_ = server
+}
+```
+
+---
+
 ## Interview Questions
 
 1. **How does JSON encoding/decoding work in Go?**
@@ -534,9 +984,24 @@ func main() {
    - `encoding/xml` works similarly to JSON: `xml.Marshal`/`xml.Unmarshal` with struct tags like `xml:"name,attr"`. Supports attributes, namespaces, and nested elements.
 
 8. **What is Protocol Buffers (protobuf) and how is it used in Go?**
-   - A language-neutral binary serialization format by Google. Define schemas in `.proto` files, generate Go code with `protoc-gen-go`. Smaller and faster than JSON. Used with gRPC.
+   - A language-neutral binary serialization format by Google. Define schemas in `.proto` files, generate Go code with `protoc-gen-go`. Smaller and faster than JSON. Used with gRPC. Field numbers are part of the wire format — never reuse them.
 
-9. **How do you handle CSV files in Go?**
+9. **What are protobuf field numbers and why do they matter?**
+   - Field numbers are the unique identifiers on the wire format (not field names). Numbers 1-15 use 1 byte, 16-2047 use 2 bytes. Never change or reuse a field number after deployment — it breaks backward compatibility. Deleted fields should be marked `reserved`.
+
+10. **What are the 4 gRPC communication patterns?**
+    - **Unary**: single request → single response. **Server streaming**: single request → stream of responses. **Client streaming**: stream of requests → single response. **Bidirectional streaming**: both client and server stream simultaneously. All use HTTP/2.
+
+11. **What are gRPC interceptors?**
+    - Middleware for gRPC calls. Unary interceptors wrap individual calls; stream interceptors wrap streaming calls. Used for logging, authentication, metrics, rate limiting. Chain them with `grpc.ChainUnaryInterceptor(a, b, c)`.
+
+12. **How does protobuf handle backward compatibility?**
+    - Adding new fields (new numbers) is safe — old clients ignore unknown fields. Removing fields is safe if the number is marked `reserved`. Renaming fields is safe since the wire format uses numbers. Changing field types or reusing numbers is breaking.
+
+13. **When should you use JSON vs Protobuf?**
+    - JSON for public APIs, browser clients, human-readable configs, debugging. Protobuf for microservice-to-microservice communication, high throughput, mobile clients, gRPC services. Protobuf is 3-10x smaller and 20-100x faster to parse.
+
+14. **How do you handle CSV files in Go?**
    - `encoding/csv` provides `csv.NewReader(r)` and `csv.NewWriter(w)`. `ReadAll()` reads everything, `Read()` reads one record at a time. Handles quoting, custom delimiters, and comments.
 
 10. **What is `encoding.TextMarshaler` / `encoding.TextUnmarshaler`?**

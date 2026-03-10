@@ -65,6 +65,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Basic Hash Set Operations:**
+
+```
+  Operation          │ Set State (map[string]struct{})    │ Notes
+ ════════════════════╪════════════════════════════════════╪══════════════════════════
+  NewStringSet()     │ { }                                │ empty set created
+  Add("go")          │ { "go" }                           │ "go" inserted
+  Add("rust")        │ { "go", "rust" }                   │ "rust" inserted
+  Add("go")          │ { "go", "rust" }                   │ duplicate → no-op
+                     │                                    │
+  Contains("go")     │         ┌───────────────┐          │
+                     │         │  "go"  → ✓    │          │ returns true
+                     │         └───────────────┘          │
+  Contains("java")   │         ┌───────────────┐          │
+                     │         │  "java" → ✗   │          │ returns false
+                     │         └───────────────┘          │
+  Size()             │ len = 2                             │ returns 2
+                     │                                    │
+  Remove("rust")     │ { "go" }                           │ "rust" deleted
+                     │                                    │
+  Values()           │ ["go"]                             │ remaining elements
+
+  Internal map layout (map[string]struct{}):
+  ┌────────────┬──────────────┐
+  │    Key     │    Value     │
+  ├────────────┼──────────────┤
+  │   "go"     │  struct{}{}  │   ← zero-size value
+  └────────────┴──────────────┘
+```
+
 ---
 
 ## Example 2: Set Operations — Union, Intersection, Difference
@@ -154,6 +184,39 @@ func main() {
 }
 ```
 
+**Textual Figure — Set Operations on A and B:**
+
+```
+  A = {1, 2, 3, 4, 5}          B = {4, 5, 6, 7, 8}
+
+          ┌─────────────────────────────────────┐
+          │           Venn Diagram               │
+          │                                     │
+          │    ┌─────────┐   ┌─────────┐        │
+          │    │ A only  │   │ B only  │        │
+          │    │ 1 2 3   │   │ 6 7 8   │        │
+          │    │    ┌────┼───┼────┐    │        │
+          │    │    │ A∩B│   │    │    │        │
+          │    │    │4  5│   │    │    │        │
+          │    └────┼────┘   └────┼────┘        │
+          │         └─────────────┘              │
+          └─────────────────────────────────────┘
+
+  ┌──────────────────────┬──────────────────────────────┐
+  │ Operation            │ Result                       │
+  ├──────────────────────┼──────────────────────────────┤
+  │ A ∪ B  (Union)       │ {1, 2, 3, 4, 5, 6, 7, 8}    │
+  │ A ∩ B  (Intersect)   │ {4, 5}                       │
+  │ A − B  (Difference)  │ {1, 2, 3}                    │
+  │ A △ B  (Sym. Diff.)  │ {1, 2, 3, 6, 7, 8}           │
+  └──────────────────────┴──────────────────────────────┘
+
+  Intersection optimization: iterate smaller set
+    len(A)=5, len(B)=5 → pick either
+    for k in small: if k in big → keep
+      4 ∈ B? ✓   5 ∈ B? ✓   → result = {4, 5}
+```
+
 ---
 
 ## Example 3: Remove Duplicates from Slice
@@ -181,6 +244,31 @@ func main() {
     fmt.Println("Unique:", removeDuplicates(input))
     // Preserves order of first appearance
 }
+```
+
+**Textual Figure — Remove Duplicates Step-by-Step:**
+
+```
+  Input: [4, 2, 7, 2, 4, 8, 7, 1, 4, 8]
+
+  Step │ Element │ In seen? │ seen (after)             │ result (after)
+  ═════╪═════════╪══════════╪══════════════════════════╪══════════════════════
+    0  │    4    │   No     │ {4}                      │ [4]
+    1  │    2    │   No     │ {4,2}                    │ [4,2]
+    2  │    7    │   No     │ {4,2,7}                  │ [4,2,7]
+    3  │    2    │   Yes ✗  │ {4,2,7}                  │ [4,2,7]        ← skip
+    4  │    4    │   Yes ✗  │ {4,2,7}                  │ [4,2,7]        ← skip
+    5  │    8    │   No     │ {4,2,7,8}                │ [4,2,7,8]
+    6  │    7    │   Yes ✗  │ {4,2,7,8}                │ [4,2,7,8]      ← skip
+    7  │    1    │   No     │ {4,2,7,8,1}              │ [4,2,7,8,1]
+    8  │    4    │   Yes ✗  │ {4,2,7,8,1}              │ [4,2,7,8,1]    ← skip
+    9  │    8    │   Yes ✗  │ {4,2,7,8,1}              │ [4,2,7,8,1]    ← skip
+
+  Output: [4, 2, 7, 8, 1]    (order of first appearance preserved)
+
+  Before: [4, 2, 7, 2, 4, 8, 7, 1, 4, 8]   len=10
+           ─  ─  ─  ×  ×  ─  ×  ─  ×  ×
+  After:  [4, 2, 7, 8, 1]                   len=5
 ```
 
 ---
@@ -224,6 +312,35 @@ func main() {
     fmt.Println("Has pair summing to 26:", hasPairWithSum(nums, 26))
     fmt.Println("Has pair summing to 50:", hasPairWithSum(nums, 50))
 }
+```
+
+**Textual Figure — Two-Sum Lookup with Hash Set:**
+
+```
+  nums = [2, 7, 11, 15],  target = 9
+
+  twoSumExists (returns indices):
+  ┌──────┬──────┬────────────┬────────────────┬─────────────────────┐
+  │  i   │ n    │ complement │ seen map       │ Action              │
+  │      │      │ (target-n) │ (val → idx)    │                     │
+  ├──────┼──────┼────────────┼────────────────┼─────────────────────┤
+  │  0   │  2   │  9-2 = 7   │ {}             │ 7 not in seen       │
+  │      │      │            │ {2:0}          │ add 2→0             │
+  ├──────┼──────┼────────────┼────────────────┼─────────────────────┤
+  │  1   │  7   │  9-7 = 2   │ {2:0}          │ 2 in seen! j=0  ✓  │
+  │      │      │            │                │ return (0, 1, true) │
+  └──────┴──────┴────────────┴────────────────┴─────────────────────┘
+
+  hasPairWithSum (target=26):
+  ┌──────┬──────┬────────────┬────────────────┬────────────────────┐
+  │  i   │  n   │  26 - n    │ seen set       │ Action             │
+  ├──────┼──────┼────────────┼────────────────┼────────────────────┤
+  │  0   │  2   │    24      │ {}             │ 24 ∉ seen → add 2  │
+  │  1   │  7   │    19      │ {2}            │ 19 ∉ seen → add 7  │
+  │  2   │ 11   │    15      │ {2,7}          │ 15 ∉ seen → add 11 │
+  │  3   │ 15   │    11      │ {2,7,11}       │ 11 ∈ seen → true ✓ │
+  └──────┴──────┴────────────┴────────────────┴────────────────────┘
+       11 + 15 = 26  ✓
 ```
 
 ---
@@ -288,6 +405,46 @@ func main() {
 }
 ```
 
+**Textual Figure — Subset, Superset, Equality, and Disjoint Checks:**
+
+```
+  A = {1, 2, 3, 4, 5}    B = {2, 3, 4}    C = {1, 2, 3, 4, 5}    D = {10, 20}
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  B ⊂ A (IsSubsetOf)?                                              │
+  │                                                                    │
+  │    A: [ 1   2   3   4   5 ]                                        │
+  │    B: [     2   3   4     ]                                        │
+  │              ✓   ✓   ✓        All B elements found in A → true     │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  A ⊃ B (IsSupersetOf)?                                            │
+  │                                                                    │
+  │    B.IsSubsetOf(A) → true     A contains all of B → true          │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  A == C (Equals)?                                                  │
+  │                                                                    │
+  │    A: {1, 2, 3, 4, 5}                                              │
+  │    C: {1, 2, 3, 4, 5}                                              │
+  │    len(A)==len(C)==5  AND  A ⊂ C → true                            │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  A ∩ D = ∅ (IsDisjoint)?                                           │
+  │                                                                    │
+  │    A: {1, 2, 3, 4, 5}                                              │
+  │    D: {10, 20}                                                     │
+  │    Iterate smaller (D):  10 ∈ A? No   20 ∈ A? No  → true          │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  Relationship diagram:
+       ┌─────────────────┐
+       │   A = C          │
+       │  ┌───────────┐   │
+       │  │     B     │   │          D = {10, 20}
+       │  │  {2,3,4}  │   │          completely separate
+       │  └───────────┘   │              (disjoint)
+       │  {1, 2, 3, 4, 5} │
+       └─────────────────┘
+```
+
 ---
 
 ## Example 6: Find First Duplicate
@@ -322,6 +479,32 @@ func main() {
     fmt.Printf("First duplicate: %d (first seen at index %d)\n", val, idx)
     fmt.Println("Distinct count:", countDistinct(arr))
 }
+```
+
+**Textual Figure — First Duplicate Detection and Distinct Count:**
+
+```
+  arr = [3, 5, 1, 4, 2, 5, 7, 1]
+
+  firstDuplicate trace (seen = map[int]int, value → first index):
+  ┌─────┬─────────┬──────────┬───────────────────────────────┐
+  │  i  │  arr[i] │ In seen? │ seen (after)                  │
+  ├─────┼─────────┼──────────┼───────────────────────────────┤
+  │  0  │    3    │   No     │ {3:0}                         │
+  │  1  │    5    │   No     │ {3:0, 5:1}                    │
+  │  2  │    1    │   No     │ {3:0, 5:1, 1:2}               │
+  │  3  │    4    │   No     │ {3:0, 5:1, 1:2, 4:3}          │
+  │  4  │    2    │   No     │ {3:0, 5:1, 1:2, 4:3, 2:4}     │
+  │  5  │    5    │  Yes ✓   │ ←── FOUND! first seen at idx 1  │
+  └─────┴─────────┴──────────┴───────────────────────────────┘
+  Result: first duplicate = 5, first seen at index 1
+
+  Index:  0   1   2   3   4   5   6   7
+         [3] [5] [1] [4] [2] [5] [7] [1]
+               ↑               ↑
+               └─── duplicate ──┘
+
+  countDistinct: put all into set → {3,5,1,4,2,7} → len = 6
 ```
 
 ---
@@ -416,6 +599,43 @@ func main() {
 }
 ```
 
+**Textual Figure — Hash Set from Scratch (Bucket Structure):**
+
+```
+  Initial capacity = 4,  hash(val) = val % cap
+
+  Add(10): hash(10)=10%4=2   Add(20): hash(20)=20%4=0   Add(30): hash(30)=30%4=2
+  Add(10): duplicate, skip    Add(40): hash(40)=40%4=0
+
+  Before resize (load=4/4=1.0 > 0.75 triggers at Add(40)):
+  ┌─────────┬───────────────────┐
+  │ Bucket  │ Contents          │
+  ├─────────┼───────────────────┤
+  │   [0]   │ [20]              │
+  │   [1]   │ []                │
+  │   [2]   │ [10, 30]          │  ← collision (chaining)
+  │   [3]   │ []                │
+  └─────────┴───────────────────┘
+
+  Resize to cap=8 (rehash all elements):
+  ┌─────────┬───────────────────┐
+  │ Bucket  │ Contents          │    hash = val % 8
+  ├─────────┼───────────────────┤
+  │   [0]   │ [40]              │    40%8=0
+  │   [1]   │ []                │
+  │   [2]   │ [10]              │    10%8=2
+  │   [3]   │ []                │
+  │   [4]   │ [20]              │    20%8=4
+  │   [5]   │ []                │
+  │   [6]   │ [30]              │    30%8=6
+  │   [7]   │ []                │
+  └─────────┴───────────────────┘
+  No collisions after resize!
+
+  Then Add(20): dup, skip.  Add(50): hash(50)=50%8=2 → bucket[2]=[10,50]
+  Final size = 5  (10, 20, 30, 40, 50)
+```
+
 ---
 
 ## Example 8: Longest Consecutive Sequence
@@ -467,6 +687,36 @@ func main() {
         fmt.Printf("nums=%v → longest=%d\n", nums, longestConsecutive(nums))
     }
 }
+```
+
+**Textual Figure — Longest Consecutive Sequence (nums = [100,4,200,1,3,2]):**
+
+```
+  Step 1: Build set from array
+  set = {100, 4, 200, 1, 3, 2}
+
+  Step 2: Find sequence starts (n where n-1 is NOT in set)
+  ┌─────┬─────────┬─────────────┬──────────────┐
+  │  n  │  n-1    │  n-1 in set? │ Is start?    │
+  ├─────┼─────────┼─────────────┼──────────────┤
+  │ 100 │  99     │     No       │  Yes ✓       │
+  │   4 │   3     │     Yes      │  No (skip)   │
+  │ 200 │ 199     │     No       │  Yes ✓       │
+  │   1 │   0     │     No       │  Yes ✓       │
+  │   3 │   2     │     Yes      │  No (skip)   │
+  │   2 │   1     │     Yes      │  No (skip)   │
+  └─────┴─────────┴─────────────┴──────────────┘
+
+  Step 3: Extend sequences from each start
+    Start at 100: 100 → 101? No   → length = 1
+    Start at 200: 200 → 201? No   → length = 1
+    Start at 1:   1 → 2 → 3 → 4 → 5? No  → length = 4  ← best!
+
+    1 ──── 2 ──── 3 ──── 4
+    └────────────────────┘
+         length = 4
+
+  Result: 4
 ```
 
 ---
@@ -539,6 +789,36 @@ func main() {
 }
 ```
 
+**Textual Figure — Intersection of Multiple Sets:**
+
+```
+  A = {1, 2, 3, 4, 5, 6}    B = {2, 4, 6, 8, 10}
+  C = {4, 5, 6, 7, 8}       D = {1, 4, 6, 9}
+
+  Step 1: Find smallest set (optimize iteration)
+    len(A)=6, len(B)=5, len(C)=5, len(D)=4  → smallest = D
+
+  Step 2: For each element in D, check membership in A, B, C
+  ┌────────┬───────┬───────┬───────┬───────────┐
+  │ D elem │ in A? │ in B? │ in C? │ In result? │
+  ├────────┼───────┼───────┼───────┼───────────┤
+  │   1    │  ✓    │  ✗    │  —   │     ✗      │  ← short-circuit at B
+  │   4    │  ✓    │  ✓    │  ✓   │     ✓      │
+  │   6    │  ✓    │  ✓    │  ✓   │     ✓      │
+  │   9    │  ✗    │  —   │  —   │     ✗      │  ← short-circuit at A
+  └────────┴───────┴───────┴───────┴───────────┘
+
+       A           B
+  {1,2,3,4,5,6}  {2,4,6,8,10}
+       │  │         │  │
+       4  6  ━━━━━  4  6     ← common
+       │  │         │  │
+  {4,5,6,7,8}    {1,4,6,9}
+       C           D
+
+  Result: {4, 6}
+```
+
 ---
 
 ## Example 10: Happy Number (Cycle Detection with Set)
@@ -589,6 +869,36 @@ func main() {
     }
     fmt.Println("  1 → Happy!")
 }
+```
+
+**Textual Figure — Happy Number Cycle Detection (n=19):**
+
+```
+  digitSquareSum: sum of squares of each digit
+
+  Trace for n = 19 (happy number):
+
+  19 ──→ 1²+9² = 1+81 = 82
+  82 ──→ 8²+2² = 64+4  = 68
+  68 ──→ 6²+8² = 36+64 = 100
+  100 ─→ 1²+0²+0² = 1    ← reached 1, HAPPY!
+
+  seen set at each step:
+    {}           ── check 19 → not in seen, add 19
+    {19}         ── check 82 → not in seen, add 82
+    {19,82}      ── check 68 → not in seen, add 68
+    {19,82,68}   ── check 100 → not in seen, add 100
+    {19,82,68,100} ── next = 1, loop ends ✓
+
+  Trace for n = 2 (NOT happy — enters cycle):
+
+    2 → 4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 → 4
+                                                    │
+    ┌────────────────────────── cycle! ──────────┘
+    │   4 → 16 → 37 → 58 → 89 → 145 → 42 → 20 → 4 ...
+    └──── seen[4] already exists → return false
+
+  Happy numbers 1–50: 1 7 10 13 19 23 28 31 32 44 49
 ```
 
 ---
@@ -661,6 +971,37 @@ func main() {
     floats.Remove(2.2)
     fmt.Println("Float set:", floats.Values())
 }
+```
+
+**Textual Figure — Generic Set with Type Parameters:**
+
+```
+  Go Generics: Set[T comparable] = map[T]struct{}
+
+  String set operations:
+  ┌─────────────────────────────────────────────────────────┐
+  │  langs  = Set[string]{ "Go", "Rust", "Python" }    │
+  │  others = Set[string]{ "Go", "Java", "C++" }        │
+  ├─────────────────────────────────────────────────────────┤
+  │  Union:     { "Go", "Rust", "Python", "Java", "C++" } │
+  │  Intersect: { "Go" }                                  │
+  └─────────────────────────────────────────────────────────┘
+
+  Float set operations:
+  ┌──────────────────────────────────────────────┐
+  │  float set = Set[float64]{ 1.1, 2.2, 3.3 }    │
+  │  Add(4.4)  →  { 1.1, 2.2, 3.3, 4.4 }          │
+  │  Remove(2.2) → { 1.1, 3.3, 4.4 }               │
+  └──────────────────────────────────────────────┘
+
+  Type parameter [T comparable] allows:
+    ┌──────────┬────────────────┬───────────────────────┐
+    │   T      │   Concrete Type │   Backed by             │
+    ├──────────┼────────────────┼───────────────────────┤
+    │ string   │ Set[string]     │ map[string]struct{}     │
+    │ int      │ Set[int]        │ map[int]struct{}        │
+    │ float64  │ Set[float64]    │ map[float64]struct{}    │
+    └──────────┴────────────────┴───────────────────────┘
 ```
 
 ---

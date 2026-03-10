@@ -564,6 +564,351 @@ func main() {
 
 ---
 
+## Performance Pitfalls — Deep Dive
+
+**Tutorial: Why Reflection Is Slow and Common Traps**
+
+Reflection is slow for several reasons: interface boxing/unboxing, dynamic dispatch instead of inlined calls, type safety checks at runtime, and allocation of `reflect.Value` wrappers. Understanding *where* the overhead comes from helps decide when reflection is acceptable.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Why Reflection Is Slow — The Cost Breakdown            │
+│                                                          │
+│  1. Interface Boxing                                     │
+│     reflect.ValueOf(42) wraps int in an interface{},    │
+│     then into reflect.Value — 2 layers of indirection    │
+│                                                          │
+│  2. No Inlining                                         │
+│     Compiler can't inline reflected calls — must go      │
+│     through dynamic dispatch every time                  │
+│                                                          │
+│  3. Runtime Type Checks                                 │
+│     Every Set/Get operation validates types at runtime   │
+│     → branching overhead on every access                 │
+│                                                          │
+│  4. Heap Allocations                                    │
+│     reflect.ValueOf often escapes to heap               │
+│     reflect.Value.Call allocates []reflect.Value for args│
+│                                                          │
+│  5. Cache Misses                                        │
+│     Indirect access patterns are unfriendly to CPU cache │
+│                                                          │
+│  Benchmark Comparison (approximate):                     │
+│  ┌──────────────────────────┬─────────────────────────┐  │
+│  │ Operation                │ Relative Speed          │  │
+│  ├──────────────────────────┼─────────────────────────┤  │
+│  │ Direct field access      │ ~1 ns    (baseline)     │  │
+│  │ reflect.ValueOf          │ ~15 ns   (15x)          │  │
+│  │ reflect.Value.Field      │ ~25 ns   (25x)          │  │
+│  │ reflect.Value.Set        │ ~50 ns   (50x)          │  │
+│  │ reflect.Value.Call       │ ~200 ns  (200x)         │  │
+│  │ reflect.Value.MethodByName│ ~300 ns (300x)         │  │
+│  └──────────────────────────┴─────────────────────────┘  │
+│                                                          │
+│  Common Pitfalls:                                       │
+│  • Calling reflect.TypeOf in a loop (cache it!)         │
+│  • Calling MethodByName repeatedly (resolve once)       │
+│  • Using DeepEqual in production code (only tests)      │
+│  • Not caching struct field indices                     │
+└──────────────────────────────────────────────────────────┘
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"time"
+)
+
+type User struct {
+	Name  string
+	Email string
+	Age   int
+}
+
+func main() {
+	u := User{Name: "Alice", Email: "alice@test.com", Age: 30}
+	const N = 1_000_000
+
+	// ❌ SLOW — reflect.TypeOf inside loop
+	start := time.Now()
+	for i := 0; i < N; i++ {
+		t := reflect.TypeOf(u) // recalculated every iteration
+		_ = t.NumField()
+	}
+	slowDur := time.Since(start)
+
+	// ✅ FAST — TypeOf cached outside loop
+	start = time.Now()
+	t := reflect.TypeOf(u) // cache it!
+	for i := 0; i < N; i++ {
+		_ = t.NumField()
+	}
+	fastDur := time.Since(start)
+
+	fmt.Printf("TypeOf in loop:      %v\n", slowDur)
+	fmt.Printf("TypeOf cached:       %v\n", fastDur)
+
+	// ❌ SLOW — MethodByName on every call
+	start = time.Now()
+	v := reflect.ValueOf(u)
+	for i := 0; i < N; i++ {
+		field := v.FieldByName("Name") // string lookup every time
+		_ = field.String()
+	}
+	byNameDur := time.Since(start)
+
+	// ✅ FAST — resolve field index once, use Field(i)
+	start = time.Now()
+	nameIdx := -1
+	for i := 0; i < t.NumField(); i++ {
+		if t.Field(i).Name == "Name" {
+			nameIdx = i
+			break
+		}
+	}
+	for i := 0; i < N; i++ {
+		field := v.Field(nameIdx) // direct index access
+		_ = field.String()
+	}
+	byIdxDur := time.Since(start)
+
+	fmt.Printf("FieldByName:         %v\n", byNameDur)
+	fmt.Printf("Field(index):        %v\n", byIdxDur)
+}
+```
+
+### Common Panic Scenarios
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type Config struct {
+	Host string
+	port int // unexported
+}
+
+func main() {
+	// Panic 1: Setting an unsettable value
+	x := 42
+	v := reflect.ValueOf(x) // NOT a pointer — copy
+	fmt.Println("CanSet:", v.CanSet()) // false
+	// v.SetInt(100) ← PANIC: reflect.Value.SetInt using unaddressable value
+
+	// Fix: pass pointer
+	vp := reflect.ValueOf(&x).Elem()
+	fmt.Println("CanSet (ptr):", vp.CanSet()) // true
+	vp.SetInt(100)
+	fmt.Println("x:", x) // 100
+
+	// Panic 2: Setting unexported fields
+	c := Config{Host: "localhost", port: 8080}
+	cv := reflect.ValueOf(&c).Elem()
+	fmt.Println("Host CanSet:", cv.FieldByName("Host").CanSet()) // true
+	fmt.Println("port CanSet:", cv.FieldByName("port").CanSet()) // false
+	// cv.FieldByName("port").SetInt(9090) ← PANIC: unexported field
+
+	// Panic 3: Wrong type assertion
+	sv := reflect.ValueOf("hello")
+	// sv.Int() ← PANIC: call of reflect.Value.Int on string Value
+	fmt.Println("Correct:", sv.String()) // hello
+
+	// Panic 4: Call with wrong arg count
+	fn := reflect.ValueOf(func(a, b int) int { return a + b })
+	// fn.Call([]reflect.Value{reflect.ValueOf(1)}) ← PANIC: wrong number of args
+	result := fn.Call([]reflect.Value{reflect.ValueOf(1), reflect.ValueOf(2)})
+	fmt.Println("add:", result[0].Int()) // 3
+}
+```
+
+---
+
+## Reflection vs Code Generation vs Generics
+
+**Tutorial: Three Approaches to Generic-Like Code in Go**
+
+Go has three ways to write code that works across types: reflection, code generation, and generics (Go 1.18+). Each has distinct trade-offs in safety, performance, and developer experience.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Reflection vs Code Generation vs Generics              │
+│                                                          │
+│  ┌─────────────┬──────────┬──────────────┬────────────┐  │
+│  │ Aspect      │Reflection│ Code Gen     │ Generics   │  │
+│  ├─────────────┼──────────┼──────────────┼────────────┤  │
+│  │ Type safety │ Runtime  │ Compile-time │ Compile    │  │
+│  │ Speed       │ Slow     │ Fast         │ Fast       │  │
+│  │ Flexibility │ Maximum  │ Medium       │ Constrained│  │
+│  │ Boilerplate │ Low      │ Generated    │ Low        │  │
+│  │ Debug       │ Hard     │ Easy (source)│ Medium     │  │
+│  │ Build step  │ None     │ go generate  │ None       │  │
+│  │ Error msgs  │ Panics   │ Compile errs │ Compile    │  │
+│  │ Introspect  │ Yes      │ No           │ No         │  │
+│  └─────────────┴──────────┴──────────────┴────────────┘  │
+│                                                          │
+│  Decision tree:                                         │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │ Need to work with multiple types?                 │   │
+│  │   ├─ No → Use concrete types                      │   │
+│  │   └─ Yes ↓                                        │   │
+│  │ Do all types share same algorithm?                │   │
+│  │   ├─ Yes → GENERICS (type-safe, zero overhead)    │   │
+│  │   └─ No ↓                                         │   │
+│  │ Do you need runtime type introspection?           │   │
+│  │   ├─ Yes → REFLECTION (struct tags, dynamic calls)│   │
+│  │   └─ No ↓                                         │   │
+│  │ Is it per-type boilerplate?                       │   │
+│  │   └─ Yes → CODE GENERATION (stringer, mockgen)    │   │
+│  └───────────────────────────────────────────────────┘   │
+│                                                          │
+│  Popular Go code generators:                            │
+│  • stringer       — String() for enum types             │
+│  • mockgen        — mock interfaces for testing         │
+│  • protoc-gen-go  — protobuf message types              │
+│  • sqlc           — type-safe SQL queries               │
+│  • ent            — entity framework                    │
+│  • wire           — compile-time dependency injection    │
+└──────────────────────────────────────────────────────────┘
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+type Product struct {
+	Name  string
+	Price float64
+}
+
+// ═══════════════════════════════════════════════════
+// Approach 1: REFLECTION — works with any struct
+// ═══════════════════════════════════════════════════
+func PrintFieldsReflect(v any) {
+	val := reflect.ValueOf(v)
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		fmt.Printf("  %s = %v\n", typ.Field(i).Name, val.Field(i))
+	}
+}
+
+// ═══════════════════════════════════════════════════
+// Approach 2: CODE GENERATION (conceptual — would be auto-generated)
+// ═══════════════════════════════════════════════════
+// go:generate would produce this for each type:
+func PrintFieldsProductGenerated(p Product) {
+	fmt.Printf("  Name = %s\n", p.Name)
+	fmt.Printf("  Price = %v\n", p.Price)
+}
+
+// ═══════════════════════════════════════════════════
+// Approach 3: GENERICS — type-safe but can't introspect fields
+// ═══════════════════════════════════════════════════
+type Stringer interface {
+	String() string
+}
+
+func PrintAll[T fmt.Stringer](items []T) {
+	for _, item := range items {
+		fmt.Println(item.String()) // type-safe, no reflection
+	}
+}
+
+func main() {
+	p := Product{Name: "Widget", Price: 9.99}
+
+	fmt.Println("Reflection (any struct):")
+	PrintFieldsReflect(p) // flexible, slow
+
+	fmt.Println("Code Gen (specific type):")
+	PrintFieldsProductGenerated(p) // fast, but needs generation per type
+
+	// Generics can't introspect struct fields — but great for algorithms
+	// PrintAll([]Product{p}) ← won't work unless Product implements Stringer
+}
+```
+
+---
+
+## Caching Reflection Results
+
+**Tutorial: Amortize Reflection Cost by Caching Type Metadata**
+
+The most effective optimization for reflection-heavy code is caching type metadata once and reusing it. Libraries like `encoding/json` cache struct field metadata internally. You can do the same with a `sync.Map` or `sync.Once` pattern.
+
+```go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"sync"
+)
+
+// Cached struct metadata
+type fieldInfo struct {
+	Index   int
+	Name    string
+	JSONTag string
+}
+
+var typeCache sync.Map // map[reflect.Type][]fieldInfo
+
+func getFields(t reflect.Type) []fieldInfo {
+	if cached, ok := typeCache.Load(t); ok {
+		return cached.([]fieldInfo)
+	}
+
+	var fields []fieldInfo
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if !f.IsExported() {
+			continue
+		}
+		fields = append(fields, fieldInfo{
+			Index:   i,
+			Name:    f.Name,
+			JSONTag: f.Tag.Get("json"),
+		})
+	}
+
+	typeCache.Store(t, fields)
+	return fields
+}
+
+type User struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Age   int    `json:"age"`
+}
+
+func main() {
+	t := reflect.TypeOf(User{})
+
+	// First call: computes and caches
+	fields := getFields(t)
+	for _, f := range fields {
+		fmt.Printf("Field %d: %s (json:%q)\n", f.Index, f.Name, f.JSONTag)
+	}
+
+	// Subsequent calls: returns from cache (fast)
+	fields2 := getFields(t)
+	fmt.Printf("Cached: %d fields\n", len(fields2))
+}
+```
+
+---
+
 ## Interview Questions
 
 1. **What is reflection in Go?**
@@ -595,3 +940,15 @@ func main() {
 
 10. **Can you call a function dynamically using reflection?**
     - Yes. `reflect.Value.Call(args)` where args is `[]reflect.Value`. The function must be wrapped in a `reflect.Value` first via `reflect.ValueOf(fn)`.
+
+11. **What are the common panic scenarios in reflection?**
+    - Setting an unaddressable value (not from pointer), setting unexported fields, calling `.Int()` on a string Value, passing wrong number of args to `Call()`, and type mismatches on `Set()`. Always check `CanSet()`, `Kind()`, and arg count before operating.
+
+12. **How do you optimize reflection-heavy code?**
+    - Cache `reflect.Type` and field indices outside loops. Use `Field(index)` instead of `FieldByName(string)`. Cache struct metadata in a `sync.Map`. Avoid `reflect.DeepEqual` in production — use it only in tests. Pre-resolve method references.
+
+13. **Reflection vs code generation vs generics — when to use which?**
+    - **Generics** when the algorithm is the same across types (Sort, Map, Contains). **Code generation** for per-type boilerplate (stringer, mockgen, protobuf). **Reflection** when you need runtime introspection of arbitrary types (JSON encoding, ORM, struct tag parsing). Prefer generics > codegen > reflection.
+
+14. **What is the performance cost of reflection?**
+    - `reflect.ValueOf`: ~15x slower than direct access. `Field()`: ~25x. `Set()`: ~50x. `Call()`: ~200x. `MethodByName`: ~300x. Caused by interface boxing, no inlining, runtime type checks, and heap allocations. Acceptable for initialization/config, unacceptable for hot loops.

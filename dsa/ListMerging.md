@@ -79,6 +79,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Merge two sorted lists (iterative):
+
+l1: ┌───┐   ┌───┐   ┌───┐   ┌───┐
+    │ 1 │──→│ 3 │──→│ 5 │──→│ 7 │──→ nil
+    └───┘   └───┘   └───┘   └───┘
+
+l2: ┌───┐   ┌───┐   ┌───┐   ┌───┐
+    │ 2 │──→│ 4 │──→│ 6 │──→│ 8 │──→ nil
+    └───┘   └───┘   └───┘   └───┘
+
+Step-by-step (tail starts at dummy):
+  1≤2 → pick 1   D──→[1]
+  3>2  → pick 2   D──→[1]──→[2]
+  3≤4 → pick 3   D──→[1]──→[2]──→[3]
+  5>4  → pick 4   ...──→[3]──→[4]
+  5≤6 → pick 5   ...──→[4]──→[5]
+  7>6  → pick 6   ...──→[5]──→[6]
+  7≤8 → pick 7   ...──→[6]──→[7]
+  l1=nil → attach [8]
+
+Result:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │─→│ 2 │─→│ 3 │─→│ 4 │─→│ 5 │─→│ 6 │─→│ 7 │─→│ 8 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+```
+
 ---
 
 ## Example 2: Merge Two Sorted Lists (Recursive)
@@ -132,6 +160,34 @@ func main() {
     printList(mergeTwoListsRec(l1, l2))
     // 1 → 1 → 2 → 3 → 4 → 4 → nil
 }
+```
+
+**Textual Figure:**
+```
+Recursive merge of l1=[1,2,4] and l2=[1,3,4]:
+
+Call tree (pick smaller head, recurse on rest):
+  merge(1→2→4, 1→3→4)
+    1≤1 → pick l1(1), l1.Next = merge(2→4, 1→3→4)
+    │ merge(2→4, 1→3→4)
+    │   2>1 → pick l2(1), l2.Next = merge(2→4, 3→4)
+    │   │ merge(2→4, 3→4)
+    │   │   2≤3 → pick l1(2), l1.Next = merge(4, 3→4)
+    │   │   │ merge(4, 3→4)
+    │   │   │   4>3 → pick l2(3), l2.Next = merge(4, 4)
+    │   │   │   │ merge(4, 4)
+    │   │   │   │   4≤4 → pick l1(4), l1.Next = merge(nil, 4)
+    │   │   │   │   │ merge(nil, 4) → return 4
+    │   │   │   │   return 4→4
+    │   │   │   return 3→4→4
+    │   │   return 2→3→4→4
+    │   return 1→2→3→4→4
+    return 1→1→2→3→4→4
+
+Result:
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │─→│ 1 │─→│ 2 │─→│ 3 │─→│ 4 │─→│ 4 │─→nil
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
 ```
 
 ---
@@ -218,6 +274,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Merge K=3 sorted lists using Min-Heap:
+
+  List 0: [1]─→[4]─→[7]
+  List 1: [2]─→[5]─→[8]
+  List 2: [3]─→[6]─→[9]
+
+Initialize heap with heads:
+  Heap: [1, 2, 3]
+
+  Pop 1, push 4  → Heap: [2, 3, 4]  Result: D──→[1]
+  Pop 2, push 5  → Heap: [3, 4, 5]  Result: ...──→[2]
+  Pop 3, push 6  → Heap: [4, 5, 6]  Result: ...──→[3]
+  Pop 4, push 7  → Heap: [5, 6, 7]  Result: ...──→[4]
+  Pop 5, push 8  → Heap: [6, 7, 8]  Result: ...──→[5]
+  Pop 6, push 9  → Heap: [7, 8, 9]  Result: ...──→[6]
+  Pop 7, nil     → Heap: [8, 9]     Result: ...──→[7]
+  Pop 8, nil     → Heap: [9]        Result: ...──→[8]
+  Pop 9, nil     → Heap: []         Result: ...──→[9]
+
+Result:
+  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+  │ 1 │→│ 2 │→│ 3 │→│ 4 │→│ 5 │→│ 6 │→│ 7 │→│ 8 │→│ 9 │→nil
+  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘
+```
+
 ---
 
 ## Example 4: Merge K Sorted Lists (Divide and Conquer)
@@ -297,6 +380,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Merge K=4 sorted lists (Divide & Conquer):
+
+  List 0: [1,5,9]   List 1: [2,6]   List 2: [3,7,10]   List 3: [4,8]
+
+  Recursive split:
+                    mergeKLists([0..3])
+                   /                    \
+       mergeKLists([0,1])          mergeKLists([2,3])
+        /            \               /            \
+    list[0]       list[1]       list[2]        list[3]
+   [1,5,9]        [2,6]       [3,7,10]        [4,8]
+
+  Merge upward:
+    merge([1,5,9], [2,6])    → [1,2,5,6,9]
+    merge([3,7,10], [4,8])   → [3,4,7,8,10]
+    merge([1,2,5,6,9], [3,4,7,8,10]) → [1,2,3,4,5,6,7,8,9,10]
+
+Result:
+  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌────┐
+  │ 1 │→│ 2 │→│ 3 │→│ 4 │→│ 5 │→│ 6 │→│ 7 │→│ 8 │→│ 9 │→│ 10 │→nil
+  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └────┘
+```
+
 ---
 
 ## Example 5: Merge in Place (No Extra Nodes)
@@ -373,6 +481,34 @@ func main() {
     printList(merged)
     fmt.Printf("Total nodes: before=%d, after=%d (same!)\n", count, mergedCount)
 }
+```
+
+**Textual Figure:**
+```
+Merge in place (reuse existing nodes, no allocation):
+
+l1: ┌───┐   ┌───┐   ┌───┐
+    │ 1 │──→│ 3 │──→│ 5 │──→ nil
+    └───┘   └───┘   └───┘
+
+l2: ┌───┐   ┌───┐   ┌───┐
+    │ 2 │──→│ 4 │──→│ 6 │──→ nil
+    └───┘   └───┘   └───┘
+
+Pointer rewiring (same 6 nodes, no new allocations):
+  tail = dummy
+  1≤2 → tail.Next = l1[1]  l1 advances
+  3>2  → tail.Next = l2[2]  l2 advances
+  3≤4 → tail.Next = l1[3]  l1 advances
+  5>4  → tail.Next = l2[4]  l2 advances
+  5≤6 → tail.Next = l1[5]  l1 advances (nil)
+  attach remaining l2[6]
+
+Result (same nodes, relinked):
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→│ 6 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+  Total nodes: before=6, after=6 (same!)
 ```
 
 ---
@@ -462,6 +598,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Merge sort linked list [4, 2, 1, 3]:
+
+Split phase (find middle with slow/fast, cut):
+                [4,2,1,3]
+               /          \
+          [4,2]            [1,3]
+         /     \          /     \
+       [4]     [2]      [1]     [3]
+
+Merge phase (merge sorted halves):
+       [4]     [2]      [1]     [3]
+         \     /          \     /
+          [2,4]            [1,3]
+               \          /
+                [1,2,3,4]
+
+Result:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→ nil
+  └───┘   └───┘   └───┘   └───┘
+```
+
 ---
 
 ## Example 7: Interleave / Zip Merge
@@ -539,6 +699,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Interleave (zip merge) two lists:
+
+l1: ┌───┐   ┌───┐   ┌───┐
+    │ 1 │──→│ 3 │──→│ 5 │──→ nil
+    └───┘   └───┘   └───┘
+
+l2: ┌───┐   ┌───┐   ┌───┐
+    │ 2 │──→│ 4 │──→│ 6 │──→ nil
+    └───┘   └───┘   └───┘
+
+Alternating picks (turn toggles l1/l2):
+  turn=l1 → pick 1   D──→[1]
+  turn=l2 → pick 2   D──→[1]──→[2]
+  turn=l1 → pick 3   ...──→[2]──→[3]
+  turn=l2 → pick 4   ...──→[3]──→[4]
+  turn=l1 → pick 5   ...──→[4]──→[5]
+  turn=l2 → pick 6   ...──→[5]──→[6]
+
+Result:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→│ 6 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+  l1       l2       l1       l2       l1       l2
+```
+
 ---
 
 ## Example 8: Merge Two Lists at Alternating Positions
@@ -603,6 +790,37 @@ func main() {
     fmt.Print("Remaining: ")
     printList(remaining)
 }
+```
+
+**Textual Figure:**
+```
+Merge at alternating positions:
+  l1: [1]──→[2]──→[3]──→nil
+  l2: [10]─→[20]─→[30]─→[40]─→[50]─→nil
+
+Step 1: curr1=[1], curr2=[10]
+  [1].Next = [10],  [10].Next = [2]  (was [1].Next)
+  ┌───┐   ┌────┐   ┌───┐
+  │ 1 │──→│ 10 │──→│ 2 │──→...
+  └───┘   └────┘   └───┘
+
+Step 2: curr1=[2], curr2=[20]
+  [2].Next = [20],  [20].Next = [3]
+
+Step 3: curr1=[3], curr2=[30]
+  [3].Next = [30],  [30].Next = nil (was [3].Next)
+  curr1 = nil → stop!
+  curr2 = [40] → remaining
+
+Merged:
+  ┌───┐  ┌────┐  ┌───┐  ┌────┐  ┌───┐  ┌────┐
+  │ 1 │─→│ 10 │─→│ 2 │─→│ 20 │─→│ 3 │─→│ 30 │─→nil
+  └───┘  └────┘  └───┘  └────┘  └───┘  └────┘
+
+Remaining:
+  ┌────┐  ┌────┐
+  │ 40 │─→│ 50 │─→nil
+  └────┘  └────┘
 ```
 
 ---
@@ -698,6 +916,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Union and Intersection of sorted lists:
+
+  l1: ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+      │ 1 │─→│ 2 │─→│ 3 │─→│ 5 │─→│ 7 │─→nil
+      └───┘  └───┘  └───┘  └───┘  └───┘
+
+  l2: ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+      │ 2 │─→│ 4 │─→│ 5 │─→│ 6 │─→│ 7 │─→│ 8 │─→nil
+      └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+
+Union (all unique values):
+  1<2 → add 1 | 2==2 → add 2 | 3<4 → add 3 | 4<5 → add 4
+  5==5 → add 5 | 6<7 → add 6 | 7==7 → add 7 | add remaining [8]
+  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+  │ 1 │→│ 2 │→│ 3 │→│ 4 │→│ 5 │→│ 6 │→│ 7 │→│ 8 │→nil
+  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘
+
+Intersection (only common values):
+  1<2 skip l1 | 2==2 add 2 | 3<4 skip l1 | 5==5 add 5 | 7==7 add 7
+  ┌───┐   ┌───┐   ┌───┐
+  │ 2 │──→│ 5 │──→│ 7 │──→ nil
+  └───┘   └───┘   └───┘
+```
+
 ---
 
 ## Example 10: Merge K Sorted Lists (Iterative Pairwise)
@@ -785,6 +1029,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Merge K=5 sorted lists (Iterative Pairwise):
+
+  L0: [1,10,20]  L1: [4,11,13]  L2: [3,8,9]  L3: [2,6]  L4: [5,7,14,15]
+
+Round 1 — pair & merge:
+  merge(L0, L1) → [1,4,10,11,13,20]
+  merge(L2, L3) → [2,3,6,8,9]
+  L4 unpaired   → [5,7,14,15]
+  → 3 lists remain
+
+Round 2 — pair & merge:
+  merge([1,4,10,11,13,20], [2,3,6,8,9]) → [1,2,3,4,6,8,9,10,11,13,20]
+  [5,7,14,15] unpaired
+  → 2 lists remain
+
+Round 3 — final merge:
+  merge([1,2,3,4,6,8,9,10,11,13,20], [5,7,14,15])
+
+Result:
+  1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 13 → 14 → 15 → 20
+
+  Tournament bracket:
+    L0  L1    L2  L3    L4
+     \ /       \ /       |
+    merge     merge      |
+       \       /         |
+        merge            |
+            \           /
+             final merge
+```
+
 ---
 
 ## Example 11: Find Intersection Point of Two Lists
@@ -841,6 +1118,34 @@ func main() {
     // B traverses: lenB + lenA - common
     // They travel the same distance → meet at intersection or nil
 }
+```
+
+**Textual Figure:**
+```
+Find intersection point of two Y-shaped lists:
+
+  List A: [1]──→[3]──┐
+                     │
+                     └──→[7]──→[8]──→nil     (shared tail)
+                     ┌──┘
+  List B: [2]─→[4]─→[5]
+
+Two-pointer technique:
+  a starts at headA, b starts at headB
+  When a reaches nil, redirect to headB
+  When b reaches nil, redirect to headA
+
+  Pointer a: 1 → 3 → 7 → 8 → nil → 2 → 4 → 5 → [7]
+  Pointer b: 2 → 4 → 5 → 7 → 8 → nil → 1 → 3 → [7]
+                                                  ↑
+                                       a == b at node 7!
+
+  Why it works:
+    a travels: lenA + lenB - common = 2 + 3 - 2 = 3 extra
+    b travels: lenB + lenA - common = 3 + 2 - 2 = 3 extra
+    Same total distance → they meet at intersection!
+
+  Intersection at node 7 ✓
 ```
 
 ---

@@ -69,6 +69,27 @@ func main() {
 }
 ```
 
+**Textual Figure: Evaluate Postfix (RPN)**
+
+```
+Tokens: ["2", "1", "+", "3", "*"]   → (2+1)*3 = 9
+
+Step-by-step stack trace:
+
+  Token   Action           Stack (top→right)
+  ─────   ──────           ───────────────
+  "2"     push 2           │ 2 │
+  "1"     push 1           │ 2 │ 1 │
+  "+"     pop 1,2 → 2+1=3  │ 3 │
+  "3"     push 3           │ 3 │ 3 │
+  "*"     pop 3,3 → 3*3=9  │ 9 │
+
+  Result: stack[0] = 9
+
+  Key: operands push, operators pop two and push result.
+  Order matters: a=second-from-top, b=top → a op b
+```
+
 ---
 
 ## Example 2: Evaluate Prefix Expression
@@ -121,6 +142,29 @@ func main() {
     // * + 2 3 - 7 4 → (2+3) * (7-4) = 15
     fmt.Println(evalPrefix([]string{"*", "+", "2", "3", "-", "7", "4"}))
 }
+```
+
+**Textual Figure: Evaluate Prefix Expression**
+
+```
+Tokens: ["+", "3", "*", "4", "2"]   → 3 + (4*2) = 11
+
+Scan RIGHT to LEFT:
+
+  Token   Action           Stack (top→right)
+  ─────   ──────           ───────────────
+  "2"     push 2           │ 2 │
+  "4"     push 4           │ 2 │ 4 │
+  "*"     pop 4,2 → 4*2=8  │ 8 │
+  "3"     push 3           │ 8 │ 3 │
+  "+"     pop 3,8 → 3+8=11 │ 11 │
+
+  Result: 11
+
+  Key difference from postfix:
+  • Scan right-to-left
+  • a=top, b=second  (not reversed like postfix)
+  • Compute a op b
 ```
 
 ---
@@ -225,6 +269,40 @@ func main() {
     // 3 + 4 * 2 / (1 - 5) → 3 4 2 * 1 5 - / +
     // 2 ^ 3 ^ 2           → 2 3 2 ^ ^  (right-associative)
 }
+```
+
+**Textual Figure: Infix to Postfix (Shunting-Yard)**
+
+```
+Expression: "3 + 4 * 2"
+
+  Token  Output Queue     Operator Stack    Rule
+  ─────  ────────────  ──────────────  ────
+  3      [3]              []                number→output
+  +      [3]              [+]               push op
+  4      [3, 4]           [+]               number→output
+  *      [3, 4]           [+, *]            *>+ prec, push
+  2      [3, 4, 2]        [+, *]            number→output
+  END    [3, 4, 2, *, +]  []                flush ops
+
+  Result: "3 4 2 * +"
+
+Expression: "(3 + 4) * 2"
+
+  Token  Output Queue       Operator Stack
+  (      []                 [(]
+  3      [3]                [(]
+  +      [3]                [(, +]
+  4      [3, 4]             [(, +]
+  )      [3, 4, +]          []           pop until '('
+  *      [3, 4, +]          [*]
+  2      [3, 4, +, 2]       [*]
+  END    [3, 4, +, 2, *]    []
+
+  Result: "3 4 + 2 *"
+
+  Precedence: ^(3) > */(2) > +-(1)
+  Higher-precedence ops pop lower ones from stack.
 ```
 
 ---
@@ -333,6 +411,35 @@ func main() {
 }
 ```
 
+**Textual Figure: Infix to Prefix Conversion**
+
+```
+Expression: "(3 + 4) * 2"
+
+Algorithm: Reverse → Infix-to-Postfix → Reverse result
+
+  Step 1: Reverse input (swap parens):
+    "(3 + 4) * 2"  →  "2 * (4 + 3)"
+
+  Step 2: Apply Shunting-Yard to reversed:
+    Token  Output    OpStack
+    2      [2]       []
+    *      [2]       [*]
+    (      [2]       [*, (]
+    4      [2,4]     [*, (]
+    +      [2,4]     [*, (, +]
+    3      [2,4,3]   [*, (, +]
+    )      [2,4,3,+] [*]        pop until '('
+    END    [2,4,3,+,*] []
+
+  Step 3: Reverse result:
+    [2,4,3,+,*]  →  [*, +, 3, 4, 2]
+
+  Prefix: "* + 3 4 2"
+
+  Verification:  * (+ 3 4) 2  =  (3+4)*2  =  7*2  = 14  ✓
+```
+
 ---
 
 ## Example 5: Direct Infix Evaluation (with Precedence)
@@ -438,6 +545,39 @@ func main() {
 }
 ```
 
+**Textual Figure: Direct Infix Evaluation (Two-Stack)**
+
+```
+Expression: "3 + 4 * 2"   (expects: 11)
+
+  Token  numStack       opStack     Action
+  ─────  ────────       ───────     ──────
+  3      [3]            []          push num
+  +      [3]            [+]         push op
+  4      [3, 4]         [+]         push num
+  *      [3, 4]         [+, *]      prec(*)>prec(+), push
+  2      [3, 4, 2]      [+, *]      push num
+  END    [3, 4, 2]      [+, *]      flush:
+         apply *: 4*2=8 → [3, 8]    [+]
+         apply +: 3+8=11→ [11]      []
+
+  Result: 11
+
+  Expression: "(3 + 4) * 2"  (expects: 14)
+
+  Token  numStack       opStack
+  (      []             [(]
+  3      [3]            [(]
+  +      [3]            [(, +]
+  4      [3, 4]         [(, +]
+  )      apply +: 3+4=7 → [7]       []    pop until '('
+  *      [7]            [*]
+  2      [7, 2]         [*]
+  END    apply *: 7*2=14→ [14]      []
+
+  Result: 14
+```
+
 ---
 
 ## Example 6: Basic Calculator (LeetCode 224)
@@ -505,6 +645,36 @@ func main() {
 }
 ```
 
+**Textual Figure: Basic Calculator (Sign-Stack Approach)**
+
+```
+Expression: "(1+(4+5+2)-3)+(6+8)"
+
+                                         result  sign  num  stack
+Start                                    0       +1    0    []
+'('  → save(result=0, sign=+1), reset    0       +1    0    [0,+1]
+'1'  → num=1                             0       +1    1
+'+'  → result+=+1*1=1, sign=+1            1       +1    0
+'('  → save(result=1, sign=+1), reset    0       +1    0    [0,+1,1,+1]
+'4'  → num=4                             0       +1    4
+'+'  → result+=+1*4=4, sign=+1            4       +1    0
+'5'  → num=5                             4       +1    5
+'+'  → result+=+1*5=9, sign=+1            9       +1    0
+'2'  → num=2                             9       +1    2
+')'  → result+=+1*2=11                   11
+       pop sign=+1, prev=1               1+1*11=12       [0,+1]
+'-'  → result+=0, sign=-1                12      -1    0
+'3'  → num=3                             12      -1    3
+')'  → result+=-1*3=9                    9
+       pop sign=+1, prev=0               0+1*9=9         []
+'+'  → sign=+1                           9       +1    0
+'('  → save, reset                       0       +1    0    [9,+1]
+'6'  '+'  '8'  ')'                       14
+       pop: 9+1*14 = 23
+
+  Result: 23
+```
+
 ---
 
 ## Example 7: Basic Calculator II (LeetCode 227) — With * /
@@ -567,6 +737,36 @@ func main() {
     }
     // 7, 1, 5, 13
 }
+```
+
+**Textual Figure: Basic Calculator II (Delayed Operator)**
+
+```
+Expression: "3+2*2"   (expects: 7)
+
+  Token  op(prev)  Action              Stack
+  ─────  ───────  ──────              ─────
+  3      '+'       push +3             [3]
+  +      '+'       ('+' was prev op)   op becomes '+'
+  2      '+'       push +2             [3, 2]
+  *      ...       op becomes '*'
+  2      '*'       stack.top*2=2*2=4   [3, 4]
+  END    sum stack: 3+4 = 7
+
+  Key insight: delay operator application.
+  op tracks the PREVIOUS operator.
+  For +/-: push (positive/negative) to stack.
+  For *//: modify stack top in-place.
+  Final: sum all stack values.
+
+  Expression: "14-3/2"  (expects: 13)
+  '+'  push 14        → [14]
+  '-'  op='-'
+  '-'  push -3        → [14, -3]   wait...
+  Actually: num=14, op='+'→push 14. Then '-': op='-'
+  num=3: op='-'→push -3. Then '/': op='/'
+  num=2: op='/' → stack.top/2 = -3/2 = -1 → [14,-1]
+  Sum: 14 + (-1) = 13  ✓
 ```
 
 ---
@@ -648,6 +848,46 @@ func main() {
 }
 ```
 
+**Textual Figure: Expression Tree Evaluation**
+
+```
+Expression: (3 + 4) * 2
+
+  Expression tree:
+           ┌───┐
+           │ * │
+           └┬─┬┘
+           ┌┘ └┐
+         ┌─┴─┐ ┌┴─┐
+         │ + │ │ 2│
+         └┬─┬┘ └──┘
+         ┌┘ └┐
+       ┌─┴─┐┌┴─┐
+       │ 3 ││ 4│
+       └───┘└──┘
+
+  Post-order evaluation (leaves first):
+    evaluate(3) = 3
+    evaluate(4) = 4
+    evaluate(+) = 3 + 4 = 7
+    evaluate(2) = 2
+    evaluate(*) = 7 * 2 = 14  ✓
+
+  Expression: 10 - (5 + 3)
+           ┌───┐
+           │ - │
+           └┬─┬┘
+          ┌┘  └─┐
+       ┌──┴─┐  ┌┴─┐
+       │ 10 │  │ +│
+       └────┘  └┬┬┘
+               ┌┘└┐
+             ┌─┴┐┌┴┐
+             │ 5││ 3│
+             └──┘└──┘
+    evaluate: 10 - (5+3) = 10 - 8 = 2  ✓
+```
+
 ---
 
 ## Example 9: Decode String (LeetCode 394)
@@ -704,6 +944,37 @@ func main() {
     // "3[a2[c]]"      → "accaccacc"
     // "2[abc]3[cd]ef"  → "abcabccdcdcdef"
 }
+```
+
+**Textual Figure: Decode String (Nested Stack)**
+
+```
+Input: "3[a2[c]]"
+
+Step-by-step:
+
+  Char  countStack  strStack          current    k
+  ────  ─────────  ────────          ───────    ─
+  '3'   []          []                ""         3
+  '['   [3]         [""]              ""         0  (save & reset)
+  'a'   [3]         [""]              "a"        0
+  '2'   [3]         [""]              "a"        2
+  '['   [3,2]       ["","a"]          ""         0  (save & reset)
+  'c'   [3,2]       ["","a"]          "c"        0
+  ']'   [3]         [""]              "a"+"cc"   0  (pop 2, repeat "c"*2)
+                                      ="acc"
+  ']'   []          []                ""+"acc"*3  0  (pop 3, repeat)
+                                      ="accaccacc"
+
+  Stack at deepest nesting:
+  countStack:  ┌───┐     strStack:  ┌────┐
+               │ 2 │←top            │"a" │←top
+               ├───┤               ├────┤
+               │ 3 │               │ "" │
+               └───┘               └────┘
+               current = "c"
+
+  Result: "accaccacc"
 ```
 
 ---
@@ -772,6 +1043,42 @@ func main() {
     inorder(tree2)
     fmt.Println() // ((5+((1+2)*4))-3)
 }
+```
+
+**Textual Figure: Postfix to Expression Tree**
+
+```
+Postfix: ["3", "4", "+", "2", "*"]
+
+Build tree using node stack:
+
+  Token  Action                          Stack (trees)
+  ─────  ──────                          ─────────────
+  "3"    push leaf(3)                    [3]
+  "4"    push leaf(4)                    [3, 4]
+  "+"    pop 4,3 → node(+,left=3,right=4)  [┌+┐]
+                                           [│  │]
+                                           [3  4]
+  "2"    push leaf(2)                    [┌+┐, 2]
+  "*"    pop 2,┌+┐ → node(*,left=+,right=2)
+
+  Final tree:
+         ┌───┐
+         │ * │
+         └┬─┬┘
+        ┌┘  └┐
+      ┌─┴─┐ ┌┴─┐
+      │ + │ │ 2│
+      └┬─┬┘ └──┘
+      ┌┘ └┐
+    ┌─┴─┐┌┴─┐
+    │ 3 ││ 4│
+    └───┘└──┘
+
+  Inorder traversal with parens: ((3+4)*2)
+
+  Operators pop 2 nodes: right=top, left=second
+  Operands become leaf nodes.
 ```
 
 ---

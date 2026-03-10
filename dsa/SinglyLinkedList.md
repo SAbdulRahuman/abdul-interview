@@ -56,6 +56,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Manual node creation and linking:
+
+Step 1: head = &Node{Val: 10}
+  head
+   ↓
+  ┌────┬──────┐
+  │ 10 │ Next─┼→ nil
+  └────┴──────┘
+
+Step 2: head.Next = &Node{Val: 20}
+  head
+   ↓
+  ┌────┬──────┐    ┌────┬──────┐
+  │ 10 │ Next─┼──→ │ 20 │ Next─┼→ nil
+  └────┴──────┘    └────┴──────┘
+
+Step 3: head.Next.Next = &Node{Val: 30}
+  head
+   ↓
+  ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐
+  │ 10 │ Next─┼──→ │ 20 │ Next─┼──→ │ 30 │ Next─┼→ nil
+  └────┴──────┘    └────┴──────┘    └────┴──────┘
+
+Final list after Step 4:
+  head
+   ↓
+  ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐
+  │ 10 │ Next─┼──→ │ 20 │ Next─┼──→ │ 30 │ Next─┼──→ │ 40 │ Next─┼→ nil
+  └────┴──────┘    └────┴──────┘    └────┴──────┘    └────┴──────┘
+
+Output: 10 → 20 → 30 → 40 → nil
+```
+
 ---
 
 ## Example 2: Insert Operations (Head, Tail, Position)
@@ -135,6 +170,36 @@ func main() {
 
     fmt.Println("Size:", ll.Size)
 }
+```
+
+**Textual Figure:**
+```
+InsertHead(30), InsertHead(20), InsertHead(10):
+  head
+   ↓
+  ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐
+  │ 10 │ Next─┼──→ │ 20 │ Next─┼──→ │ 30 │ Next─┼→ nil
+  └────┴──────┘    └────┴──────┘    └────┴──────┘
+
+InsertTail(40) — traverse to end, append:
+  head
+   ↓
+  ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐    ┌────┬──────┐
+  │ 10 │ Next─┼──→ │ 20 │ Next─┼──→ │ 30 │ Next─┼──→ │ 40 │ Next─┼→ nil
+  └────┴──────┘    └────┴──────┘    └────┴──────┘    └────┴──────┘
+
+InsertAt(pos=2, val=25) — walk to pos-1, splice:
+  Before:  10 → 20 → 30 → 40 → nil
+                  │         ↑
+                  │   ┌────┬┴─────┐
+                  └──→│ 25 │ Next─┘  (new node inserted)
+                      └────┴──────┘
+  After:
+  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐
+  │ 10 │ Next─┼→ │ 20 │ Next─┼→ │ 25 │ Next─┼→ │ 30 │ Next─┼→ │ 40 │ Next─┼→ nil
+  └────┴──────┘  └────┴──────┘  └────┴──────┘  └────┴──────┘  └────┴──────┘
+
+Result: 10 → 20 → 25 → 30 → 40 → nil   Size: 5
 ```
 
 ---
@@ -240,6 +305,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Initial list:
+  head
+   ↓
+  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐
+  │ 10 │ Next─┼→ │ 20 │ Next─┼→ │ 30 │ Next─┼→ │ 40 │ Next─┼→ │ 50 │ Next─┼→ nil
+  └────┴──────┘  └────┴──────┘  └────┴──────┘  └────┴──────┘  └────┴──────┘
+
+DeleteHead() — move head pointer forward:
+  (removed)       head
+  ┌────┐           ↓
+  │ 10 │  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐
+  └────┘  │ 20 │ Next─┼→ │ 30 │ Next─┼→ │ 40 │ Next─┼→ │ 50 │ Next─┼→ nil
+          └────┴──────┘  └────┴──────┘  └────┴──────┘  └────┴──────┘
+
+DeleteVal(30) — find prev, skip over 30:
+          head
+           ↓
+          ┌────┬──────┐  ┌────┬──────┐  ┌────┬──────┐
+          │ 20 │ Next─┼→ │ 40 │ Next─┼→ │ 50 │ Next─┼→ nil
+          └────┴──────┘  └────┴──────┘  └────┴──────┘
+                    └─── skipped [30] ───┘
+
+DeleteAt(1) — remove node at index 1 (value 40):
+          head
+           ↓
+          ┌────┬──────┐  ┌────┬──────┐
+          │ 20 │ Next─┼→ │ 50 │ Next─┼→ nil
+          └────┴──────┘  └────┴──────┘
+
+Final: 20 → 50 → nil   Size: 2
+```
+
 ---
 
 ## Example 4: Search and Get by Index
@@ -308,6 +407,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+List: 10 → 20 → 30 → 40 → 50 → nil
+       idx=0  idx=1  idx=2  idx=3  idx=4
+
+search(head, 30):
+  ┌────┐  ┌────┐  ┌────┐
+  │ 10 │→ │ 20 │→ │ 30 │  ← FOUND at index 2
+  └────┘  └────┘  └────┘
+   idx=0   idx=1   idx=2 ✓
+
+search(head, 99):
+  ┌────┐  ┌────┐  ┌────┐  ┌────┐  ┌────┐
+  │ 10 │→ │ 20 │→ │ 30 │→ │ 40 │→ │ 50 │→ nil  → return -1 (not found)
+  └────┘  └────┘  └────┘  └────┘  └────┘
+
+getAt(head, 3):
+  ┌────┐  ┌────┐  ┌────┐  ┌────┐
+  │ 10 │→ │ 20 │→ │ 30 │→ │ 40 │  ← return 40, true
+  └────┘  └────┘  └────┘  └────┘
+   i=0     i=1     i=2     i=3 ✓
+
+length(head) → traverse all nodes → 5
+```
+
 ---
 
 ## Example 5: Reverse a Singly Linked List (Iterative)
@@ -360,6 +484,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Iterative reversal — three pointers: prev, curr, next
+
+Initial:  prev=nil  curr=1
+  nil    ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+   ↑     │ 1 │Next┼→ │ 2 │Next┼→ │ 3 │Next┼→ │ 4 │Next┼→ │ 5 │Next┼→ nil
+  prev   └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+          curr
+
+Step 1: next=2, 1.Next=nil, prev=1, curr=2
+  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+  │ 1 │Next┼→nil │ 2 │Next┼→ │ 3 │Next┼→ │ 4 │Next┼→ │ 5 │Next┼→ nil
+  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+   prev        curr
+
+Step 2: next=3, 2.Next=1, prev=2, curr=3
+  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+  │ 1 │Next┼→nil←┼Next│ 2 │  │ 3 │Next┼→ │ 4 │Next┼→ │ 5 │Next┼→ nil
+  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+                prev        curr
+
+... continues until curr=nil
+
+Final result:
+  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+  │ 5 │Next┼→ │ 4 │Next┼→ │ 3 │Next┼→ │ 2 │Next┼→ │ 1 │Next┼→ nil
+  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+   prev(head)
+
+Output: 5 → 4 → 3 → 2 → 1 → nil
+```
+
 ---
 
 ## Example 6: Reverse a Singly Linked List (Recursive)
@@ -410,6 +567,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Recursive reversal — unwind the call stack, reverse links on return:
+
+Call stack (going deeper):
+  reverseRecursive(1) → reverseRecursive(2) → reverseRecursive(3) → reverseRecursive(4) → reverseRecursive(5)
+                                                                                          base case: return 5
+
+Unwinding:
+  Step 1: head=4, head.Next.Next=head → 5.Next=4, 4.Next=nil
+    ┌───┬────┐  ┌───┬────┐
+    │ 5 │Next┼→ │ 4 │Next┼→ nil
+    └───┴────┘  └───┴────┘
+
+  Step 2: head=3, 4.Next=3, 3.Next=nil
+    ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+    │ 5 │Next┼→ │ 4 │Next┼→ │ 3 │Next┼→ nil
+    └───┴────┘  └───┴────┘  └───┴────┘
+
+  ... continues unwinding ...
+
+Final result (newHead = 5):
+  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+  │ 5 │Next┼→ │ 4 │Next┼→ │ 3 │Next┼→ │ 2 │Next┼→ │ 1 │Next┼→ nil
+  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+  newHead
+
+Output: 5 → 4 → 3 → 2 → 1 → nil
+```
+
 ---
 
 ## Example 7: List to Slice and Slice to List
@@ -453,6 +640,30 @@ func main() {
     fmt.Println("Original:", original)
     fmt.Println("Back:    ", back)
 }
+```
+
+**Textual Figure:**
+```
+Slice → List (fromSlice):
+  []int{5, 10, 15, 20, 25}
+
+  Build from end (i=4 down to 0), prepend each:
+    i=4: head = [25|→nil]
+    i=3: head = [20|→] → [25|→nil]
+    i=2: head = [15|→] → [20|→] → [25|→nil]
+    i=1: head = [10|→] → [15|→] → [20|→] → [25|→nil]
+    i=0: head = [ 5|→] → [10|→] → [15|→] → [20|→] → [25|→nil]
+
+  Final linked list:
+  ┌───┬────┐  ┌────┬────┐  ┌────┬────┐  ┌────┬────┐  ┌────┬────┐
+  │ 5 │Next┼→ │ 10 │Next┼→ │ 15 │Next┼→ │ 20 │Next┼→ │ 25 │Next┼→ nil
+  └───┴────┘  └────┴────┘  └────┴────┘  └────┴────┘  └────┴────┘
+
+List → Slice (toSlice):
+  Traverse and append to []int:
+  [5] → [5,10] → [5,10,15] → [5,10,15,20] → [5,10,15,20,25]
+
+Round-trip: [5,10,15,20,25] → list → [5,10,15,20,25] ✓
 ```
 
 ---
@@ -507,6 +718,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Remove duplicates from sorted list:
+
+Before: 1 → 1 → 2 → 3 → 3 → 3 → 4 → 5 → 5 → nil
+
+Step-by-step (curr walks through, skip duplicates):
+  curr=1: curr.Val==curr.Next.Val(1)? YES → skip
+  ┌───┬────┐  ┌───┬────┐
+  │ 1 │Next┼──┼──┼────┼→ [2] → ...    (skip duplicate 1)
+  └───┴────┘  └───┴────┘
+  curr
+
+  curr=1: curr.Val==curr.Next.Val(2)? NO → advance
+  curr=2: curr.Val==curr.Next.Val(3)? NO → advance
+  curr=3: curr.Val==curr.Next.Val(3)? YES → skip
+  curr=3: curr.Val==curr.Next.Val(3)? YES → skip
+  curr=3: curr.Val==curr.Next.Val(4)? NO → advance
+  curr=4: curr.Val==curr.Next.Val(5)? NO → advance
+  curr=5: curr.Val==curr.Next.Val(5)? YES → skip
+  curr=5: curr.Next==nil → done
+
+After:
+  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐  ┌───┬────┐
+  │ 1 │Next┼→ │ 2 │Next┼→ │ 3 │Next┼→ │ 4 │Next┼→ │ 5 │Next┼→ nil
+  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘  └───┴────┘
+
+Result: 1 → 2 → 3 → 4 → 5 → nil
+```
+
 ---
 
 ## Example 9: Find Middle Node
@@ -556,6 +797,41 @@ func main() {
     printList(even)
     fmt.Printf("Middle:    %d\n", findMiddle(even).Val)
 }
+```
+
+**Textual Figure:**
+```
+Find middle with slow/fast pointers:
+
+Odd list [1, 2, 3, 4, 5]:
+  Step 0:  S         F
+           │         │
+          [1] → [2] → [3] → [4] → [5] → nil
+
+  Step 1:       S              F
+               │              │
+          [1] → [2] → [3] → [4] → [5] → nil
+
+  Step 2:            S                   F
+                    │                   │
+          [1] → [2] → [3] → [4] → [5] → nil
+                                     fast.Next=nil → STOP
+  Middle = slow.Val = 3 ✓
+
+Even list [1, 2, 3, 4, 5, 6]:
+  Step 0:  S         F
+          [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 1:       S              F
+          [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 2:            S                   F
+          [1] → [2] → [3] → [4] → [5] → [6] → nil
+
+  Step 3:                 S                   F(nil)
+          [1] → [2] → [3] → [4] → [5] → [6] → nil
+                               fast=nil → STOP
+  Middle = slow.Val = 4 (second middle) ✓
 ```
 
 ---
@@ -639,6 +915,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Palindrome check for [1, 2, 3, 2, 1]:
+
+Step 1: Find middle with slow/fast
+  [1] → [2] → [3] → [2] → [1] → nil
+                S              F
+  slow stops at node 3 (middle)
+
+Step 2: Reverse second half (after slow)
+  Before: [3].Next → [2] → [1] → nil
+  After:  [3].Next → [1] → [2] → nil   (reversed)
+
+  First half:   [1] → [2] → [3]
+  Second half:  [1] → [2] → nil
+
+Step 3: Compare
+  p1 → [1]    p2 → [1]   ✓ match
+  p1 → [2]    p2 → [2]   ✓ match
+  p2 = nil → DONE
+  Result: true (palindrome) ✓
+
+Palindrome check for [1, 2, 3]:
+  First half:   [1] → [2]
+  Second half:  [3] (reversed from [3])
+  p1=1 vs p2=3 → MISMATCH
+  Result: false ✗
+```
+
 ---
 
 ## Example 11: Singly Linked List with Tail Pointer
@@ -717,6 +1022,35 @@ func main() {
     ll.Print()
     fmt.Println("Size:", ll.Size)
 }
+```
+
+**Textual Figure:**
+```
+Singly linked list with tail pointer — O(1) append:
+
+PushBack(1), PushBack(2), PushBack(3):
+  head                              tail
+   ↓                                 ↓
+  ┌───┬────┐    ┌───┬────┐    ┌───┬────┐
+  │ 1 │Next┼──→ │ 2 │Next┼──→ │ 3 │Next┼→ nil
+  └───┴────┘    └───┴────┘    └───┴────┘
+
+PushFront(0) — new node becomes head:
+  head                                        tail
+   ↓                                           ↓
+  ┌───┬────┐    ┌───┬────┐    ┌───┬────┐    ┌───┬────┐
+  │ 0 │Next┼──→ │ 1 │Next┼──→ │ 2 │Next┼──→ │ 3 │Next┼→ nil
+  └───┴────┘    └───┴────┘    └───┴────┘    └───┴────┘
+  Output: 0 → 1 → 2 → 3 → nil
+
+PopFront() — move head forward, return old head value:
+  Popped: 0
+          head                              tail
+           ↓                                 ↓
+          ┌───┬────┐    ┌───┬────┐    ┌───┬────┐
+          │ 1 │Next┼──→ │ 2 │Next┼──→ │ 3 │Next┼→ nil
+          └───┴────┘    └───┴────┘    └───┴────┘
+  Output: 1 → 2 → 3 → nil   Size: 3
 ```
 
 ---

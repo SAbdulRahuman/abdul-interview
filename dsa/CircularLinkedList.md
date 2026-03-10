@@ -84,6 +84,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Building a circular singly linked list (tail pointer design):
+
+InsertBack(10): single node, points to itself
+  tail──→ ┌────┬────┐
+          │ 10 │Next┼─┐
+          └────┴────┘ │
+           ↑               │
+           └───────────┘
+
+InsertBack(10), InsertBack(20), InsertBack(30):
+          ┌───────────────────────────────┐
+          ↓                               │
+  head─→ [10] ─→ [20] ─→ [30] ───────┘
+  (tail.Next)              tail ↑
+
+InsertFront(5) — insert at head (tail.Next):
+          ┌─────────────────────────────────────┐
+          ↓                                     │
+  head─→ [5] ─→ [10] ─→ [20] ─→ [30] ───┘
+  (tail.Next)                    tail ↑
+
+Output: 5 → 10 → 20 → 30 → (back to head)   Size: 4
+```
+
 ---
 
 ## Example 2: Delete from Circular List
@@ -194,6 +220,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Delete from circular list:
+
+Initial: 10 → 20 → 30 → 40 → 50 → (back to 10)
+  ┌───────────────────────────────────────────┐
+  ↓                                           │
+ [10] ─→ [20] ─→ [30] ─→ [40] ─→ [50] ──┘
+                                   tail ↑
+
+DeleteVal(30) — middle node, find prev and skip:
+  ┌───────────────────────────────────┐
+  ↓                                   │
+ [10] ─→ [20] ────→ [40] ─→ [50] ──┘
+              skipped [30]    tail ↑
+
+DeleteVal(10) — head node, tail.Next = head.Next:
+  ┌───────────────────────────┐
+  ↓                           │
+ [20] ────→ [40] ─→ [50] ──┘
+                      tail ↑
+
+DeleteVal(50) — tail node, update tail to prev:
+  ┌─────────────────┐
+  ↓                 │
+ [20] ────→ [40] ─┘
+              tail ↑
+
+Result: 20 → 40 → ↻
+```
+
 ---
 
 ## Example 3: Josephus Problem
@@ -261,6 +318,39 @@ func main() {
         fmt.Printf("Josephus(%d,%d) = %d\n", test[0], test[1], josephusMath(test[0], test[1]))
     }
 }
+```
+
+**Textual Figure:**
+```
+Josephus Problem: n=7 people, every k=3rd eliminated
+
+Circular arrangement (0-indexed):
+       ┌───┐
+   ┌── │ 0 │ ──┐
+   │   └───┘   │
+ ┌─┴─┐       ┌─┴─┐
+ │ 6 │       │ 1 │
+ └─┬─┘       └─┬─┘
+   │           │
+ ┌─┴─┐       ┌─┴─┐
+ │ 5 │       │ 2 │
+ └─┬─┘       └─┬─┘
+   │   ┌───┐   │
+   └── │ 4 │ ──┘
+       └─┬─┘
+       ┌─┴─┐
+       │ 3 │
+       └───┘
+
+Elimination order (every 3rd):
+  Round 1: count 0→1→2 → eliminate 2
+  Round 2: count 3→4→5 → eliminate 5
+  Round 3: count 6→0→1 → eliminate 1
+  Round 4: count 3→4→6 → eliminate 6
+  Round 5: count 0→3→4 → eliminate 4
+  Round 6: count 0→3     → eliminate 0
+
+  Survivor: person 3 ✓
 ```
 
 ---
@@ -332,6 +422,32 @@ func main() {
     fmt.Println("Round Robin (quantum=4):")
     roundRobin(tasks, 4)
 }
+```
+
+**Textual Figure:**
+```
+Round-Robin Scheduler (quantum=4):
+
+Circular task list:
+  ┌───────────────────────────────────────────┐
+  ↓                                           │
+ [P1:10] ─→ [P2:5] ─→ [P3:8] ─→ [P4:3] ──┘
+
+Execution trace (quantum=4):
+  t= 4: P1 ran 4 (remaining: 6)
+  t= 8: P2 ran 4 (remaining: 1)
+  t=12: P3 ran 4 (remaining: 4)
+  t=15: P4 ran 3 (remaining: 0) → P4 COMPLETE
+  t=19: P1 ran 4 (remaining: 2)
+  t=20: P2 ran 1 (remaining: 0) → P2 COMPLETE
+  t=24: P3 ran 4 (remaining: 0) → P3 COMPLETE
+  t=26: P1 ran 2 (remaining: 0) → P1 COMPLETE
+
+  Timeline:
+  │P1│P2│P3│P4│P1│P2│P3│P1│
+  0  4  8  12 15 19 20 24 26
+
+All tasks completed at t=26
 ```
 
 ---
@@ -434,6 +550,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Circular doubly linked list:
+
+After inserting 1, 2, 3, 4, 5:
+  ┌───────────────────────────────────┐
+  ↓                                   │
+ [1] ⇄ [2] ⇄ [3] ⇄ [4] ⇄ [5] ──┘
+  ↑                                   │
+  └───────────────────────────────────┘
+  Head ↑               (bidirectional cycle)
+
+1 lap:  1 → 2 → 3 → 4 → 5 → ↻
+2 laps: 1 → 2 → 3 → 4 → 5 → 1 → 2 → 3 → 4 → 5 → ↻
+
+Remove(3):
+  ┌───────────────────────────┐
+  ↓                           │
+ [1] ⇄ [2] ⇄ [4] ⇄ [5] ──┘
+  ↑                           │
+  └───────────────────────────┘
+  3.Prev.Next = 3.Next  (2.Next = 4)
+  3.Next.Prev = 3.Prev  (4.Prev = 2)
+
+Result: 1 → 2 → 4 → 5 → ↻
+```
+
 ---
 
 ## Example 6: Circular Buffer (Ring Buffer)
@@ -522,6 +665,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Circular Buffer (Ring Buffer) — array-based circular structure:
+
+NewRingBuffer(cap=5), Push 1..5:
+  Index:  [0] [1] [2] [3] [4]
+  Data:    1   2   3   4   5
+           ↑                   ↑
+          head              tail(wraps to 0)
+  size=5, cap=5 (full)
+
+Pop(), Pop() — remove from head:
+  Index:  [0] [1] [2] [3] [4]
+  Data:    _   _   3   4   5
+                   ↑
+                  head     tail=0
+  size=3
+
+Push(6), Push(7) — insert at tail (wraps around):
+  Index:  [0] [1] [2] [3] [4]
+  Data:    6   7   3   4   5
+                   ↑       
+                  head  tail=2
+  size=5
+
+Overwrite mode (cap=3), pushing 1..7:
+  Push 1: [1, _, _]  head=0 tail=1
+  Push 2: [1, 2, _]  head=0 tail=2
+  Push 3: [1, 2, 3]  head=0 tail=0 (full)
+  Push 4: [4, 2, 3]  head=1 tail=1 (overwrote 1)
+  Push 5: [4, 5, 3]  head=2 tail=2 (overwrote 2)
+  Push 6: [4, 5, 6]  head=0 tail=0 (overwrote 3)
+  Push 7: [7, 5, 6]  head=1 tail=1 (overwrote 4)
+  Final:  [5, 6, 7]
+```
+
 ---
 
 ## Example 7: Detect if List is Circular
@@ -587,6 +766,28 @@ func main() {
     b3.Next = b2 // cycle at b2, not head
     fmt.Println("Cycle not at head:", isCircular(b1)) // false
 }
+```
+
+**Textual Figure:**
+```
+Detect if a list is truly circular (full cycle through head):
+
+Case 1: Circular list (cycle includes head)
+  ┌─────────────────────┐
+  ↓                     │
+ [1] ─→ [2] ─→ [3] ──┘
+  Slow/fast meet → walk cycle to check if head is in it
+  Found head → TRUE ✓
+
+Case 2: Linear list (no cycle)
+  [10] ─→ [20] ─→ [30] ─→ nil
+  fast reaches nil → FALSE ✓
+
+Case 3: Cycle exists but NOT at head
+  [1] ─→ [2] ─→ [3]
+              ↑       │
+              └───────┘  (cycle at 2, not head)
+  Slow/fast meet → walk cycle, head not found → FALSE ✓
 ```
 
 ---
@@ -666,6 +867,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Music Playlist — Circular doubly linked list:
+
+Playlist after adding 4 songs:
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  ┌───────────────────┐  ┌──────────────────┐  ┌────────────────┐  ┌─────────┐
+  │ Bohemian Rhapsody │⇄ │ Stairway to Heaven│⇄ │ Hotel California│⇄ │ Imagine │
+  └───────────────────┘  └──────────────────┘  └────────────────┘  └─────────┘
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+  current ↑
+
+Next (6 times — wraps around):
+  Bohemian → Stairway → Hotel → Imagine → Bohemian → Stairway
+
+Prev (3 times):
+  Stairway ← Bohemian ← Imagine ← Hotel
+
+Circular: never ends, just loops through the playlist!
+```
+
 ---
 
 ## Example 9: Split Circular List into Two
@@ -741,6 +965,32 @@ func main() {
     fmt.Print("Second:   ")
     printCircular(h2)
 }
+```
+
+**Textual Figure:**
+```
+Split circular list into two halves:
+
+Original (circular): 1 → 2 → 3 → 4 → 5 → 6 → (back to 1)
+  ┌─────────────────────────────────────────┐
+  ↓                                         │
+ [1] ─→ [2] ─→ [3] ─→ [4] ─→ [5] ─→ [6] ─┘
+
+Find midpoint with slow/fast:
+  slow stops at node 3, head2 = slow.Next = 4
+
+Split into two circular lists:
+  First half:  1 → 2 → 3 → (back to 1)
+  ┌─────────────────────┐
+  ↓                     │
+ [1] ─→ [2] ─→ [3] ──┘
+  slow.Next = head  (3.Next = 1)
+
+  Second half: 4 → 5 → 6 → (back to 4)
+  ┌─────────────────────┐
+  ↓                     │
+ [4] ─→ [5] ─→ [6] ──┘
+  oldTail.Next = head2  (6.Next = 4)
 ```
 
 ---
@@ -822,6 +1072,29 @@ func main() {
     fmt.Println("Search 30:", searchCircular(head, 30))
     fmt.Println("Search 99:", searchCircular(head, 99))
 }
+```
+
+**Textual Figure:**
+```
+Count, Sum, Search in circular list:
+
+List: 10 → 20 → 30 → 40 → 50 → (back to 10)
+  ┌───────────────────────────────────────┐
+  ↓                                       │
+ [10] ─→ [20] ─→ [30] ─→ [40] ─→ [50] ─┘
+  head
+
+countNodes: start at head, walk until we return to head
+  [10] → [20] → [30] → [40] → [50] → head? YES → count = 5
+
+sumNodes: accumulate values
+  10 + 20 + 30 + 40 + 50 = 150
+
+searchCircular(30):
+  [10]? no → [20]? no → [30]? YES → return true ✓
+
+searchCircular(99):
+  [10] → [20] → [30] → [40] → [50] → back to head → return false ✗
 ```
 
 ---

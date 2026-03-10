@@ -103,6 +103,50 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Basic Chaining — Insert, Get, Delete
+
+  Input: "apple"=1, "banana"=2, "cherry"=3   capacity=8
+
+  hash("apple")  % 8 → bucket 5
+  hash("banana") % 8 → bucket 2
+  hash("cherry") % 8 → bucket 5   ← collision with apple!
+
+  Insert "apple":  bucket[5] → prepend → [apple=1]
+  Insert "banana": bucket[2] → prepend → [banana=2]
+  Insert "cherry": bucket[5] → prepend → [cherry=3 → apple=1]
+
+  Hash Table with chains:
+  ┌─────────┬──────────────────────────────────────┐
+  │ Bucket  │ Chain (linked list)                  │
+  ├─────────┼──────────────────────────────────────┤
+  │  [0]    │ nil                                  │
+  │  [1]    │ nil                                  │
+  │  [2]    │ ┌──────────┐                         │
+  │         │ │banana = 2│──→ nil                  │
+  │         │ └──────────┘                         │
+  │  [3]    │ nil                                  │
+  │  [4]    │ nil                                  │
+  │  [5]    │ ┌──────────┐    ┌─────────┐          │
+  │         │ │cherry = 3│──→ │apple = 1│──→ nil   │
+  │         │ └──────────┘    └─────────┘          │
+  │  [6]    │ nil                                  │
+  │  [7]    │ nil                                  │
+  └─────────┴──────────────────────────────────────┘
+
+  Get("banana"): hash=2 → bucket[2] → traverse → found → 2, true
+
+  Delete("banana"):
+    bucket[2]: head.Key == "banana" → head = head.Next (nil)
+  ┌─────────┬────────────────────┐
+  │  [2]    │ nil  (removed!)    │
+  └─────────┴────────────────────┘
+
+  Get("banana") after delete: hash=2 → bucket[2] → nil → 0, false
+```
+
 ---
 
 ## Example 2: Chaining with Slice (Array-Based Chains)
@@ -193,6 +237,46 @@ func main() {
         fmt.Println()
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Slice-Based Chaining
+
+  Input: "go"=0,"rust"=1,"java"=2,"python"=3,"c"=4,"ruby"=5,"swift"=6,"kotlin"=7
+  Table capacity: 4
+
+  Hash assignments (mod 4):
+    hash("go")=2,     hash("rust")=0,   hash("java")=2,   hash("python")=1
+    hash("c")=3,      hash("ruby")=1,   hash("swift")=2,  hash("kotlin")=3
+
+  Insertions (append to slice):
+  ┌─────────┬─────────────────────────────────────────┐
+  │ Bucket  │ Slice contents []Entry                │
+  ├─────────┼─────────────────────────────────────────┤
+  │  [0]    │ [ rust=1 ]                              │
+  │  [1]    │ [ python=3, ruby=5 ]                    │
+  │  [2]    │ [ go=0, java=2, swift=6 ]               │
+  │  [3]    │ [ c=4, kotlin=7 ]                       │
+  └─────────┴─────────────────────────────────────────┘
+
+  Memory layout (contiguous within each bucket):
+  Bucket[2]:  ┌────────┬────────┬─────────┐
+              │ go=0   │ java=2 │ swift=6 │   ← contiguous in memory
+              └────────┴────────┴─────────┘
+               index 0   index 1  index 2
+
+  Delete uses swap-with-last optimization:
+  Delete("java") from bucket[2]:
+    1. Find "java" at index 1
+    2. Swap with last: bucket[2][1] = bucket[2][2] ("swift=6")
+    3. Shrink slice:  bucket[2] = bucket[2][:2]
+
+  Before: [ go=0, java=2, swift=6 ]
+  After:  [ go=0, swift=6 ]          ← O(1) deletion!
+
+  Advantage over linked lists: better cache locality within each bucket
 ```
 
 ---
@@ -287,6 +371,53 @@ func main() {
             key, m.size, m.cap, m.loadFactor())
     }
 }
+```
+
+**Textual Figure:**
+
+```
+Automatic Resizing — Load Factor Trigger
+
+  Start: capacity=4, threshold=0.75
+  Inserting keys key_0 through key_19:
+
+  Phase 1: capacity=4 (resize when size > 3)
+  ┌────────┬──────────────────────┐
+  │ Bucket │ Contents             │
+  ├────────┼──────────────────────┤
+  │  [0]   │ key_0                │
+  │  [1]   │ key_1                │
+  │  [2]   │ key_2                │
+  │  [3]   │                      │
+  └────────┴──────────────────────┘
+  size=3, lf=0.75 → adding key_3 triggers resize!
+
+  RESIZE: 4 → 8 buckets
+  ┌──────────────────────────────────┐
+  │ Rehash all existing keys into   │
+  │ new table with capacity=8       │
+  │ hash(key) % 8 ≠ hash(key) % 4  │
+  │ Elements redistribute!          │
+  └──────────────────────────────────┘
+
+  Phase 2: capacity=8 (resize when size > 6)
+  ...add more keys until lf > 0.75 → resize to 16
+
+  Phase 3: capacity=16 (resize when size > 12)
+  ...add more keys until lf > 0.75 → resize to 32
+
+  Resize history for 20 keys:
+  ┌────────┬──────┬───────┬─────────────────┐
+  │  Step  │ Size │  Cap  │ Event           │
+  ├────────┼──────┼───────┼─────────────────┤
+  │  3→4  │   3  │ 4→8  │ resize (lf=0.75)│
+  │  6→7  │   6  │ 8→16 │ resize (lf=0.75)│
+  │ 12→13 │  12  │ 16→32│ resize (lf=0.75)│
+  └────────┴──────┴───────┴─────────────────┘
+  Final: 20 keys in 32 buckets, lf = 0.625
+
+  Total rehash operations: 3 + 6 + 12 = 21 rehashes
+  Amortized insert cost: O(1)
 ```
 
 ---
@@ -384,6 +515,54 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Sorted Chain Insertion
+
+  Input: "delta"=0, "alpha"=1, "charlie"=2, "bravo"=3, "echo"=4
+  Table capacity: 4
+
+  Suppose hash values (mod 4):
+    hash("delta")=2, hash("alpha")=2, hash("charlie")=2
+    hash("bravo")=1, hash("echo")=0
+
+  Insert "delta":   bucket[2] empty → [delta=0]
+  Insert "alpha":   bucket[2] → "alpha" < "delta" → insert before
+                    → [alpha=1 → delta=0]
+  Insert "charlie": bucket[2] → "alpha" < "charlie" < "delta"
+                    → insert between
+                    → [alpha=1 → charlie=2 → delta=0]
+  Insert "bravo":   bucket[1] empty → [bravo=3]
+  Insert "echo":    bucket[0] empty → [echo=4]
+
+  Final sorted chains:
+  ┌────────┬──────────────────────────────────────────────┐
+  │ Bucket │ Sorted Chain                                 │
+  ├────────┼──────────────────────────────────────────────┤
+  │  [0]   │ ┌────────┐                                   │
+  │        │ │echo = 4│──→ nil                            │
+  │        │ └────────┘                                   │
+  │  [1]   │ ┌─────────┐                                  │
+  │        │ │bravo = 3│──→ nil                           │
+  │        │ └─────────┘                                  │
+  │  [2]   │ ┌─────────┐   ┌───────────┐   ┌─────────┐  │
+  │        │ │alpha = 1│─→│charlie = 2│─→│delta = 0│─→nil│
+  │        │ └─────────┘   └───────────┘   └─────────┘  │
+  │  [3]   │ nil                                          │
+  └────────┴──────────────────────────────────────────────┘
+
+  Get("bravo"):  hash=1 → bucket[1] → "bravo" found → 3, true
+  Get("fox"):    hash=? → traverse sorted chain
+                 → if node.Key > "fox" → STOP early (not found)
+
+  Advantage: Early termination on unsuccessful search
+  ┌────────────────────────────────────────────────┐
+  │ Unsorted: must traverse entire chain → O(n)    │
+  │ Sorted:   stop when key > target → O(n/2) avg │
+  └────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Multi-Value Chaining (Multimap)
@@ -442,6 +621,47 @@ func main() {
     fmt.Println("Alice's grades:", mm.GetAll("Alice"))
     fmt.Println("Bob's grades:", mm.GetAll("Bob"))
 }
+```
+
+**Textual Figure:**
+
+```
+Multimap — Multiple Values Per Key
+
+  Insert: Alice→95, Alice→87, Alice→92, Bob→78, Bob→85
+
+  hash("Alice") % 8 = bucket 3 (suppose)
+  hash("Bob")   % 8 = bucket 6 (suppose)
+
+  Internal structure (map[string][]int per bucket):
+  ┌────────┬──────────────────────────────────────┐
+  │ Bucket │ map[string][]int                     │
+  ├────────┼──────────────────────────────────────┤
+  │  [0]   │ {}                                   │
+  │  [1]   │ {}                                   │
+  │  [2]   │ {}                                   │
+  │  [3]   │ { "Alice": [95, 87, 92] }            │
+  │  [4]   │ {}                                   │
+  │  [5]   │ {}                                   │
+  │  [6]   │ { "Bob": [78, 85] }                  │
+  │  [7]   │ {}                                   │
+  └────────┴──────────────────────────────────────┘
+
+  Operations:
+  Add("Alice", 95) → bucket[3]["Alice"] = append([], 95)       = [95]
+  Add("Alice", 87) → bucket[3]["Alice"] = append([95], 87)     = [95, 87]
+  Add("Alice", 92) → bucket[3]["Alice"] = append([95,87], 92)  = [95, 87, 92]
+
+  GetAll("Alice") → hash=3 → bucket[3]["Alice"] → [95, 87, 92]
+  GetAll("Bob")   → hash=6 → bucket[6]["Bob"]   → [78, 85]
+
+  Use case: Student → Grades mapping
+  ┌─────────┬────────────────┬─────────┐
+  │ Student │ Grades         │ Average │
+  ├─────────┼────────────────┼─────────┤
+  │ Alice   │ [95, 87, 92]   │  91.3   │
+  │ Bob     │ [78, 85]       │  81.5   │
+  └─────────┴────────────────┴─────────┘
 ```
 
 ---
@@ -516,6 +736,56 @@ func main() {
     fmt.Println("\n=== Large Table (low load) ===")
     chainStats(keys, 2000)
 }
+```
+
+**Textual Figure:**
+
+```
+Chain Length Distribution Analysis
+
+  1000 keys across different table sizes:
+
+  Small Table (size=100, load=10.0):
+  ┌─────────┬──────────────────────────────────────────┐
+  │Bucket 0│ ████████████ (12 keys)                  │
+  │Bucket 1│ ████████ (8 keys)                       │
+  │Bucket 2│ ██████████████ (14 keys)                │
+  │  ...   │ ...                                      │
+  │Bucket99│ ███████ (7 keys)                         │
+  └─────────┴──────────────────────────────────────────┘
+  Max chain: ~18   Avg: 10.0   StdDev: ~3.2
+  Empty buckets: 0 (0%)
+
+  Medium Table (size=500, load=2.0):
+  ┌─────────┬──────────────────────────────────────────┐
+  │Bucket 0│ ███ (3 keys)                             │
+  │Bucket 1│ █ (1 key)                                │
+  │Bucket 2│ (empty)                                   │
+  │Bucket 3│ ████ (4 keys)                            │
+  │  ...   │ ...                                      │
+  └─────────┴──────────────────────────────────────────┘
+  Max chain: ~7    Avg: 2.0    StdDev: ~1.4
+  Empty buckets: ~65 (13%)
+
+  Large Table (size=2000, load=0.5):
+  ┌─────────┬──────────────────────────────────────────┐
+  │Bucket 0│ █ (1 key)                                │
+  │Bucket 1│ (empty)                                   │
+  │Bucket 2│ (empty)                                   │
+  │Bucket 3│ █ (1 key)                                │
+  │  ...   │ mostly empty or single-element chains    │
+  └─────────┴──────────────────────────────────────────┘
+  Max chain: ~4    Avg: 0.5    StdDev: ~0.7
+  Empty buckets: ~1213 (60.7%)
+
+  ┌────────────┬──────┬──────┬──────┬────────┬─────────┐
+  │ Table Size │ Load │ Max  │ Avg  │ StdDev │ Empty % │
+  ├────────────┼──────┼──────┼──────┼────────┼─────────┤
+  │    100     │ 10.0 │  ~18 │ 10.0 │  ~3.2  │   0%    │
+  │    500     │  2.0 │   ~7 │  2.0 │  ~1.4  │  13%    │
+  │   2000     │  0.5 │   ~4 │  0.5 │  ~0.7  │  61%    │
+  └────────────┴──────┴──────┴──────┴────────┴─────────┘
+  Lower load factor → shorter chains → faster lookups
 ```
 
 ---
@@ -607,6 +877,65 @@ func main() {
     // Worst case lookup: O(log n) instead of O(n) with linked list
     // Java's HashMap uses this approach when chains get long
 }
+```
+
+**Textual Figure:**
+
+```
+BST-Based Chaining — O(log n) Worst Case
+
+  Input: "go"=0,"rust"=1,"java"=2,"python"=3,
+         "c"=4,"swift"=5,"kotlin"=6,"scala"=7
+  Table capacity: 4
+
+  Hash assignments (mod 4):
+    bucket 0: "rust"=1, "scala"=7
+    bucket 1: "python"=3
+    bucket 2: "go"=0, "java"=2, "swift"=5, "kotlin"=6
+    bucket 3: "c"=4
+
+  Linked List (traditional) for bucket[2]:
+    go → java → swift → kotlin → nil
+    Search "kotlin": 4 hops → O(n)
+
+  BST (improved) for bucket[2]:
+              go
+               \
+              java
+                \
+               swift
+               /
+            kotlin
+
+    Search "kotlin":
+      go → "kotlin">"go" → right
+      java → "kotlin">"java" → right
+      swift → "kotlin"<"swift" → left
+      kotlin → found!  (3 comparisons)
+
+  BST for bucket[0]:
+         rust
+            \
+           scala
+
+  All buckets:
+  ┌────────┬───────────────────────────────────────┐
+  │ Bucket │ Structure                             │
+  ├────────┼───────────────────────────────────────┤
+  │  [0]   │ BST: rust → scala  (2 nodes)          │
+  │  [1]   │ BST: python        (1 node)           │
+  │  [2]   │ BST: go,java,kotlin,swift (4 nodes)   │
+  │  [3]   │ BST: c             (1 node)           │
+  └────────┴───────────────────────────────────────┘
+
+  Comparison:
+  ┌─────────────────┬─────────────┬───────────┐
+  │ Chain Type      │ Worst Case  │ Used In   │
+  ├─────────────────┼─────────────┼───────────┤
+  │ Linked List     │ O(n)        │ simple    │
+  │ BST             │ O(log n)    │ Java 8+   │
+  └─────────────────┴─────────────┴───────────┘
+  Java's HashMap converts chains to red-black trees when length > 8
 ```
 
 ---
@@ -701,6 +1030,50 @@ func main() {
     }
     fmt.Printf("Inserted 100 keys concurrently, found %d\n", found)
 }
+```
+
+**Textual Figure:**
+
+```
+Per-Bucket Locking for Concurrent Access
+
+  ConcurrentChainMap with 16 buckets, each with its own RWMutex
+
+  ┌─────────┬──────────┬────────────────────┐
+  │ Bucket  │ RWMutex  │ Chain / Data       │
+  ├─────────┼──────────┼────────────────────┤
+  │  [0]    │ Lock_0   │ [key_5, key_32]    │
+  │  [1]    │ Lock_1   │ [key_1, key_17]    │
+  │  [2]    │ Lock_2   │ [key_66]           │
+  │   ...   │  ...     │  ...               │
+  │  [15]   │ Lock_15  │ [key_15, key_47]   │
+  └─────────┴──────────┴────────────────────┘
+
+  Concurrent operations on DIFFERENT buckets (parallel!):
+  ┌────────────────────────────────────────────────┐
+  │ Goroutine A: Put("key_5")  → Lock bucket 0  │─→ no conflict
+  │ Goroutine B: Put("key_1")  → Lock bucket 1  │─→ no conflict
+  │ Goroutine C: Get("key_66") → RLock bucket 2 │─→ no conflict
+  └────────────────────────────────────────────────┘
+  All three execute in parallel! ✓
+
+  Concurrent operations on SAME bucket (serialized):
+  ┌────────────────────────────────────────────────┐
+  │ Goroutine A: Put("key_5")  → Lock bucket 0  │─→ acquired
+  │ Goroutine B: Put("key_32") → Lock bucket 0  │─→ WAITS
+  │ Goroutine C: Get("key_5")  → RLock bucket 0 │─→ WAITS
+  └────────────────────────────────────────────────┘
+  Only one writer at a time per bucket
+
+  Multiple readers on same bucket (RWMutex allows):
+  ┌────────────────────────────────────────────────┐
+  │ Goroutine A: Get("key_5")  → RLock bucket 0 │─→ reads ✓
+  │ Goroutine B: Get("key_32") → RLock bucket 0 │─→ reads ✓
+  │ Both readers execute in parallel!            │
+  └────────────────────────────────────────────────┘
+
+  Throughput: 16 buckets = up to 16× parallel writes
+  vs single global lock = 1× throughput
 ```
 
 ---
@@ -803,6 +1176,51 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Move-to-Front Heuristic
+
+  Input: "a"=0, "b"=1, "c"=2, "d"=3, "e"=4, "f"=5
+  Table capacity: 4
+
+  Suppose hash (mod 4):
+    hash("a")=1, hash("b")=2, hash("c")=1
+    hash("d")=3, hash("e")=1, hash("f")=2
+
+  After inserts (prepend to head):
+  ┌────────┬───────────────────────────────────┐
+  │ Bucket │ Chain (most recent → oldest)      │
+  ├────────┼───────────────────────────────────┤
+  │  [0]   │ nil                               │
+  │  [1]   │ e=4 → c=2 → a=0 → nil            │
+  │  [2]   │ f=5 → b=1 → nil                  │
+  │  [3]   │ d=3 → nil                         │
+  └────────┴───────────────────────────────────┘
+
+  Get("a") — search bucket[1]:
+    e=4 (no) → c=2 (no) → a=0 (FOUND!)
+    Move-to-front: detach "a" and prepend to head
+
+  Before: e=4 → c=2 → a=0 → nil
+                          ↑ found here (3 hops)
+  After:  a=0 → e=4 → c=2 → nil
+          ↑ now at front!
+
+  Get("a") again — bucket[1]:
+    a=0 (FOUND at head!) → O(1) access!
+
+  Temporal Locality Benefit:
+  ┌────────────┬──────────────┬─────────────────────┐
+  │  Access    │ Without MTF  │ With MTF            │
+  ├────────────┼──────────────┼─────────────────────┤
+  │ Get("a")   │ 3 hops       │ 3 hops (first time) │
+  │ Get("a")   │ 3 hops       │ 1 hop  (at front!)  │
+  │ Get("a")   │ 3 hops       │ 1 hop  (stays front)│
+  └────────────┴──────────────┴─────────────────────┘
+  Frequently accessed keys "bubble up" to front → amortized O(1)
+```
+
 ---
 
 ## Example 10: Chaining Performance with Different Load Factors
@@ -876,6 +1294,51 @@ func main() {
     // Chaining gracefully handles load factors > 1
     // Performance degrades linearly, not catastrophically
 }
+```
+
+**Textual Figure:**
+
+```
+Chaining Performance vs Load Factor
+
+  50,000 keys, varying table sizes:
+
+  ┌─────────────┬────────────┬──────────────────────────────┐
+  │ Load Factor │ Table Size │ Avg Chain Length              │
+  ├─────────────┼────────────┼──────────────────────────────┤
+  │    0.5      │  100,000   │ █ 0.5  (mostly empty)        │
+  │    1.0      │   50,000   │ ██ 1.0 (ideal balance)       │
+  │    2.0      │   25,000   │ ████ 2.0                     │
+  │    5.0      │   10,000   │ ██████████ 5.0               │
+  │   10.0      │    5,000   │ ████████████████████ 10.0    │
+  └─────────────┴────────────┴──────────────────────────────┘
+
+  Lookup cost visualization:
+  Load 0.5:  bucket → [k1] → done                  (1 comparison avg)
+  Load 1.0:  bucket → [k1] → done                  (1 comparison avg)
+  Load 2.0:  bucket → [k1 → k2] → done             (2 comparisons avg)
+  Load 5.0:  bucket → [k1 → k2 → k3 → k4 → k5]    (5 comparisons avg)
+  Load 10.0: bucket → [k1 → k2 → ... → k10]        (10 comparisons avg)
+
+  Time growth (relative):
+  Time
+   5× │                                          ×
+      │
+   4× │
+      │
+   3× │                              ×
+      │
+   2× │                  ×
+      │
+   1× │     ×     ×
+      │
+   0  ┼──────────────────────────────────────
+      0.5   1.0   2.0    5.0         10.0
+                Load Factor
+
+  Key insight: Chaining degrades LINEARLY with load factor
+  (unlike open addressing which degrades EXPONENTIALLY)
+  → Chaining gracefully handles load factors > 1
 ```
 
 ---

@@ -273,6 +273,9 @@
 - [ ] Tilde `~` — underlying type approximation: `~int` matches `type MyInt int`
 - [ ] `cmp.Compare`, `cmp.Or` (Go 1.21+)
 - [ ] Limitations: no generic methods (only generic functions and types), no specialization, no operator methods
+- [ ] When NOT to use generics — single type, behavior-varying, interface already works, readability cost
+- [ ] Generic methods workarounds — standalone functions, both types on struct
+- [ ] Performance: GC shape stenciling + dictionaries, monomorphization comparison, generics vs interface{} benchmark
 
 ---
 
@@ -293,6 +296,10 @@
 - [ ] `reflect.DeepEqual` — recursive comparison (useful in tests)
 - [ ] Performance implications — reflection is slow, avoid in hot paths
 - [ ] Use cases — serialization, ORM, dependency injection, test assertions
+- [ ] Performance pitfalls — cost breakdown (ValueOf ~15x, Field ~25x, Set ~50x, Call ~200x)
+- [ ] Common panic scenarios — unsettable value, unexported field, type mismatch, wrong arg count
+- [ ] Caching reflection results — `sync.Map` for type metadata, field index caching
+- [ ] Reflection vs code generation vs generics — decision tree, trade-off comparison
 
 ---
 
@@ -373,7 +380,18 @@
 - [ ] `encoding/csv`: `csv.NewReader`, `csv.NewWriter`
 - [ ] `encoding/gob`: Go-specific binary encoding (for Go-to-Go communication)
 - [ ] `encoding/binary`: `binary.Read`, `binary.Write`, byte order (`BigEndian`, `LittleEndian`)
-- [ ] Protocol Buffers & gRPC — overview (`.proto` files, code generation, service definitions)
+- [ ] Protocol Buffers — deep dive:
+  - Proto3 syntax, scalar types, field numbers, nested messages
+  - `repeated`, `optional`, `oneof`, `map` fields
+  - Code generation: `protoc --go_out`, `protoc-gen-go`
+  - Backward compatibility rules (safe vs breaking changes)
+  - `reserved` fields and numbers
+  - JSON vs Protobuf performance comparison
+- [ ] gRPC overview:
+  - 4 patterns: Unary, Server streaming, Client streaming, Bidirectional
+  - Service definition in `.proto`, generated stubs
+  - Server implementation, client usage
+  - Interceptors (logging, auth) — `grpc.ChainUnaryInterceptor`
 
 ---
 
@@ -529,6 +547,14 @@
 - [ ] `go fmt` / `gofmt` / `goimports` — formatting
 - [ ] `go vet` — static analysis
 - [ ] `go generate` — code generation (`//go:generate` directive)
+- [ ] `go generate` deep dive:
+  - `stringer` — auto String() for enum types
+  - `mockgen` — mock interfaces for testing
+  - `protoc-gen-go` — protobuf + gRPC code generation
+  - `sqlc`, `wire`, `oapi-codegen` — other common generators
+  - Custom code generators with `text/template`
+  - CI freshness check: `go generate && git diff`
+  - Best practices: commit generated files, place directives near types
 - [ ] `go doc` / `godoc` — documentation
 - [ ] `go list` — list packages
 - [ ] `go env` — environment variables
@@ -537,6 +563,13 @@
 - [ ] Build constraints / tags: `//go:build` (Go 1.17+)
 - [ ] `ldflags`: `-ldflags "-X main.version=1.0.0"` — inject values at build time
 - [ ] Link-time optimizations, static binary
+- [ ] CGO deep dive:
+  - C preamble, `import "C"`, calling C functions
+  - Memory rules: `C.CString`/`C.free`, pointer passing rules
+  - Build flags: `#cgo LDFLAGS`, `#cgo CFLAGS`, pkg-config
+  - Costs: slow builds, no cross-compile, dynamic linking, goroutine pinning
+  - When to avoid CGO, pure-Go alternatives
+  - "cgo is not Go" — Dave Cheney's principle
 
 ---
 

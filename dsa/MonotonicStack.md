@@ -63,6 +63,36 @@ func main() {
 }
 ```
 
+**Textual Figure: Next Greater Element (Monotonic Decreasing Stack)**
+
+```
+nums = [4, 5, 2, 25]       Stack stores indices (decreasing by value)
+
+i=0 (4):  stack=[]         → push 0         stack=[0]
+                            (vals:  [4])
+i=1 (5):  5>4 → pop 0      result[0]=5      stack=[]
+          push 1            stack=[1]        (vals: [5])
+i=2 (2):  2<5 → no pop     push 2           stack=[1,2]
+                            (vals:  [5,2])
+i=3 (25): 25>2 → pop 2     result[2]=25     stack=[1]
+          25>5 → pop 1     result[1]=25     stack=[]
+          push 3            stack=[3]        (vals: [25])
+
+Remaining in stack: index 3 → result[3]=-1
+
+  Index:  0   1   2   3
+  Input:  4   5   2   25
+  Result: 5   25  25  -1
+          ↑   ↑   ↑   ↑
+          5   25  25  none
+
+  Monotonic decreasing stack invariant:
+  ┌───────────────────────┐
+  │  bottom → large  top │  Elements decrease from bottom to top
+  │  When new > top: pop │  Popped element's answer = new element
+  └───────────────────────┘
+```
+
 ---
 
 ## Example 2: Next Smaller Element
@@ -104,6 +134,34 @@ func main() {
 }
 ```
 
+**Textual Figure: Next Smaller Element (Monotonic Increasing Stack)**
+
+```
+nums = [4, 8, 5, 2, 25]    Stack stores indices (increasing by value)
+
+i=0 (4):  stack=[]         → push 0         stack=[0]
+i=1 (8):  8>4 → no pop     push 1           stack=[0,1]
+                            (vals:  [4,8])
+i=2 (5):  5<8 → pop 1      result[1]=5      stack=[0]
+          5>4 → no pop     push 2           stack=[0,2]
+                            (vals:  [4,5])
+i=3 (2):  2<5 → pop 2      result[2]=2      stack=[0]
+          2<4 → pop 0      result[0]=2      stack=[]
+          push 3            stack=[3]        (vals: [2])
+i=4 (25): 25>2 → no pop    push 4           stack=[3,4]
+                            (vals:  [2,25])
+
+Remaining: indices 3,4 → result[3]=-1, result[4]=-1
+
+  Index:  0   1   2   3    4
+  Input:  4   8   5   2    25
+  Result: 2   5   2   -1   -1
+
+  Monotonic increasing stack:
+  bottom → small .... large ← top
+  When new < top: pop (answer for popped = new element)
+```
+
 ---
 
 ## Example 3: Previous Greater Element
@@ -141,6 +199,31 @@ func main() {
     fmt.Printf("%v\n→ %v\n", nums, prevGreaterElement(nums))
     // [-1, 10, 4, -1, -1, 40, 40]
 }
+```
+
+**Textual Figure: Previous Greater Element (Monotonic Decreasing Stack)**
+
+```
+nums = [10, 4, 2, 20, 40, 12, 30]
+
+i=0 (10): stack=[]          result[0]=-1    push 0   stack=[0]
+i=1 (4):  4≤10 → no pop     result[1]=10    push 1   stack=[0,1]
+                             (vals: [10,4])
+i=2 (2):  2≤4 → no pop      result[2]=4     push 2   stack=[0,1,2]
+                             (vals: [10,4,2])
+i=3 (20): pop 2(2≤20)       pop 1(4≤20)     stack=[0]
+          20≤10 → no pop    result[3]=-1    push 3   stack=[0,3]
+                             (vals: [10,20])
+i=4 (40): pop 3(20≤40)      pop 0(10≤40)    stack=[]
+          result[4]=-1       push 4           stack=[4]
+i=5 (12): 12≤40             result[5]=40    push 5   stack=[4,5]
+i=6 (30): pop 5(12≤30)      result[6]=40    push 6   stack=[4,6]
+
+  Index:  0    1   2   3    4    5    6
+  Input:  10   4   2   20   40   12   30
+  Result: -1   10  4   -1   -1   40   40
+                                 ↑    ↑
+                          stack top is prev greater
 ```
 
 ---
@@ -183,6 +266,35 @@ func main() {
     fmt.Println(dailyTemperatures(temps3))
     // [1, 1, 0]
 }
+```
+
+**Textual Figure: Daily Temperatures (Monotonic Decreasing Stack)**
+
+```
+temps = [73, 74, 75, 71, 69, 72, 76, 73]
+index:   0   1   2   3   4   5   6   7
+
+Stack trace (decreasing stack of indices):
+
+i=0 (73): push 0                     stack=[0]
+i=1 (74): 74>73 pop 0 → r[0]=1-0=1   stack=[]     push 1
+i=2 (75): 75>74 pop 1 → r[1]=2-1=1   stack=[]     push 2
+i=3 (71): 71<75                       stack=[2]    push 3  → [2,3]
+i=4 (69): 69<71                       stack=[2,3]  push 4  → [2,3,4]
+i=5 (72): 72>69 pop 4 → r[4]=5-4=1
+          72>71 pop 3 → r[3]=5-3=2   stack=[2]    push 5
+i=6 (76): 76>72 pop 5 → r[5]=6-5=1
+          76>75 pop 2 → r[2]=6-2=4   stack=[]     push 6
+i=7 (73): 73<76                       stack=[6]    push 7
+
+Remaining: r[6]=0, r[7]=0
+
+  Index:   0  1  2  3  4  5  6  7
+  Temp:   73 74 75 71 69 72 76 73
+  Result:  1  1  4  2  1  1  0  0
+           │  │  │  │  │  │
+           └→┴→┤  └→┤  │     Days until warmer
+                 └───┴──┘
 ```
 
 ---
@@ -242,6 +354,40 @@ func main() {
 }
 ```
 
+**Textual Figure: Largest Rectangle in Histogram**
+
+```
+heights = [2, 1, 5, 6, 2, 3]
+
+       6
+     ┌───┐
+   5 │   │
+  ┌──┤   │                       3
+  │  │   │              ┌───┐
+  │  │   │  2       2   │   │
+  │  │   ├───┐  ┌───├───┤
+  │  │   │   │  │   │   │
+  ├──┤   │   │  │   │   │    1
+  │  ├───┤   ├──┤   ├───┤  ┌───┐
+  │  │   │   │  │   │   │  │   │
+  └──┴───┴───┴──┴───┴───┘  └───┘
+  [0]  [1]  [2] [3][4]  [5]
+
+Stack trace (increasing stack):
+  Push 0(h=2), pop at i=1 → area=2*1=2
+  Push 1(h=1), push 2(h=5), push 3(h=6)
+  At i=4(h=2): pop 3 → area=6*1=6
+               pop 2 → area=5*2=10  ← MAX!
+  Push 4(h=2), push 5(h=3)
+  At end:      pop 5 → area=3*1=3
+               pop 4 → area=2*4=8
+               pop 1 → area=1*6=6
+
+  Largest rectangle: 5×2 = 10 (indices 2-3)
+  ██████████
+  ██████████  ← width=2, height=5
+```
+
 ---
 
 ## Example 6: Trapping Rain Water (Monotonic Stack)
@@ -296,6 +442,35 @@ func main() {
 }
 ```
 
+**Textual Figure: Trapping Rain Water (Monotonic Stack)**
+
+```
+height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
+
+              3
+           ┌───┐
+     2     │   │        2
+  ┌───┐  │   │     ┌───┐
+  │░░░│  │   │  2  │░░░│
+  │░░░┤  │   ├───├───┤
+1 │░░░│  │ 1 │░░░│░░░│ 1
+┌├───├──┤ ├───├───├───├───┐
+││ ░ │░░░│ │ ░ │░░░│░░░│   │
+└┴───┴───┴─┴───┴───┴───┴───┘
+0  1  0  2  1  0  1  3  2  1  2  1
+░ = trapped water
+
+Stack approach: decreasing stack of indices.
+When height[i] > height[stack.top]:
+  - Pop bottom bar
+  - left = new stack top
+  - width = i - left - 1
+  - h = min(height[left], height[i]) - height[bottom]
+  - water += width * h
+
+Total trapped water = 6 units
+```
+
 ---
 
 ## Example 7: Stock Span Problem
@@ -334,6 +509,31 @@ func main() {
     fmt.Println("Spans: ", stockSpan(prices))
     // [1, 1, 1, 2, 1, 4, 6]
 }
+```
+
+**Textual Figure: Stock Span Problem**
+
+```
+prices = [100, 80, 60, 70, 60, 75, 85]
+
+Stack trace (decreasing stack of indices by price):
+
+i=0 (100): stack=[]       span=0+1=1  push 0   stack=[0]
+i=1 (80):  80≤100         span=1-0=1  push 1   stack=[0,1]
+i=2 (60):  60≤80          span=2-1=1  push 2   stack=[0,1,2]
+i=3 (70):  pop 2(60≤70)   span=3-1=2  push 3   stack=[0,1,3]
+i=4 (60):  60≤70          span=4-3=1  push 4   stack=[0,1,3,4]
+i=5 (75):  pop 4(60≤75)
+           pop 3(70≤75)   span=5-1=4  push 5   stack=[0,1,5]
+i=6 (85):  pop 5(75≤85)
+           pop 1(80≤85)   span=6-0=6  push 6   stack=[0,6]
+
+  Day:    0    1    2    3    4    5    6
+  Price: 100  80   60   70   60   75   85
+  Span:   1    1    1    2    1    4    6
+               │    │    ┌┘    │    ┌───┘
+               │    │    │     │    │
+  Span = consecutive days (including today) where price ≤ today
 ```
 
 ---
@@ -390,6 +590,41 @@ func main() {
     // "10200",1 → "200"
     // "10",2 → "0"
 }
+```
+
+**Textual Figure: Remove K Digits (Monotonic Increasing Stack)**
+
+```
+num = "1432219", k = 3
+
+Process each digit, maintain increasing stack:
+
+  ch='1': stack=[1]                            k=3
+  ch='4': 4>1 → push      stack=[1,4]          k=3
+  ch='3': 3<4 → pop 4     stack=[1,3]          k=2
+  ch='2': 2<3 → pop 3     stack=[1,2]          k=1
+  ch='2': 2≤2 → push      stack=[1,2,2]        k=1
+  ch='1': 1<2 → pop 2     stack=[1,2,1]        k=0
+          (k=0, but we already removed)         k=0
+  ch='9': 9>1 → push      stack=[1,2,1,9]      k=0
+
+  Wait—let me retrace correctly:
+  ch='1': stack=[1]                            k=3
+  ch='4': push             stack=[1,4]          k=3
+  ch='3': pop 4(4>3)       stack=[1,3]          k=2
+  ch='2': pop 3(3>2)       stack=[1,2]          k=1
+  ch='2': push             stack=[1,2,2]        k=1
+  ch='1': pop 2(2>1)       stack=[1,2,1]        k=0
+  ch='9': push             stack=[1,2,1,9]      k=0
+
+  Result: "1219"
+
+  Stack visualization:
+  ┌─┐ ┌─┬─┐ ┌─┬─┐ ┌─┬─┐ ┌─┬─┬─┐ ┌─┬─┬─┐ ┌─┬─┬─┬─┐
+  │1│ │4│1│ │3│1│ │2│1│ │2│2│1│ │1│2│1│ │9│1│2│1│
+  └─┘ └─┴─┘ └─┴─┘ └─┴─┘ └─┴─┴─┘ └─┴─┴─┘ └─┴─┴─┴─┘
+  '1'  '4'   '3'   '2'   '2'    '1'     '9'
+  Greedy: remove larger digits early to minimize the number.
 ```
 
 ---
@@ -450,6 +685,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Asteroid Collision**
+
+```
+asteroids = [5, 10, -5]
+
+Process each asteroid (positive=right, negative=left):
+
+  a=5:   stack=[5]        (moving right, no collision)
+  a=10:  stack=[5,10]     (moving right, no collision)
+  a=-5:  │-5│ vs │10│      10 > 5  → -5 explodes!
+         stack=[5,10]     (10 survives)
+
+  Result: [5, 10]
+
+  Collision rules:
+  ┌───────────────────────────────────────┐
+  │  (+) and (-) moving toward each other:  │
+  │    │+│ > │-│  →  (-) explodes          │
+  │    │+│ < │-│  →  (+) explodes          │
+  │    │+│ = │-│  →  both explode          │
+  │  Same direction → no collision          │
+  └───────────────────────────────────────┘
+
+  [8, -8]:  8 = 8 → both explode → []
+  [10, 2, -5]:  -5 vs 2 → 2 explodes; -5 vs 10 → -5 explodes → [10]
+```
+
 ---
 
 ## Example 10: Next Greater Element II (Circular Array, LeetCode 503)
@@ -498,6 +760,36 @@ func main() {
     // [1,2,3,4,3] → [2,3,4,-1,4]
     // [5,4,3,2,1] → [-1,5,5,5,5]
 }
+```
+
+**Textual Figure: Next Greater Element II (Circular Array)**
+
+```
+nums = [1, 2, 1]  (circular: wraps around)
+
+Traverse 2*n = 6 elements using i % n:
+
+i=0 (1): push 0             stack=[0]
+i=1 (2): 2>1 pop 0→r[0]=2   stack=[]   push 1  stack=[1]
+i=2 (1): 1<2                 push 2     stack=[1,2]
+i=3 (idx=0, val=1): 1<1 no pop                   (only push in first pass)
+i=4 (idx=1, val=2): 2>1 pop 2→r[2]=2   stack=[1] (no push, second pass)
+i=5 (idx=2, val=1): 1<2 no pop
+
+Remaining: index 1 → r[1]=-1 (no greater in circular scan)
+
+  Circular array visualization:
+       ┌───┐
+    ┌──┤ 1 ├──┐
+    │  └───┘  │
+  ┌─┴─┐      ┌─┴─┐
+  │ 1 │      │ 2 │
+  └─┬─┘      └─┬─┘
+    │  ┌───┐  │       Index: 0  1  2
+    └──┤   ├──┘       Input: 1  2  1
+       └───┘           Result: 2 -1  2
+  Traverse indices 0..2n-1 with idx = i%n
+  to handle wrap-around.
 ```
 
 ---
@@ -566,6 +858,46 @@ func main() {
     // [3,1,2,4] → 17
     // [11,81,94,43,3] → 444
 }
+```
+
+**Textual Figure: Sum of Subarray Minimums**
+
+```
+arr = [3, 1, 2, 4]
+
+For each element, count subarrays where it's the minimum:
+
+  left[i] = # of subarrays ending at i where arr[i] is min
+  right[i] = # of subarrays starting at i where arr[i] is min
+
+  Prev less (left):           Next less (right):
+  i=0: no prev less, left=1   i=3: no next less, right=1
+  i=1: no prev less, left=2   i=2: next less at 1, right=1
+  i=2: prev less at 1, left=1 i=1: no next less, right=3
+  i=3: prev less at 1, left=2 i=0: next less at 1, right=1  (strict)
+
+  Index:  0    1    2    3
+  Value:  3    1    2    4
+  left:   1    2    1    2
+  right:  1    3    1    1
+
+  Contribution of each element:
+  arr[i] * left[i] * right[i]
+  3*1*1 = 3
+  1*2*3 = 6
+  2*1*1 = 2
+  4*2*1 = 8   (wait, should be 4*1*1 with correct boundaries)
+
+  Actually:
+  left=[1,2,1,1], right=[1,3,2,1]
+  3*1*1 + 1*2*3 + 2*1*2 + 4*1*1 = 3+6+4+4 = 17  ✓
+
+  All subarrays and their mins:
+  [3]=3  [1]=1  [2]=2  [4]=4
+  [3,1]=1  [1,2]=1  [2,4]=2
+  [3,1,2]=1  [1,2,4]=1
+  [3,1,2,4]=1
+  Sum = 3+1+2+4+1+1+2+1+1+1 = 17
 ```
 
 ---

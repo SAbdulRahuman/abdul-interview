@@ -59,6 +59,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Floyd's Cycle Detection (slow moves 1 step, fast moves 2 steps):
+
+Case 1 — No cycle:
+  ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→ nil
+  └───┘   └───┘   └───┘
+  fast reaches nil → return false
+
+Case 2 — Cycle (1→2→3→1):
+  ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │
+  └───┘   └───┘   └───┘
+    ↑                   │
+    └───────────────┘
+
+  Step 1: slow=2, fast=3      (not equal)
+  Step 2: slow=3, fast=2      (not equal)
+  Step 3: slow=1, fast=1      → EQUAL! return true
+
+Case 3 — Self-loop:
+  ┌───┐
+  │ 1 │─┐
+  └───┘ │
+    ↑   │
+    └───┘
+  Step 1: slow=1, fast=1 → EQUAL! return true
+```
+
 ---
 
 ## Example 2: Find Cycle Entry Point
@@ -111,6 +141,30 @@ func main() {
     linear := &Node{Val: 1, Next: &Node{Val: 2}}
     fmt.Println("No cycle:", detectCycleStart(linear)) // nil
 }
+```
+
+**Textual Figure:**
+```
+Find cycle entry in: 1 → 2 → 3 → 4 → 5 → 3 (cycle at node 3)
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │
+  └───┘   └───┘   └───┘   └───┘   └───┘
+                    ↑                   │
+                    └───────────────┘
+                    tail=2    cycle=3
+
+Phase 1 — Find meeting point (slow +1, fast +2):
+  Step 1: slow=2, fast=3
+  Step 2: slow=3, fast=5
+  Step 3: slow=4, fast=4  → MEET at node 4!
+
+Phase 2 — Find entry (entry from head, slow from meeting):
+  entry=1, slow=4
+  Step 1: entry=2, slow=5
+  Step 2: entry=3, slow=3  → MEET at node 3!
+
+  Entry point = node 3 ✓
 ```
 
 ---
@@ -172,6 +226,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Find cycle length in: 1 → 2 → 3 → 4 → 5 → 3 (cycle at 3)
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │
+  └───┘   └───┘   └───┘   └───┘   └───┘
+                    ↑                   │
+                    └───────────────┘
+
+Phase 1 — Detect meeting point with Floyd's:
+  slow and fast meet at some node inside the cycle
+
+Phase 2 — Count cycle length:
+  Start runner at slow.Next, count until runner == slow
+
+  runner = slow.Next
+  ┌───────────────────────┐
+  │   ┌───┐   ┌───┐   ┌───┐ │
+  └─→ │ 3 │──→│ 4 │──→│ 5 │─┘
+      └───┘   └───┘   └───┘
+      count=1  count=2  count=3
+                        runner==slow → stop!
+
+  Cycle length = 3
+```
+
 ---
 
 ## Example 4: Hash Set Based Detection
@@ -217,6 +298,35 @@ func main() {
     // Floyd's: O(n) time, O(1) space
     // HashSet: O(n) time, O(n) space — but finds entry in one phase
 }
+```
+
+**Textual Figure:**
+```
+Hash Set cycle detection: 1 → 2 → 3 → 4 → 2 (cycle at 2)
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │
+  └───┘   └───┘   └───┘   └───┘
+              ↑                   │
+              └───────────────┘
+
+  visited = {}
+
+  Visit 1: not in set → add    visited = {1}
+  Visit 2: not in set → add    visited = {1, 2}
+  Visit 3: not in set → add    visited = {1, 2, 3}
+  Visit 4: not in set → add    visited = {1, 2, 3, 4}
+  Visit 2: IN SET! → return (node 2, true)
+                       ↑
+                   cycle entry found directly!
+
+  Comparison:
+  ┌─────────────┬──────────┬──────────┐
+  │ Algorithm   │ Time     │ Space    │
+  ├─────────────┼──────────┼──────────┤
+  │ Floyd's     │ O(n)     │ O(1)     │
+  │ Hash Set    │ O(n)     │ O(n)     │
+  └─────────────┴──────────┴──────────┘
 ```
 
 ---
@@ -292,6 +402,33 @@ func main() {
     length, entry := brentCycleDetection(nodes[0])
     fmt.Printf("Brent's: cycle length=%d, entry=%d\n", length, entry.Val)
 }
+```
+
+**Textual Figure:**
+```
+Brent's Algorithm on: 1 → 2 → 3 → 4 → 5 → 6 → 3
+
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │─→│ 2 │─→│ 3 │─→│ 4 │─→│ 5 │─→│ 6 │
+  └───┘  └───┘  └───┘  └───┘  └───┘  └───┘
+                  ↑                        │
+                  └────────────────────┘
+
+Phase 1 — Find cycle length (power-of-2 teleportation):
+  power=1: slow=1, fast=2, length=1
+    slow≠fast → length==power → teleport slow=fast(2), power=2, length=0
+  power=2: fast=3(len=1), fast=4(len=2)
+    length==power → teleport slow=fast(4), power=4, length=0
+  power=4: fast=5(1), fast=6(2), fast=3(3), fast=4(4)
+    slow==fast at node 4! → cycle length = 4
+
+Phase 2 — Find entry:
+  slow=head(1), fast=head+4 steps = node 5
+  Move both:
+    slow=2, fast=6
+    slow=3, fast=3  → MEET! Entry = node 3
+
+  Result: cycle length=4, entry=3
 ```
 
 ---
@@ -377,6 +514,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Detect and remove cycle: 1 → 2 → 3 → 4 → 5 → 3
+
+Before:
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │
+  └───┘   └───┘   └───┘   └───┘   └───┘
+                    ↑                   │
+                    └───────────────┘
+
+Step 1 — Floyd's detects cycle (slow meets fast)
+Step 2 — Find entry point = node 3
+Step 3 — Find last node before entry:
+  Walk fast until fast.Next == entry(3)
+  fast stops at node 5 (5.Next == 3)
+
+Step 4 — Break the cycle: fast.Next = nil
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→ nil
+  └───┘   └───┘   └───┘   └───┘   └───┘
+                                        ╳ cycle broken
+
+After: 1 → 2 → 3 → 4 → 5 → nil
+```
+
 ---
 
 ## Example 7: Find Duplicate Number (Array as Linked List)
@@ -425,6 +588,31 @@ func main() {
     // index: 0 → 1 → 3 → 2 → 4 → 2 → 4 → 2 ...
     // The cycle exists because two indices map to the same value (duplicate)
 }
+```
+
+**Textual Figure:**
+```
+Find duplicate in [1, 3, 4, 2, 2] using cycle detection:
+
+Treat array as implicit linked list (index → value = next index):
+  index: 0 → nums[0]=1 → nums[1]=3 → nums[3]=2 → nums[2]=4 → nums[4]=2 ...
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 0 │──→│ 1 │──→│ 3 │──→│ 2 │──→│ 4 │
+  └───┘   └───┘   └───┘   └───┘   └───┘
+                              ↑           │
+                              └─────────┘
+                           cycle entry = 2 = duplicate!
+
+Phase 1 — slow=nums[0]=1, fast=nums[nums[0]]=3
+  slow=nums[1]=3, fast=nums[nums[3]]=nums[2]=4
+  slow=nums[3]=2, fast=nums[nums[4]]=nums[2]=4
+  slow=nums[2]=4, fast=nums[nums[4]]=nums[2]=4  → MEET!
+
+Phase 2 — slow=0, fast=4
+  slow=nums[0]=1, fast=nums[4]=2
+  slow=nums[1]=3, fast=nums[2]=4
+  slow=nums[3]=2, fast=nums[4]=2  → MEET! duplicate = 2
 ```
 
 ---
@@ -476,6 +664,28 @@ func main() {
     entry, length := detectCycleInGraph(next, 0)
     fmt.Printf("Cycle entry: %d, length: %d\n", entry, length)
 }
+```
+
+**Textual Figure:**
+```
+Cycle detection in directed functional graph:
+  next[] = {1, 2, 3, 4, 5, 2}
+
+  Graph: 0 → 1 → 2 → 3 → 4 → 5 → 2 (cycle)
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 0 │──→│ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+  tail ────────┤ ↑                           │
+                  └─────────────────────┘
+                  ├───── cycle (len=4) ────┤
+
+  Floyd's on array:
+    slow = next[slow], fast = next[next[fast]]
+    They meet inside cycle → find entry = 2
+    Count from entry back to entry → length = 4
+
+  Result: entry=2, length=4
 ```
 
 ---
@@ -530,6 +740,32 @@ func main() {
     }
     fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+Collect all nodes in cycle: 1 → 2 → 3 → 4 → 5 → 6 → 3
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→│ 6 │
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+  (tail)          ↑                           │
+                  └─────────────────────┘
+
+Step 1: Floyd's finds meeting point (some node in cycle)
+
+Step 2: Collect cycle nodes from meeting point:
+  result = [slow]
+  curr = slow.Next
+  Walk until curr == slow:
+
+  ┌───────────────────────────┐
+  │   ┌───┐   ┌───┐   ┌───┐   ┌───┐ │
+  └─→ │ 3 │──→│ 4 │──→│ 5 │──→│ 6 │─┘
+      └───┘   └───┘   └───┘   └───┘
+       add      add      add      add
+
+  Nodes in cycle: [3, 4, 5, 6] (or starting from meeting point)
 ```
 
 ---
@@ -607,6 +843,36 @@ func main() {
     fmt.Printf("Tail length: %d\n", info.TailLength)
     fmt.Printf("Total nodes: %d\n", info.CycleLength+info.TailLength)
 }
+```
+
+**Textual Figure:**
+```
+Complete cycle analysis: 1 → 2 → 3 → 4 → 5 → 6 → 3
+
+  ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐
+  │ 1 │──→│ 2 │──→│ 3 │──→│ 4 │──→│ 5 │──→│ 6 │
+  └───┘   └───┘   └───┘   └───┘   └───┘   └───┘
+                    ↑                           │
+                    └─────────────────────┘
+  ├─ tail=2 ─┤├────── cycle=4 ──────┤
+
+  Analysis steps:
+    1. Floyd's: slow & fast meet inside cycle
+    2. Cycle length: count steps from meeting → back to meeting = 4
+    3. Entry point: reset one ptr to head, advance both by 1
+       → they meet at node 3
+    4. Tail length: count steps head → entry = 2
+
+  Result:
+  ┌─────────────────┬────────┐
+  │ Property        │ Value  │
+  ├─────────────────┼────────┤
+  │ Has cycle       │ true   │
+  │ Entry node      │ 3      │
+  │ Cycle length    │ 4      │
+  │ Tail length     │ 2      │
+  │ Total nodes     │ 6      │
+  └─────────────────┴────────┘
 ```
 
 ---

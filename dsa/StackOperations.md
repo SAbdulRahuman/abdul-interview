@@ -73,6 +73,30 @@ func main() {
 }
 ```
 
+**Textual Figure: Basic Stack Operations**
+
+```
+Step-by-step push/pop trace (stack grows upward):
+
+  Push(10)     Push(20)     Push(30)      Pop()        Pop()        Pop()
+  ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐
+  │      │     │      │ top│  30  │     │      │     │      │     │      │
+  │      │ top│  20  │     │  20  │ top│  20  │     │      │     │      │
+  │  10  │←top │  10  │     │  10  │     │  10  │ top│  10  │     │      │
+  └──────┘     └──────┘     └──────┘     └──────┘     └──────┘     └──────┘
+   size=1       size=2       size=3       size=2       size=1       size=0
+
+  After Push(30): Peek() → 30, Size() → 3
+  Pop() returns: 30 → 20 → 10  (LIFO order)
+  Final: IsEmpty() = true
+
+  Underlying slice:
+  ┌────┬────┬────┐         ┌────┬────┐         ┌────┐
+  │ 10 │ 20 │ 30 │  ─pop→  │ 10 │ 20 │  ─pop→  │ 10 │  ─pop→  []
+  └────┴────┴────┘         └────┴────┘         └────┘
+   [0]  [1]  [2]            [0]  [1]            [0]
+```
+
 ---
 
 ## Example 2: Generic Stack (Go 1.18+)
@@ -136,6 +160,29 @@ func main() {
 }
 ```
 
+**Textual Figure: Generic Stack with Type Parameters**
+
+```
+Stack[int]              Stack[string]           Stack[float64]
+┌──────────┐            ┌──────────────┐        ┌──────────┐
+│  Push(1)  │            │ Push("hello") │        │ Push(3.14)│
+│  Push(2)  │            │ Push("world") │        │ Push(2.71)│
+└──────────┘            └──────────────┘        └──────────┘
+
+  ┌─────┐                 ┌─────────┐            ┌──────┐
+  │  2  │←top  Pop→2      │ "world" │←top Pop    │ 2.71 │←top  Pop→2.71
+  ├─────┤                 ├─────────┤            ├──────┤
+  │  1  │                 │ "hello" │            │ 3.14 │
+  └─────┘                 └─────────┘            └──────┘
+
+  After Pop:              After Pop:             After Pop:
+  ┌─────┐                 ┌─────────┐            ┌──────┐
+  │  1  │←top             │ "hello" │←top        │ 3.14 │←top
+  └─────┘                 └─────────┘            └──────┘
+
+  Same Stack[T any] struct — type parameter T determines element type.
+```
+
 ---
 
 ## Example 3: Stack Using Linked List
@@ -195,6 +242,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Linked List Stack**
+
+```
+After Push(10), Push(20), Push(30), Push(40), Push(50):
+
+  top
+   │
+   ▼
+  ┌────┐    ┌────┐    ┌────┐    ┌────┐    ┌────┐
+  │ 50 │───→│ 40 │───→│ 30 │───→│ 20 │───→│ 10 │───→ nil
+  └────┘    └────┘    └────┘    └────┘    └────┘
+   size=5
+
+Pop sequence (each Pop moves top to top.Next):
+
+  Pop()→50:  top→[40]→[30]→[20]→[10]→nil   size=4
+  Pop()→40:  top→[30]→[20]→[10]→nil        size=3
+  Pop()→30:  top→[20]→[10]→nil             size=2
+  Pop()→20:  top→[10]→nil                  size=1
+  Pop()→10:  top→nil                       size=0
+
+  Output: 50 40 30 20 10  (LIFO order)
+
+  Push O(1): new node points to old top
+  Pop  O(1): move top to top.Next
+```
+
 ---
 
 ## Example 4: Min Stack (LeetCode 155)
@@ -245,6 +319,47 @@ func main() {
     s.Push(-1)
     fmt.Println("Min:", s.GetMin()) // -2
 }
+```
+
+**Textual Figure: Min Stack with Parallel Tracking**
+
+```
+Operation      data stack         mins stack         GetMin()
+─────────      ──────────         ──────────         ────────
+Push(-2)       ┌────┐             ┌────┐
+               │ -2 │             │ -2 │             → -2
+               └────┘             └────┘
+
+Push(0)        ┌────┐             ┌────┐
+               │  0 │←top         │ -2 │←top         → -2
+               ├────┤             ├────┤
+               │ -2 │             │ -2 │
+               └────┘             └────┘
+
+Push(-3)       ┌────┐             ┌────┐
+               │ -3 │←top         │ -3 │←top         → -3  (new min!)
+               ├────┤             ├────┤
+               │  0 │             │ -2 │
+               ├────┤             ├────┤
+               │ -2 │             │ -2 │
+               └────┘             └────┘
+
+Pop()          ┌────┐             ┌────┐
+               │  0 │←top         │ -2 │←top         → -2
+               ├────┤             ├────┤
+               │ -2 │             │ -2 │
+               └────┘             └────┘
+               Top() → 0
+
+Push(-1)       ┌────┐             ┌────┐
+               │ -1 │←top         │ -2 │←top         → -2  (-1 > -2)
+               ├────┤             ├────┤
+               │  0 │             │ -2 │
+               ├────┤             ├────┤
+               │ -2 │             │ -2 │
+               └────┘             └────┘
+
+  Key: mins[i] always holds min(data[0..i]) — O(1) GetMin()
 ```
 
 ---
@@ -303,6 +418,33 @@ func main() {
         }
     }
 }
+```
+
+**Textual Figure: Max Stack with Parallel Tracking**
+
+```
+Push sequence with max tracking:
+
+  Push(5)   Push(1)   Push(5)   Push(3)   Push(7)   Push(2)
+  data maxs data maxs data maxs data maxs data maxs data maxs
+  ┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐┌───┐
+  │ 5 ││ 5 ││ 1 ││ 5 ││ 5 ││ 5 ││ 3 ││ 5 ││ 7 ││ 7 ││ 2 ││ 7 │←top
+  └───┘└───┘├───┤├───┤├───┤├───┤├───┤├───┤├───┤├───┤├───┤├───┤
+            │ 5 ││ 5 ││ 1 ││ 5 ││ 5 ││ 5 ││ 7 ││ 7 ││ 7 ││ 7 │
+            └───┘└───┘├───┤├───┤├───┤├───┤├───┤├───┤├───┤├───┤
+                      │ 5 ││ 5 ││ 1 ││ 5 ││ 3 ││ 5 ││ 3 ││ 5 │
+                      └───┘└───┘├───┤├───┤├───┤├───┤├───┤├───┤
+                                │ 5 ││ 5 ││ 5 ││ 5 ││ 5 ││ 5 │
+                                └───┘└───┘├───┤├───┤├───┤├───┤
+                                          │ 1 ││ 5 ││ 1 ││ 5 │
+                                          └───┘└───┘├───┤├───┤
+                                                    │ 5 ││ 5 │
+                                                    └───┘└───┘
+  max: 5     5     5     5     7     7
+
+Pop sequence:
+  Pop(2)→max=7  Pop(7)→max=5  Pop(3)→max=5
+  Pop(5)→max=5  Pop(1)→max=5  Pop(5)→empty
 ```
 
 ---
@@ -391,6 +533,33 @@ func main() {
 }
 ```
 
+**Textual Figure: Two Stacks in One Array**
+
+```
+Shared array (capacity=10):
+
+  Stack1 grows →→→                  ←←← Stack2 grows
+  top1                                         top2
+   │                                             │
+   ▼                                             ▼
+  ┌────┬────┬────┬────┬────┬────┬────┬────┬─────┬─────┐
+  │  1 │  2 │  3 │    │    │    │    │    │ 200 │ 100 │
+  └────┴────┴────┴────┴────┴────┴────┴────┴─────┴─────┘
+  [0]   [1]  [2]  [3]  [4]  [5]  [6]  [7]   [8]   [9]
+
+  Pop1() → 3:  top1 moves left to index 1
+  Pop2() → 200: top2 moves right to index 9
+
+  After filling Stack1 with 5 more (10..14):
+  top1=7, top2=8 → no room left → Push1(99) = overflow!
+
+  ┌────┬────┬────┬────┬────┬────┬────┬────┬─────┬─────┐
+  │  1 │  2 │ 10 │ 11 │ 12 │ 13 │ 14 │    │     │ 100 │
+  └────┴────┴────┴────┴────┴────┴────┴────┴─────┴─────┘
+              top1=6 ↑              ↑ top2=9
+              Collision zone: top1+1 >= top2
+```
+
 ---
 
 ## Example 7: Implement Queue Using Two Stacks (LeetCode 232)
@@ -452,6 +621,44 @@ func main() {
 }
 ```
 
+**Textual Figure: Queue Using Two Stacks**
+
+```
+Push(1), Push(2), Push(3):
+
+  pushStack          popStack
+  ┌───┐
+  │ 3 │←top           (empty)
+  ├───┤
+  │ 2 │
+  ├───┤
+  │ 1 │
+  └───┘
+
+Peek()/Pop() triggers transfer (popStack is empty):
+  Pop all from pushStack → push to popStack:
+
+  pushStack          popStack
+                     ┌───┐
+  (empty)            │ 1 │←top  ▒ Peek()=1
+                     ├───┤
+                     │ 2 │
+                     ├───┤
+                     │ 3 │
+                     └───┘
+
+  Pop()→1  Pop()→2  Push(4)  Pop()→3  Pop()→4
+
+  pushStack  popStack      pushStack  popStack
+             ┌───┐         ┌───┐
+             │ 2 │←top     │ 4 │←top  (empty)  → transfer → Pop()
+             ├───┤         └───┘
+             │ 3 │
+             └───┘
+
+  FIFO order achieved: 1, 2, 3, 4  (amortized O(1) per op)
+```
+
 ---
 
 ## Example 8: Reverse a Stack (Using Recursion)
@@ -507,6 +714,43 @@ func main() {
 }
 ```
 
+**Textual Figure: Reverse a Stack Using Recursion**
+
+```
+Original stack: [1, 2, 3, 4, 5]  (1=bottom, 5=top)
+
+  reverseStack() pops each element, recurses, then inserts at bottom:
+
+  Step 1: Pop 5, recurse on [1,2,3,4]
+  Step 2: Pop 4, recurse on [1,2,3]
+  Step 3: Pop 3, recurse on [1,2]
+  Step 4: Pop 2, recurse on [1]
+  Step 5: Pop 1, recurse on []  (base case)
+
+  Now insertAtBottom in reverse order:
+
+  insertAtBottom(1):  │ 1 │
+  insertAtBottom(2):  │ 2 │ 1 │       (pop 1, insert 2, push 1 back)
+  insertAtBottom(3):  │ 3 │ 2 │ 1 │
+  insertAtBottom(4):  │ 4 │ 3 │ 2 │ 1 │
+  insertAtBottom(5):  │ 5 │ 4 │ 3 │ 2 │ 1 │
+
+  Before:              After:
+  ┌───┐  top            ┌───┐  top
+  │ 5 │                │ 1 │
+  ├───┤                ├───┤
+  │ 4 │                │ 2 │
+  ├───┤                ├───┤
+  │ 3 │                │ 3 │
+  ├───┤                ├───┤
+  │ 2 │                │ 4 │
+  ├───┤                ├───┤
+  │ 1 │  bottom        │ 5 │  bottom
+  └───┘                └───┘
+
+  Result: [5, 4, 3, 2, 1]
+```
+
 ---
 
 ## Example 9: Sort a Stack (Using Recursion)
@@ -560,6 +804,41 @@ func main() {
     sortStack(s)
     fmt.Println("After:", s.data) // [3, 23, 31, 34, 92, 98]
 }
+```
+
+**Textual Figure: Sort a Stack Using Recursion**
+
+```
+Original: [34, 3, 31, 98, 92, 23]  (34=bottom, 23=top)
+
+sortStack pops all elements, then inserts each in sorted position:
+
+  Pop all:  23 → 92 → 98 → 31 → 3 → 34
+
+  sortedInsert builds sorted stack (bottom to top = ascending):
+
+  insert(34):  │ 34 │
+  insert(3):   │  3 │ 34 │         (3 < 34, so insert below)
+  insert(31):  │  3 │ 31 │ 34 │    (3 < 31, pop; 31 < 34, insert)
+  insert(98):  │  3 │ 31 │ 34 │ 98 │  (98 >= top, push on top)
+  insert(92):  │  3 │ 31 │ 34 │ 92 │ 98 │  (pop 98, 92<98; push 92, push 98)
+  insert(23):  │  3 │ 23 │ 31 │ 34 │ 92 │ 98 │
+
+  Final sorted stack:
+  ┌────┐  top
+  │ 98 │
+  ├────┤
+  │ 92 │
+  ├────┤
+  │ 34 │
+  ├────┤
+  │ 31 │
+  ├────┤
+  │ 23 │
+  ├────┤
+  │  3 │  bottom
+  └────┘
+  Slice: [3, 23, 31, 34, 92, 98]
 ```
 
 ---
@@ -652,6 +931,34 @@ func main() {
 }
 ```
 
+**Textual Figure: Stack with Middle Operation**
+
+```
+Push sequence with middle pointer tracking:
+
+  Push  head(top)                         mid    size
+  ────  ─────────────────────────     ───    ────
+  1     [1]                               1      1
+  2     [2]↔[1]                           1      2    (even: mid stays)
+  3     [3]↔[2]↔[1]                       2      3    (odd: mid moves left)
+  4     [4]↔[3]↔[2]↔[1]                   2      4    (even: mid stays)
+  5     [5]↔[4]↔[3]↔[2]↔[1]               3      5    (odd: mid moves left)
+  6     [6]↔[5]↔[4]↔[3]↔[2]↔[1]           3      6    (even: mid stays)
+  7     [7]↔[6]↔[5]↔[4]↔[3]↔[2]↔[1]       4      7    (odd: mid moves left)
+            head         ↑ mid
+
+  Doubly linked list with mid pointer:
+  head→[7]↔[6]↔[5]↔[4]↔[3]↔[2]↔[1]
+                     ↑
+                    mid (element 4, middle of 7 elements)
+
+  Pop adjusts mid pointer:
+  Pop 7 → mid=4 (size=6, even: mid moves right to 3)
+  Pop 6 → mid=3 (size=5, odd: mid stays)
+  Pop 5 → mid=3 (size=4, even: mid moves right to 2)
+  ...continues until empty
+```
+
 ---
 
 ## Example 11: Undo/Redo with Two Stacks
@@ -722,6 +1029,41 @@ func main() {
     e.Insert(" Go")
     e.Redo() // nothing — cleared after new insert
 }
+```
+
+**Textual Figure: Undo/Redo with Two Stacks**
+
+```
+Operation         content        undoStack              redoStack
+─────────         ───────        ─────────              ─────────
+Insert("Hello")   "Hello"        [ins:"Hello"]           []
+Insert(" World")  "Hello World"  [ins:"Hello",           []
+                                  ins:" World"]
+Insert("!")       "Hello World!" [ins:"Hello",           []
+                                  ins:" World",
+                                  ins:"!"]
+
+Undo()            "Hello World"  [ins:"Hello",           [ins:"!"]
+                                  ins:" World"]
+Undo()            "Hello"        [ins:"Hello"]           [ins:"!",
+                                                          ins:" World"]
+Redo()            "Hello World"  [ins:"Hello",           [ins:"!"]
+                                  ins:" World"]
+
+Insert(" Go")     "Hello World"  [ins:"Hello",           []  ← cleared!
+                  " Go"          ins:" World",
+                                  ins:" Go"]
+Redo()            (nothing)      (unchanged)             []  ← empty
+
+  undoStack               redoStack
+  ┌─────────────┐         ┌─────────────┐
+  │ ins:" Go"   │←top     │             │  empty
+  ├─────────────┤         └─────────────┘
+  │ ins:" World"│
+  ├─────────────┤
+  │ ins:"Hello" │
+  └─────────────┘
+  New insert clears redo stack (can't redo after new action)
 ```
 
 ---

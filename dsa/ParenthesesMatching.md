@@ -56,6 +56,34 @@ func main() {
 }
 ```
 
+**Textual Figure: Valid Parentheses Matching**
+
+```
+Input: "{[]}"   → true
+
+  Char   Stack          Action
+  ────   ─────          ──────
+  '{'    │ { │          push '{'
+  '['    │ [ │ { │      push '['
+  ']'    │ { │          pop '[' ↔ ']' match ✓
+  '}'    (empty)         pop '{' ↔ '}' match ✓
+  END    stack empty     → valid!
+
+Input: "([)]"   → false
+
+  Char   Stack          Action
+  '('    │ ( │          push '('
+  '['    │ [ │ ( │      push '['
+  ')'    │ [ │ ( │      top='[' ≠ match[')']='('  → INVALID!
+
+  Match map:
+  ┌─────────────────────┐
+  │  ')' → '('           │
+  │  ']' → '['           │
+  │  '}' → '{'           │
+  └─────────────────────┘
+```
+
 ---
 
 ## Example 2: Minimum Add to Make Valid (LeetCode 921)
@@ -100,6 +128,32 @@ func main() {
     // "()"     → 0
     // "()))((" → 4
 }
+```
+
+**Textual Figure: Minimum Additions to Make Valid**
+
+```
+Input: "()))(("    → 4 additions needed
+
+  Char   open   close   Action
+  ────   ────   ─────   ──────
+  '('    1      0       open++ (unmatched '(')
+  ')'    0      0       open-- (matched!)
+  ')'    0      1       open=0, close++ (unmatched ')')
+  ')'    0      2       close++
+  '('    1      2       open++
+  '('    2      2       open++
+
+  Result: open + close = 2 + 2 = 4
+
+  Need to add:  2 × ')' to close the '('s
+                2 × '(' to open for the ')'s
+
+  ┌─────────────────────────────────┐
+  │ No stack needed!                │
+  │ Just two counters: open, close  │
+  │ O(1) space, O(n) time           │
+  └─────────────────────────────────┘
 ```
 
 ---
@@ -149,6 +203,34 @@ func main() {
     }
     // "(()": 2, ")()())": 4, "()()()": 6
 }
+```
+
+**Textual Figure: Longest Valid Parentheses**
+
+```
+Input: ")()())"   → longest = 4
+
+Stack stores indices (initialized with -1 as base):
+
+  i  char  Stack          Action               maxLen
+  ─  ────  ─────          ──────               ──────
+  -  init  [-1]           base index
+  0  ')'   [0]            pop -1, stack empty    0
+                          push 0 as new base
+  1  '('   [0, 1]         push index             0
+  2  ')'   [0]            pop 1, len=2-0=2       2
+  3  '('   [0, 3]         push index             2
+  4  ')'   [0]            pop 3, len=4-0=4       4
+  5  ')'   [5]            pop 0, stack empty     4
+                          push 5 as new base
+
+  Longest valid substring: positions 1-4 = "()()"
+
+  ┌───┬───┬───┬───┬───┬───┐
+  │ ) │ ( │ ) │ ( │ ) │ ) │
+  └───┴───┴───┴───┴───┴───┘
+   [0]  [1]  [2]  [3]  [4]  [5]
+    x   █████████████████   x    ← valid span = 4
 ```
 
 ---
@@ -208,6 +290,35 @@ func main() {
 }
 ```
 
+**Textual Figure: Remove Invalid Parentheses**
+
+```
+Input: "lee(t(c)o)de)"
+
+Pass 1: Mark unmatched ')' with '#'
+  l e e ( t ( c ) o ) d e )
+                              ↑ unmatched ')' → '#'
+
+Pass 2: Mark unmatched '(' with '#'
+  Stack of '(' indices: push index 3 and 5
+  Index 5 '(' matched by index 7 ')'
+  Index 3 '(' matched by index 9 ')'
+  Stack empty → no unmatched '('
+
+  Before: l  e  e  (  t  (  c  )  o  )  d  e  )
+  Marks:                                         #
+  After:  l  e  e  (  t  (  c  )  o  )  d  e
+
+  Result: "lee(t(c)o)de"
+
+  Algorithm:
+  ┌───────────────────────────────────────┐
+  │ 1. Forward pass: mark unmatched ')'   │
+  │ 2. Stack tracks unmatched '(' indices  │
+  │ 3. Remove all '#' marked characters    │
+  └───────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Generate Parentheses (LeetCode 22)
@@ -248,6 +359,36 @@ func main() {
     // n=2: ["(())", "()()"]
     // n=3: ["((()))", "(()())", "(())()", "()(())", "()()()"]
 }
+```
+
+**Textual Figure: Generate Parentheses (Backtracking Tree)**
+
+```
+n=3:  Generate all valid combinations of 3 pairs.
+
+  Backtracking decision tree (open < n, close < open):
+
+                          ""
+                          │
+                         "("
+                       ┌──┴──┐
+                    "(("      "()"
+                  ┌──┴──┐      │
+              "((("    "(()"   "()("
+                │     ┌─┴─┐    ┌─┴─┐
+            "((()""(()(" "(())" "()((" "()()"
+               │    │     │     │     │
+           "((())""(()()""(())(""()(()" "()()("
+              │    │     │     │      │
+              ✓    ✓   "(())()" ✓    "()()()"
+                         │              │
+                         ✓              ✓
+
+  Result: ["((()))", "(()())", "(())()", "()(())", "()()()"]
+
+  Rules: • Add '(' if open < n
+         • Add ')' if close < open
+         • Complete when length = 2n
 ```
 
 ---
@@ -294,11 +435,39 @@ func main() {
     for _, s := range tests {
         fmt.Printf("%-12q → %d\n", s, scoreOfParentheses(s))
     }
-    // "()"       → 1
-    // "(())"     → 2
-    // "()()"     → 2
+    // "(()"     → 2
+    // "()("     → 2
     // "(()(()))" → 6
 }
+```
+
+**Textual Figure: Score of Parentheses**
+
+```
+Input: "(()(()))"   → score = 6
+
+Stack tracks running scores at each depth level:
+
+  Char  Stack             Action
+  ────  ─────             ──────
+  init  [0]               base score
+  '('   [0, 0]            push 0 (enter depth 1)
+  '('   [0, 0, 0]         push 0 (enter depth 2)
+  ')'   [0, 1]            inner=0 → score=1; add to prev
+  '('   [0, 1, 0]         push 0 (enter depth 2)
+  '('   [0, 1, 0, 0]      push 0 (enter depth 3)
+  ')'   [0, 1, 1]         inner=0 → score=1; add to prev
+  ')'   [0, 3]            inner=1 → score=2*1=2; 1+2=3
+  ')'   [6]               inner=3 → score=2*3=6; 0+6=6
+
+  Result: stack[0] = 6
+
+  Scoring rules:
+  ┌───────────────────────┐
+  │  ()     = 1             │
+  │  (A)   = 2 * A          │
+  │  A B   = A + B           │
+  └───────────────────────┘
 ```
 
 ---
@@ -345,6 +514,33 @@ func main() {
     // "(()())(())(()(()))"   → "()()()()(())"
     // "()()"                 → ""
 }
+```
+
+**Textual Figure: Remove Outermost Parentheses**
+
+```
+Input: "(()())(())"  →  "()()()"
+
+  Char  depth   Include?   Output
+  ────  ─────  ────────  ──────
+  '('   0→1     NO  (outer)  ""
+  '('   1→2     YES          "("
+  ')'   2→1     YES          "()"
+  '('   1→2     YES          "()("
+  ')'   2→1     YES          "()()"
+  ')'   1→0     NO  (outer)  "()()"
+  '('   0→1     NO  (outer)  "()()"
+  '('   1→2     YES          "()()("
+  ')'   2→1     YES          "()()()"
+  ')'   1→0     NO  (outer)  "()()()"
+
+  Primitive groups:
+  ┌──────────┐  ┌──────┐
+  │ (()())   │  │ (()) │
+  └──────────┘  └──────┘
+   ↑        ↑    ↑    ↑
+  outer   outer outer outer  ← removed
+   Result: ()()  +  () = "()()()"
 ```
 
 ---
@@ -408,6 +604,34 @@ func main() {
 }
 ```
 
+**Textual Figure: Check if Parentheses Can Be Valid**
+
+```
+s = "))()))", locked = "010100"
+
+  Index:   0    1    2    3    4    5
+  s:       )    )    (    )    )    )
+  locked:  0    1    0    1    0    0
+           ↑         ↑         ↑    ↑
+         flex       flex     flex  flex  (changeable)
+
+Left-to-right scan (can we keep ')' ≤ possible '('):
+  i=0: locked=0 or '(' → open++     open=1
+  i=1: locked=1 and ')' → open--    open=0
+  i=2: locked=0         → open++    open=1
+  i=3: locked=1 and ')' → open--    open=0
+  i=4: locked=0         → open++    open=1
+  i=5: locked=0         → open++    open=2
+  open ≥ 0 throughout ✓
+
+Right-to-left scan (can we keep '(' ≤ possible ')'):
+  Similar check from right → close ≥ 0 throughout ✓
+
+  Result: true (possible valid assignment exists)
+
+  Two-pass greedy: O(n) time, O(1) space
+```
+
 ---
 
 ## Example 9: Maximum Nesting Depth of Parentheses (LeetCode 1614)
@@ -448,6 +672,38 @@ func main() {
     }
     // 3, 3, 1, 0
 }
+```
+
+**Textual Figure: Maximum Nesting Depth**
+
+```
+Input: "(1+(2*3)+((8)/4))+1"
+
+  Char     depth   maxDepth
+  ────     ─────   ────────
+  '('      1       1
+   1
+   +
+  '('      2       2
+   2 * 3
+  ')'      1
+   +
+  '('      2       2
+  '('      3       3  ← MAX
+   8
+  ')'      2
+   / 4
+  ')'      1
+  ')'      0
+   + 1
+
+  Nesting visualization:
+  Depth 0: ......................+1
+  Depth 1: (──────────────────)
+  Depth 2:   (─────)  (──────)
+  Depth 3:            ((──)   )
+
+  Maximum nesting depth = 3
 ```
 
 ---
@@ -499,6 +755,39 @@ func main() {
     // "(u(love)i)"      → "iloveu"
     // "(ed(et(oc))el)"  → "leetcode"
 }
+```
+
+**Textual Figure: Reverse Substrings Between Parentheses**
+
+```
+Input: "(u(love)i)"
+
+Stack of partial strings at each depth:
+
+  Char    stack              current
+  ────    ─────              ───────
+  '('     [""]               ""         save & reset
+  'u'     [""]               "u"
+  '('     ["", "u"]          ""         save & reset
+  'l'     ["", "u"]          "l"
+  'o'     ["", "u"]          "lo"
+  'v'     ["", "u"]          "lov"
+  'e'     ["", "u"]          "love"
+  ')'     [""]               "u"+rev("love")  reverse & pop
+                             = "u" + "evol"
+                             = "uevol"
+  'i'     [""]               "uevoli"
+  ')'     []                 ""+rev("uevoli")  reverse & pop
+                             = "iloveu"
+
+  Stack at deepest point:
+  ┌─────┐
+  │ "u" │←top   current = "love"
+  ├─────┤
+  │ ""  │
+  └─────┘
+
+  Result: "iloveu"
 ```
 
 ---
@@ -554,6 +843,37 @@ func main() {
         fmt.Printf("%-20q → %v\n", s, checkValidString(s))
     }
 }
+```
+
+**Textual Figure: Validate Wildcard Parentheses**
+
+```
+Input: "(*))"
+
+'*' can be '(' or ')' or empty.
+Track range [minOpen, maxOpen] of possible open-paren counts:
+
+  Char  minOpen  maxOpen   Reasoning
+  ────  ───────  ───────   ─────────
+  '('   1        1         must be '('
+  '*'   0        2         treat as ')'→min--
+                           treat as '('→max++
+  ')'   0        1         min-- → -1→clamp to 0
+                           max--
+  ')'   0        0         min-- → -1→clamp to 0
+                           max-- = 0 (≥0, ok)
+
+  Final: minOpen = 0  → valid! ✓
+
+  Visualization of possible open counts:
+
+  After '(':   [1, 1]     min=max=1
+  After '*':   [0, 2]     ─────────
+  After ')':   [0, 1]       ──────
+  After ')':   [0, 0]         ─     ← range includes 0 → valid
+
+  If maxOpen < 0 at any point → impossible → false
+  If minOpen = 0 at end → valid
 ```
 
 ---
