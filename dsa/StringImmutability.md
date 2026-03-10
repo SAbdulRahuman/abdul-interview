@@ -32,6 +32,36 @@ func main() {
 }
 ```
 
+**Textual Figure — String vs Byte Slice:**
+
+```
+  String (immutable):
+  ┌─────────────────────────────┐
+  │ s := "hello"                │
+  │  ptr ──→ [h][e][l][l][o]   │   Read-only bytes
+  │  len = 5                    │   Cannot modify s[0]
+  └─────────────────────────────┘
+
+  Convert to []byte (mutable copy):
+  ┌─────────────────────────────┐
+  │ b := []byte(s)              │   COPIES the bytes
+  │  ptr ──→ [h][e][l][l][o]   │   New mutable memory
+  │  len=5, cap=5               │
+  └─────────────────────────────┘
+
+  Modify and convert back:
+  b[0] = 'H'
+  ┌─────────────────────────────┐
+  │ b ──→ [H][e][l][l][o]      │   Modified in place
+  │ modified = string(b)        │   Another COPY back
+  └─────────────────────────────┘
+
+  Original s is untouched:  "hello"
+  New modified string:      "Hello"
+
+  Total: 2 copies!  string → []byte → string
+```
+
 ---
 
 ## Example 2: String Concatenation Creates New Strings
@@ -52,6 +82,29 @@ func main() {
     fmt.Printf("s2: %q at %p\n", s2, unsafe.StringData(s2))
     // Different addresses — s2 is a new string
 }
+```
+
+**Textual Figure — Concatenation Creates New String:**
+
+```
+  s1 := "hello"
+  ┌───────┐
+  │ ptr ──┼──→ [h][e][l][l][o]     addr: 0xA000
+  │ len=5 │
+  └───────┘
+
+  s2 := s1 + " world"
+  ┌───────┐
+  │ ptr ──┼──→ [h][e][l][l][o][ ][w][o][r][l][d]   addr: 0xB000
+  │ len=11│
+  └───────┘
+
+  s1 and s2 point to DIFFERENT memory!
+
+  0xA000: [h e l l o]           ← s1 (still alive)
+  0xB000: [h e l l o   w o r l d]  ← s2 (new allocation)
+
+  Every + creates a new string and copies ALL bytes.
 ```
 
 ---
@@ -98,6 +151,35 @@ func main() {
 }
 ```
 
+**Textual Figure — Naive vs Builder Concatenation:**
+
+```
+  Naive: s += "a" in a loop (n = 5)
+
+  Iter 1: s = ""  + "a"     → copy 1 byte  → "a"
+  Iter 2: s = "a" + "a"     → copy 2 bytes → "aa"
+  Iter 3: s = "aa" + "a"    → copy 3 bytes → "aaa"
+  Iter 4: s = "aaa" + "a"   → copy 4 bytes → "aaaa"
+  Iter 5: s = "aaaa" + "a"  → copy 5 bytes → "aaaaa"
+                  Total copies: 1+2+3+4+5 = 15 = O(n²)
+
+  strings.Builder (amortized O(1) append):
+  ┌────────────────────────────────────────┐
+  │ internal buffer (grows like []byte):   │
+  │  cap=0 → cap=8 → cap=16 → cap=32...   │
+  │                                        │
+  │  Write("a"): just append, no copy      │
+  │  Write("a"): just append, no copy      │
+  │  ...                                   │
+  │  String(): one final conversion        │
+  └────────────────────────────────────────┘
+  Total copies: O(n)  ← ~100x faster!
+
+  Performance (n=100,000):
+  Naive:   ~500ms
+  Builder: ~0.5ms
+```
+
 ---
 
 ## Example 4: strings.Builder — The Right Way
@@ -133,6 +215,37 @@ func main() {
 }
 ```
 
+**Textual Figure — strings.Builder Internals:**
+
+```
+  var sb strings.Builder
+
+  sb.WriteString("Go")         sb.WriteByte(' ')
+  ┌─────────────────┐          ┌─────────────────┐
+  │ buf: [G][o]     │          │ buf: [G][o][ ]  │
+  │ len=2, cap=8    │          │ len=3, cap=8    │
+  └─────────────────┘          └─────────────────┘
+
+  sb.WriteString("strings")    sb.WriteByte(' ')
+  ┌─────────────────────────┐  ┌──────────────────────────┐
+  │ buf: [G o   s t r i n]  │  │ buf: [G o   s t r i n g] │
+  │      [g s]               │  │      [s  ]               │
+  │ len=10, cap=16           │  │ len=11, cap=16           │
+  └─────────────────────────┘  └──────────────────────────┘
+
+  ...continues appending "are" and "immutable"...
+
+  sb.String() → "Go strings are immutable"
+                  (single conversion, no extra copies)
+
+  sb.Grow(100):  pre-allocate 100 bytes capacity
+  ┌──────────────────────────────────────┐
+  │ buf: [...........................]    │
+  │ len=0, cap=100                       │
+  │ No reallocation needed until cap hit │
+  └──────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: String Slicing Shares Memory (Like Slices)
@@ -159,6 +272,36 @@ func main() {
     // This means substrings are O(1) — no copy!
     // But the original string can't be GC'd while sub exists
 }
+```
+
+**Textual Figure — String Slicing Shares Memory:**
+
+```
+  s := "hello world"
+
+  Memory layout:
+  addr:  0x1000                           0x100A
+         ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+  bytes: │ h │ e │ l │ l │ o │   │ w │ o │ r │ l │ d │
+         └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+         ↑                       ↑
+         s.ptr (len=11)          sub.ptr (len=5)
+
+  sub := s[6:]  →  "world"
+
+  s:   { ptr: 0x1000, len: 11 }    ← string header
+  sub: { ptr: 0x1006, len: 5  }    ← points INTO same bytes!
+
+  No copy! O(1) substring creation.
+
+  ⚠ Memory leak risk:
+  ┌────────────────────────────────────────────┐
+  │ If s = readHugeFile() (1GB)                │
+  │ sub = s[:10]                               │
+  │ s = ""  // try to free...                  │
+  │ But 1GB can't be GC'd! sub still refs it.  │
+  │ Fix: sub = string([]byte(s[:10]))  // copy │
+  └────────────────────────────────────────────┘
 ```
 
 ---
@@ -189,6 +332,36 @@ func main() {
     result := append(r2[:6], append(insert, r2[6:]...)...)
     fmt.Println(string(result)) // hello beautiful world
 }
+```
+
+**Textual Figure — []rune for Unicode Modification:**
+
+```
+  s := "café"
+
+  Bytes vs Runes:
+  Bytes: [c] [a] [f] [0xc3] [0xa9]    len(s) = 5 bytes
+          │   │   │   └─────┘
+          c   a   f      é            é = 2 bytes in UTF-8
+
+  Runes: [c] [a] [f] [é]              len([]rune(s)) = 4 runes
+          0   1   2   3
+
+  Modify rune at index 3:
+  runes[3] = 'E'
+  [c] [a] [f] [E]  →  "cafE"  ✓
+
+  Insert into middle:
+  s2 = "hello world"   r2 = []rune(s2)
+  insert = []rune("beautiful ")
+
+  r2[:6]  = [h][e][l][l][o][ ]
+  insert  = [b][e][a][u][t][i][f][u][l][ ]
+  r2[6:]  = [w][o][r][l][d]
+
+  Result: "hello beautiful world"
+
+  Rule: Use []byte for ASCII, []rune for Unicode!
 ```
 
 ---
@@ -222,6 +395,30 @@ func main() {
     fmt.Println(strings.Compare("b", "a"))  // 1
     fmt.Println(strings.Compare("a", "a"))  // 0
 }
+```
+
+**Textual Figure — String Comparison:**
+
+```
+  Byte-by-byte lexicographic comparison:
+
+  "apple" vs "banana":
+  a(97) < b(98) → "apple" < "banana"  (stop at first diff)
+
+  "abc" vs "abd":
+  a==a, b==b, c(99) < d(100) → "abc" < "abd"
+
+  "abc" vs "abcd":
+  a==a, b==b, c==c, then "abc" shorter → "abc" < "abcd"
+
+  Case sensitivity:
+  ┌─────────────┬────────┬──────────────────────────┐
+  │ Method        │Result │ Notes                      │
+  ├─────────────┼────────┼──────────────────────────┤
+  │ "Hello"=="hello"  false   │ 'H'(72) ≠ 'h'(104)        │
+  │ EqualFold      │ true   │ Case-insensitive           │
+  │ ToLower==      │ true   │ Normalize then compare     │
+  └─────────────┴────────┴──────────────────────────┘
 ```
 
 ---
@@ -264,6 +461,34 @@ func main() {
 }
 ```
 
+**Textual Figure — String Interning:**
+
+```
+  Compile-time literals:
+  s1 := "hello"   s2 := "hello"
+
+  Compiler may deduplicate:
+  ┌─────┐     ┌──────────────────┐
+  │  s1 │───→│ [h][e][l][l][o]  │  read-only segment
+  └─────┘  ┌→│                  │
+  ┌─────┐  │ └──────────────────┘
+  │  s2 │──┘  Same memory! (compiler optimized)
+  └─────┘
+
+  Runtime-created strings:
+  b := []byte{'h','e','l','l','o'}
+  s3 := string(b)
+  ┌─────┐     ┌──────────────────┐
+  │  s3 │───→│ [h][e][l][l][o]  │  NEW allocation
+  └─────┘     └──────────────────┘
+
+  s1 == s3 → true  (value equality, compares bytes)
+
+  Manual interning with map:
+  intern["important"] = "important"  (store once)
+  Next time: reuse same pointer → saves memory
+```
+
 ---
 
 ## Example 9: Reverse a String (Handling Immutability)
@@ -298,6 +523,34 @@ func main() {
     fmt.Println(reverseASCII("café"))      // ??fac (WRONG for multi-byte!)
     fmt.Println(reverseUnicode("日本語"))   // 語本日
 }
+```
+
+**Textual Figure — Reverse String (ASCII vs Unicode):**
+
+```
+  reverseASCII("hello"):
+  Step 1: b = []byte{'h','e','l','l','o'}
+  Two-pointer swap:
+    i=0,j=4: swap h↔o  [o,e,l,l,h]
+    i=1,j=3: swap e↔l  [o,l,l,e,h]
+    i=2,j=2: done!      "olleh"  ✓
+
+  reverseASCII("café"):  ✘ WRONG for multi-byte!
+  Bytes: [63 61 66 c3 a9]   (é = 2 bytes)
+  Reversed bytes: [a9 c3 66 61 63]  → garbled!
+
+  reverseUnicode("café"):  ✓ Correct
+  Step 1: r = []rune{'c','a','f','é'}  (4 runes)
+  Two-pointer swap:
+    i=0,j=3: swap c↔é  [é,a,f,c]
+    i=1,j=2: swap a↔f  [é,f,a,c]
+  Result: "éfac"  ✓
+
+  Rule of thumb:
+  ┌─────────────┬────────────────────────┐
+  │ ASCII only  │ []byte is fine           │
+  │ Unicode     │ Must use []rune          │
+  └─────────────┴────────────────────────┘
 ```
 
 ---
@@ -356,6 +609,31 @@ func main() {
     _ = strings.Join(parts, "")
     fmt.Printf("Join:      %v\n", time.Since(start))
 }
+```
+
+**Textual Figure — Performance Comparison of String Methods:**
+
+```
+  Building a string of n=50,000 'x' characters:
+
+  ┌─────────────────┬────────┬─────────┬────────────────────────┐
+  │ Method            │ Time    │ Space   │ How it works             │
+  ├─────────────────┼────────┼─────────┼────────────────────────┤
+  │ s += "x"          │ O(n²)   │ O(n²)   │ Copy entire string each  │
+  │ strings.Builder   │ O(n)    │ O(n)    │ Amortized append         │
+  │ []byte + string   │ O(n)    │ O(n)    │ Grow slice, convert once │
+  │ strings.Repeat    │ O(n)    │ O(n)    │ Single allocation        │
+  │ strings.Join      │ O(n)    │ O(n)    │ Pre-calculate total len  │
+  └─────────────────┴────────┴─────────┴────────────────────────┘
+
+  Why += is O(n²):
+  "" + "x"       → copy 1     total: 1
+  "x" + "x"      → copy 2     total: 3
+  "xx" + "x"     → copy 3     total: 6
+  ...            ...          ...
+  n-1 chars + x  → copy n     total: n(n+1)/2 = O(n²)
+
+  Recommendation: Always use strings.Builder for loops!
 ```
 
 ---

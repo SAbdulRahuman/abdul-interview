@@ -619,6 +619,88 @@
 
 ---
 
+## Chapter 31 — [Go Scheduler Deep Dive (GMP Model)](go/GoSchedulerDeepDive.md)
+
+- [ ] GMP model overview — Goroutines (G), OS Threads (M), Processors (P)
+- [ ] G entity — goroutine state machine (Idle → Runnable → Running → Waiting → Dead)
+- [ ] M entity — OS thread, bound to one P at a time, `GOMAXPROCS` controls P count
+- [ ] P entity — logical processor, owns local run queue (LRQ), max 256 entries
+- [ ] Scheduling cycle — `findRunnable` priority order (local → global → netpoll → steal)
+- [ ] Work stealing — idle P steals half of another P's LRQ
+- [ ] Preemption — cooperative (Go <1.14) vs asynchronous signal-based (Go 1.14+)
+- [ ] Sysmon thread — preempts long-running goroutines, retakes Ps from syscalls
+- [ ] Syscall handoff — blocking syscall detaches P, netpoller for non-blocking I/O
+- [ ] `GODEBUG=schedtrace` — runtime scheduler tracing, reading trace output
+- [ ] `runtime.LockOSThread` — pin goroutine to OS thread (CGo, GUI, TLS)
+
+---
+
+## Chapter 32 — [Iterators & Range-Over-Func (Go 1.23+)](go/Iterators.md)
+
+- [ ] Iterator convention — `iter.Seq[V]` and `iter.Seq2[K, V]` function signatures
+- [ ] Push-based iterators — yield callback pattern, range-over-func syntax
+- [ ] Standard combinators — Filter, Map, Take as composable iterator functions
+- [ ] Chaining pipelines — composing iterators without intermediate allocations
+- [ ] Two-value iterators (`Seq2`) — key-value pairs, index-element patterns
+- [ ] Standard library support — `slices.All`, `slices.Values`, `maps.Keys`, `maps.Values`
+- [ ] Custom data structure iterators — BST in-order traversal, tree iterators
+- [ ] Pull-based iterators — `iter.Pull`, `iter.Pull2`, manual advancement
+- [ ] Merged/sorted iterators — combining multiple sorted sequences
+
+---
+
+## Chapter 33 — [Iota & Enum Patterns](go/IotaAndEnumPatterns.md)
+
+- [ ] `iota` basics — auto-incrementing constant generator, resets per `const` block
+- [ ] Iota expressions — bit shifts, arithmetic, skip-with-blank-identifier
+- [ ] Bitmask / bitflag enums — permission flags with `1 << iota`, bitwise operations
+- [ ] Type-safe enums — custom types prevent mixing enum kinds
+- [ ] `go:generate` + `stringer` — auto-generate `String()` method for enum types
+- [ ] String-based enums — `const` with explicit string values
+- [ ] Sentinel / unknown value — placing unknown/invalid at iota 0
+- [ ] Multiple constants per line — multi-dimensional iota expressions
+- [ ] JSON marshal/unmarshal for enums — custom `MarshalJSON` / `UnmarshalJSON`
+
+---
+
+## Chapter 34 — [Database Access (database/sql)](go/DatabaseAccess.md)
+
+- [ ] `database/sql` architecture — driver-agnostic interface, driver registration
+- [ ] `sql.DB` — connection pool (not a connection), `sql.Open`, `db.Ping`
+- [ ] Query methods — `QueryRow` (single row), `Query` (multi row), `Exec` (no rows)
+- [ ] Parameterized queries — `$1/$2` (Postgres), `?` (MySQL), SQL injection prevention
+- [ ] `*sql.Rows` — iterate with `Next()`, `Scan()`, always `defer rows.Close()`
+- [ ] `sql.ErrNoRows` — sentinel error for empty `QueryRow` results
+- [ ] Prepared statements — `db.Prepare`, parse-once-execute-many pattern
+- [ ] Transactions — `BeginTx`, `Commit`, `Rollback`, `defer tx.Rollback()` pattern
+- [ ] Isolation levels — `sql.LevelSerializable`, `sql.LevelRepeatableRead`, etc.
+- [ ] NULL handling — `sql.NullString`, `sql.NullInt64`, pointer types, `sql.Null[T]`
+- [ ] Connection pool tuning — `SetMaxOpenConns`, `SetMaxIdleConns`, `SetConnMaxLifetime`
+- [ ] `db.Stats()` — pool health monitoring metrics
+- [ ] Repository pattern — wrapping `sql.DB` for clean data access layers
+- [ ] Testing — `go-sqlmock`, interface-based mocking
+- [ ] Third-party libraries — `sqlx`, `pgx`, GORM, `sqlc`, migration tools
+
+---
+
+## Chapter 35 — [Race Conditions & Data Races](go/RaceConditions.md)
+
+- [ ] Data race vs race condition — unsynchronized access vs timing-dependent logic
+- [ ] Go race detector — `go run -race`, ThreadSanitizer, runtime detection only
+- [ ] Classic race: shared counter — `counter++` is not atomic, lost updates
+- [ ] Classic race: concurrent map access — `fatal error: concurrent map writes`
+- [ ] Classic race: loop variable capture (pre Go 1.22) — closure captures reference
+- [ ] Classic race: check-then-act (TOCTOU) — gap between check and action
+- [ ] Classic race: slice append — concurrent append corrupts slice header
+- [ ] `sync.Mutex` vs `sync.RWMutex` — exclusive vs reader-writer locks
+- [ ] `sync/atomic` — lock-free operations, `atomic.Int64`, `CompareAndSwap`
+- [ ] `sync.Once` — exactly-once initialization pattern
+- [ ] Goroutine leaks — unbuffered channel blocking, prevention strategies
+- [ ] Channel ownership — producer creates/closes, consumer reads
+- [ ] Race-free design — confinement, immutability, channels over shared memory
+
+---
+
 ## Quick Reference: Go Versions & Key Features
 
 | Version | Key Features |
@@ -673,3 +755,8 @@
 - [ ] Chapter 28: [Go Toolchain & Build](go/GoToolchainAndBuild.md)
 - [ ] Chapter 29: [Keywords & Built-in Functions](go/KeywordsAndBuiltins.md)
 - [ ] Chapter 30: [Garbage Collector (GC)](go/GarbageCollector.md)
+- [ ] Chapter 31: [Go Scheduler Deep Dive (GMP Model)](go/GoSchedulerDeepDive.md)
+- [ ] Chapter 32: [Iterators & Range-Over-Func (Go 1.23+)](go/Iterators.md)
+- [ ] Chapter 33: [Iota & Enum Patterns](go/IotaAndEnumPatterns.md)
+- [ ] Chapter 34: [Database Access (database/sql)](go/DatabaseAccess.md)
+- [ ] Chapter 35: [Race Conditions & Data Races](go/RaceConditions.md)

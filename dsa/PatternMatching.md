@@ -39,6 +39,35 @@ func main() {
 }
 ```
 
+**Textual Figure — Naive Pattern Matching:**
+
+```
+  text = "AABAACAADAABAABA",  pattern = "AABA"
+
+  Slide pattern across text, compare char by char:
+
+  i=0: A A B A A C A A D A A B A A B A
+       A A B A               ✓ match at 0!
+
+  i=1: A A B A A C A A D A A B A A B A
+         A A B A             ✘ (B≠A at j=2)
+
+  i=2: A A B A A C A A D A A B A A B A
+           A A B A           ✘ (A≠A? no, A≠B at j=1)
+  ...skip...
+
+  i=9: A A B A A C A A D A A B A A B A
+                             A A B A   ✓ match at 9!
+
+  i=12: A A B A A C A A D A A B A A B A
+                                A A B A ✓ match at 12!
+
+  Matches: [0, 9, 12]
+
+  Complexity: O((n-m+1) × m) = O(n×m) worst case
+  Each position: up to m comparisons
+```
+
 ---
 
 ## Example 2: strings.Index and strings.Contains
@@ -85,6 +114,33 @@ func main() {
 }
 ```
 
+**Textual Figure — strings.Index Find All:**
+
+```
+  text = "abababab",  pattern = "aba"
+
+  Finding ALL overlapping occurrences:
+
+  start=0: strings.Index("abababab", "aba") = 0
+           a b a b a b a b
+           a b a           ✓ found at 0
+           start = 0 + 1 = 1
+
+  start=1: strings.Index("bababab", "aba") = 1 → actual pos = 2
+           a b a b a b a b
+               a b a       ✓ found at 2
+           start = 2 + 1 = 3
+
+  start=3: strings.Index("babab", "aba") = 1 → actual pos = 4
+           a b a b a b a b
+                   a b a   ✓ found at 4
+           start = 4 + 1 = 5
+
+  start=5: strings.Index("bab", "aba") = -1 → done
+
+  Result: [0, 2, 4]  (overlapping matches!)
+```
+
 ---
 
 ## Example 3: Wildcard Matching
@@ -129,6 +185,34 @@ func main() {
     fmt.Println(isMatch("abc", "a*"))            // true
     fmt.Println(isMatch("abc", "a?c"))           // true
 }
+```
+
+**Textual Figure — Wildcard Matching DP:**
+
+```
+  s = "adceb",  p = "*a*b"
+  ? = any single char,  * = any sequence (including empty)
+
+  DP table: dp[i][j] = s[:i] matches p[:j]
+
+        ""   *    a    *    b
+    j:  0    1    2    3    4
+  ┌───┬───┬───┬───┬───┬───┐
+  │   │ "" │ * │ a │ * │ b │
+  ├───┼───┼───┼───┼───┼───┤
+  │"" │ T │ T │ F │ F │ F │  i=0
+  │ a │ F │ T │ T │ T │ F │  i=1
+  │ d │ F │ T │ F │ T │ F │  i=2
+  │ c │ F │ T │ F │ T │ F │  i=3
+  │ e │ F │ T │ F │ T │ F │  i=4
+  │ b │ F │ T │ F │ T │ T │  i=5  ← answer!
+  └───┴───┴───┴───┴───┴───┘
+
+  dp[5][4] = T → "adceb" matches "*a*b"  ✓
+
+  Rules:
+  '*': dp[i][j] = dp[i-1][j] || dp[i][j-1]  (use or skip)
+  '?': dp[i][j] = dp[i-1][j-1]              (must match 1)
 ```
 
 ---
@@ -181,6 +265,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Regex Matching with . and *:**
+
+```
+  s = "aab",  p = "c*a*b"
+  . = any single char,  x* = zero or more of x
+
+  DP table:
+         ""   c    *    a    *    b
+    j:   0    1    2    3    4    5
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │   │ "" │ c │ * │ a │ * │ b │
+  ├───┼───┼───┼───┼───┼───┼───┤
+  │"" │ T │ F │ T │ F │ T │ F │  c*=ε, a*=ε
+  │ a │ F │ F │ F │ T │ T │ F │
+  │ a │ F │ F │ F │ F │ T │ F │  a* matches "aa"
+  │ b │ F │ F │ F │ F │ F │ T │  ← answer!
+  └───┴───┴───┴───┴───┴───┴───┘
+
+  Key: c* = zero c's, a* = two a's, b = b
+  So "c*a*b" matches "aab"  ✓
+
+  x* rules:
+  • Zero occurrences: dp[i][j] = dp[i][j-2]  (skip x*)
+  • One+ occurrences: dp[i][j] = dp[i-1][j] if x matches s[i-1]
+```
+
 ---
 
 ## Example 5: Implement strStr (LeetCode 28)
@@ -211,6 +321,26 @@ func main() {
 }
 ```
 
+**Textual Figure — strStr (Find Substring):**
+
+```
+  haystack = "hello",  needle = "ll"
+
+  i=0: haystack[0:2] = "he" ≠ "ll"
+  i=1: haystack[1:3] = "el" ≠ "ll"
+  i=2: haystack[2:4] = "ll" == "ll" → return 2  ✓
+
+  Visualization:
+  h e l l o
+  └─┘         "he" ✘
+    └─┘       "el" ✘
+      └─┘     "ll" ✓  → return 2!
+
+  Key optimization: haystack[i:i+m] uses Go's slice
+  comparison which is efficient for short patterns.
+  For long patterns, use KMP or Rabin-Karp instead.
+```
+
 ---
 
 ## Example 6: Two-Pointer Pattern Match
@@ -239,6 +369,36 @@ func main() {
     fmt.Println(isSubsequence("abc", "ahbgdc"))  // true
     fmt.Println(isSubsequence("axc", "ahbgdc"))  // false
 }
+```
+
+**Textual Figure — Subsequence Check (Two Pointers):**
+
+```
+  sub = "ace",  text = "abcde"
+  i = pointer into sub,  j = pointer into text
+
+  j=0: text[0]='a' == sub[0]='a' → i=1, j=1
+       a b c d e
+       ↑               match!
+       a c e
+       ↑
+
+  j=1: text[1]='b' ≠ sub[1]='c' → j=2
+  j=2: text[2]='c' == sub[1]='c' → i=2, j=3
+       a b c d e
+           ↑             match!
+       a c e
+         ↑
+
+  j=3: text[3]='d' ≠ sub[2]='e' → j=4
+  j=4: text[4]='e' == sub[2]='e' → i=3, j=5
+
+  i == len(sub) = 3 → true!  (all chars found in order)
+
+  "axc" in "ahbgdc":
+  a✓ x? (never found) → false
+
+  O(n) time, O(1) space
 ```
 
 ---
@@ -289,6 +449,33 @@ func main() {
 }
 ```
 
+**Textual Figure — Repeated Substring Pattern:**
+
+```
+  s = "abab"  → Is it made of a repeating pattern?
+
+  Method 1: Double-string trick
+  doubled = s + s = "abababab"
+  Remove first and last char: "bababab"
+  Does "bababab" contain "abab"?  YES! → true
+
+  Why this works:
+  "abab" + "abab" = "abab|abab"
+  Remove edges:     "_bab ab ab_"
+                      still contains "abab"!
+
+  If NOT repeating: "abc" + "abc" = "abcabc"
+  Remove edges: "_bcab_"  does NOT contain "abc"
+
+  Method 2: Check all divisor lengths
+  n = 4,  check l = 1, 2 (divisors of 4, ≤ n/2)
+
+  l=1: pattern="a", check "a"|"b"|"a"|"b" → "b"≠"a" ✘
+  l=2: pattern="ab", check "ab"|"ab" → all match ✓
+
+  Result: true ("ab" repeats twice)
+```
+
 ---
 
 ## Example 8: Shortest Superstring Containing All Words
@@ -330,6 +517,31 @@ func main() {
         fmt.Printf("'%s' + '%s' overlap=%d\n", p[0], p[1], ov)
     }
 }
+```
+
+**Textual Figure — String Overlap Merging:**
+
+```
+  a = "abcde",  b = "cdefg"
+
+  Check suffix of a vs prefix of b:
+  len=5: "abcde" == "cdefg"[:5]? No (different lengths ok, but no match)
+  len=4: "bcde"  == "cdef"? No
+  len=3: "cde"   == "cde"?  YES!  overlap = 3
+
+  Merge:   a      +    b[overlap:]
+         "abcde" +    "fg"
+       = "abcdefg"
+
+  Visual:
+  a: [a][b][c][d][e]
+  b:         [c][d][e][f][g]
+             └─overlap─┘
+
+  Merged: [a][b][c][d][e][f][g]  (no duplication)
+
+  No overlap example: "hello" + "world" → overlap=0
+  Merge: "helloworld"
 ```
 
 ---
@@ -378,6 +590,32 @@ func main() {
     fmt.Println("Overlapping 'aba':", countOverlapping(text, "aba"))       // 4
     fmt.Println("Non-overlapping 'ab':", countNonOverlapping(text, "ab"))   // 5
 }
+```
+
+**Textual Figure — Overlapping vs Non-Overlapping Counts:**
+
+```
+  text = "ababababab",  pattern = "aba"
+
+  Non-overlapping (skip past match):
+  a b a b a b a b a b
+  a b a                 ✓ found at 0, next start = 0+3 = 3
+        a b a           ✘ "bab" (start=3, found at idx 1 → pos=4)
+          a b a         ✓ found at 4, next start = 4+3 = 7
+                a b a   ✘ not found
+  Count: 2
+
+  Overlapping (advance by 1):
+  a b a b a b a b a b
+  a b a                 ✓ found at 0, next start = 1
+      a b a             ✓ found at 2, next start = 3
+          a b a         ✓ found at 4, next start = 5
+              a b a     ✓ found at 6, next start = 7
+  Count: 4
+
+  Key difference:
+  Non-overlapping: start += len(pattern)  (skip match)
+  Overlapping:     start += 1             (advance 1)
 ```
 
 ---
@@ -443,6 +681,38 @@ func main() {
     fmt.Println(wordPattern("aaaa", "dog cat cat dog"))   // false
     fmt.Println(wordPattern("abba", "dog dog dog dog"))   // false
 }
+```
+
+**Textual Figure — Word Pattern Matching:**
+
+```
+  pattern = "abba",  s = "dog cat cat dog"
+  words = ["dog", "cat", "cat", "dog"]
+
+  Build bidirectional mapping:
+
+  i=0: pattern='a', word="dog"
+       charToWord: {a:"dog"}    wordToChar: {"dog":a}
+
+  i=1: pattern='b', word="cat"
+       charToWord: {a:"dog", b:"cat"}
+       wordToChar: {"dog":a, "cat":b}
+
+  i=2: pattern='b', word="cat"
+       charToWord[b]="cat" == "cat" ✓
+       wordToChar["cat"]=b == b ✓
+
+  i=3: pattern='a', word="dog"
+       charToWord[a]="dog" == "dog" ✓
+       wordToChar["dog"]=a == a ✓
+
+  All match → true!
+
+  Counterexample: "abba" vs "dog dog dog dog"
+  i=0: a → "dog"
+  i=1: b → "dog"  but wordToChar["dog"]=a ≠ b → false!
+
+  Both maps needed to prevent many-to-one mappings.
 ```
 
 ---

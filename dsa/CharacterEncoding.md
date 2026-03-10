@@ -28,6 +28,31 @@ func main() {
 }
 ```
 
+**Textual Figure — ASCII Table (Key Ranges):**
+
+```
+  ASCII Character Map (0-127):
+
+  ┌──────────┬─────────┬────────────────────┐
+  │ Range    │ Decimal │ Characters           │
+  ├──────────┼─────────┼────────────────────┤
+  │ '0'-'9'  │  48-57  │ Digits               │
+  │ 'A'-'Z'  │  65-90  │ Uppercase letters    │
+  │ 'a'-'z'  │  97-122 │ Lowercase letters    │
+  └──────────┴─────────┴────────────────────┘
+
+  Character Arithmetic:
+  'Z' - 'A' = 90 - 65 = 25     (letter distance)
+  'a' - 'A' = 97 - 65 = 32     (case offset)
+  '5' - '0' = 53 - 48 = 5      (digit value)
+  'A' + 3   = 65 + 3  = 68 'D' (shift in alphabet)
+
+  Common interview tricks:
+  • char - 'a'  →  index 0-25 (for [26]int arrays)
+  • char - '0'  →  digit value 0-9
+  • char ^ 32   →  toggle case (ASCII trick)
+```
+
 ---
 
 ## Example 2: UTF-8 Multi-Byte Characters
@@ -57,6 +82,30 @@ func main() {
             i, r, r, len(string(r)))
     }
 }
+```
+
+**Textual Figure — UTF-8 Multi-Byte Characters:**
+
+```
+  s = "Hello, 世界! 🌍"
+
+  Byte layout:
+  Position: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19
+  Hex:      48 65 6C 6C 6F 2C 20 E4 B8 96 E7 95 8C 21 20 F0 9F 8C 8D
+            H  e  l  l  o  ,     世(×3 bytes) 界(×3 bytes) !     🌍 (×4 bytes)
+            └─── ASCII (1B each) ──┘  └─ 3B ─┘ └─ 3B ─┘     └── 4B ──┘
+
+  len(s) = 20 bytes,  len([]rune(s)) = 12 runes
+
+  Rune iteration (via range):
+  byte  0: U+0048 'H' (1 byte)
+  byte  1: U+0065 'e' (1 byte)
+  ...                            range skips to next rune start!
+  byte  7: U+4E16 '世' (3 bytes)
+  byte 10: U+754C '界' (3 bytes)
+  byte 15: U+1F30D '🌍' (4 bytes)
+
+  Key: range s gives (byte_index, rune), NOT (rune_index, rune)
 ```
 
 ---
@@ -93,6 +142,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Rune vs Byte Access:**
+
+```
+  String      bytes  runes  Why different?
+  ──────────────────────────────────────────────
+  "hello"       5      5    All ASCII (1 byte each)
+  "café"        5      4    é = 2 bytes
+  "日本語"       9      3    Each CJK = 3 bytes
+  "🎉🌟"        8      2    Each emoji = 4 bytes
+  "naïve"       6      5    ï = 2 bytes
+
+  Accessing "café":
+  Index:  0    1    2    3    4
+  Bytes: [63] [61] [66] [C3] [A9]
+          c    a    f    └─é─┘
+
+  s[3] = 0xC3  ✘  (half of é, invalid rune!)
+
+  Runes: [99] [97] [102] [233]
+          c    a     f    é
+
+  rune[3] = 233 = 'é'  ✓
+
+  Rule: NEVER index a string by byte for non-ASCII!
+```
+
 ---
 
 ## Example 4: Converting Between Encodings
@@ -125,6 +200,28 @@ func main() {
     fmt.Println(string(rune(9731))) // ☃ (snowman)
     fmt.Println(string(rune(128640))) // 🚀
 }
+```
+
+**Textual Figure — Encoding Conversions:**
+
+```
+  Conversion paths:
+
+  string ──── []byte(s) ────→ []byte     (copies UTF-8 bytes)
+    │                              │
+    │    string(b) ─────────────┘         (copies back)
+    │
+    ├──── []rune(s) ────→ []rune    (decodes to code points)
+    │                              │
+    │    string(r) ─────────────┘         (encodes back to UTF-8)
+    │
+    └──── string(rune(65)) ──→ "A"      (single code point)
+
+  Example:
+  "café" ──[]byte──→ [99, 97, 102, 195, 169]   (5 bytes)
+  "café" ──[]rune──→ [99, 97, 102, 233]        (4 runes)
+
+  ⚠ Each conversion allocates new memory!
 ```
 
 ---
@@ -169,9 +266,33 @@ func main() {
 }
 ```
 
----
+**Textual Figure — Case Conversion:**
 
-## Example 6: Character Frequency Counter (Encoding-Aware)
+```
+  ASCII case conversion trick:
+
+  'A' = 0100 0001 (65)
+  'a' = 0110 0001 (97)       difference = 32 = bit 5
+
+  To lowercase: c | 0x20   (set bit 5)
+  To uppercase: c & ^0x20  (clear bit 5)
+  Toggle case:  c ^ 0x20   (flip bit 5)
+
+  Manual: c - 32 = uppercase,  c + 32 = lowercase
+
+  Unicode classification:
+  ┌───────┬────────┬───────┬───────┬───────┐
+  │ Char  │ Letter │ Digit │ Upper │ Lower │
+  ├───────┼────────┼───────┼───────┼───────┤
+  │ 'H'   │  ✓     │  ✘    │  ✓    │  ✘    │
+  │ 'e'   │  ✓     │  ✘    │  ✘    │  ✓    │
+  │ '1'   │  ✘     │  ✓    │  ✘    │  ✘    │
+  │ '!'   │  ✘     │  ✘    │  ✘    │  ✘    │
+  │ 'é'   │  ✓     │  ✘    │  ✘    │  ✓    │
+  └───────┴────────┴───────┴───────┴───────┘
+```
+
+---
 
 ```go
 package main
@@ -212,6 +333,37 @@ func main() {
     }
     // a:5 b:2 c:1 d:1 r:2
 }
+```
+
+**Textual Figure — Character Frequency Counting:**
+
+```
+  Two approaches:
+
+  1. map[rune]int (Unicode-safe):
+     "hello 世界" → iterate runes via range
+     map: {'h':1, 'e':1, 'l':2, 'o':1, ' ':1, '世':1, '界':1}
+
+  2. [128]int array (ASCII-only, faster):
+     "abracadabra"
+
+     Index:   97  98  99 100 114    (a=97, b=98, ...)
+     Array:  [ 5,  2,  1,  1, ..., 2, ...]   freq['a'-0]=5
+
+     s[i]    freq[s[i]]++
+     'a'  →  freq[97]++   → 5
+     'b'  →  freq[98]++   → 2
+     'r'  →  freq[114]++  → 2
+     'c'  →  freq[99]++   → 1
+     'd'  →  freq[100]++  → 1
+
+  Speed comparison:
+  ┌──────────────┬──────────┬──────────────┐
+  │ Method       │ Lookup   │ Unicode?     │
+  ├──────────────┼──────────┼──────────────┤
+  │ [128]int     │ O(1)     │ ASCII only   │
+  │ map[rune]int │ O(1) avg │ Yes          │
+  └──────────────┴──────────┴──────────────┘
 ```
 
 ---
@@ -262,6 +414,32 @@ func main() {
 }
 ```
 
+**Textual Figure — Anagram Detection:**
+
+```
+  isAnagram("anagram", "nagaram"):
+
+  Use a single [256]int count array:
+  For s: count[ch]++     For t: count[ch]--
+
+  s = "anagram"     t = "nagaram"
+  ┌───┬──────────┬──────────┐
+  │ i │ s[i]++ →  │ t[i]-- →  │
+  ├───┼──────────┼──────────┤
+  │ 0 │ a: +1    │ n: -1    │
+  │ 1 │ n: +1    │ a: -1    │
+  │ 2 │ a: +1    │ g: -1    │
+  │ 3 │ g: +1    │ a: -1    │
+  │ 4 │ r: +1    │ r: -1    │
+  │ 5 │ a: +1    │ a: -1    │
+  │ 6 │ m: +1    │ m: -1    │
+  └───┴──────────┴──────────┘
+
+  Final counts: all zeros → true (anagram!) ✓
+
+  One-pass trick: increment for s, decrement for t simultaneously.
+```
+
 ---
 
 ## Example 8: UTF-8 Encoding Details
@@ -301,6 +479,29 @@ func main() {
     fmt.Println(utf8.ValidString("hello"))   // true
     fmt.Println(utf8.Valid([]byte{0xff, 0xfe})) // false — invalid UTF-8
 }
+```
+
+**Textual Figure — UTF-8 Encoding Rules:**
+
+```
+  UTF-8 Variable-Length Encoding:
+
+  ┌───────────────────┬───────┬─────────────────────────────────┐
+  │ Code Point Range    │ Bytes │ Bit Pattern                      │
+  ├───────────────────┼───────┼─────────────────────────────────┤
+  │ U+0000..U+007F     │   1   │ 0xxxxxxx                         │
+  │ U+0080..U+07FF     │   2   │ 110xxxxx 10xxxxxx                 │
+  │ U+0800..U+FFFF     │   3   │ 1110xxxx 10xxxxxx 10xxxxxx        │
+  │ U+10000..U+10FFFF  │   4   │ 11110xxx 10xxxxxx 10xxxxxx 10xx.. │
+  └───────────────────┴───────┴─────────────────────────────────┘
+
+  Examples:
+  'A'  U+0041 → 01000001                   = 0x41 (1 byte)
+  'é'  U+00E9 → 11000011 10101001          = 0xC3 0xA9 (2 bytes)
+  '世' U+4E16 → 11100100 10111000 10010110 = 0xE4 0xB8 0x96 (3 bytes)
+  '🌍' U+1F30D→ 11110000 10011111 10001100 10001101 (4 bytes)
+
+  Leading bits tell the decoder how many bytes to read.
 ```
 
 ---
@@ -350,6 +551,31 @@ func main() {
 }
 ```
 
+**Textual Figure — [26]int Array for Letter Problems:**
+
+```
+  s = "leetcode"
+
+  freq[ch - 'a']++ for each byte:
+
+  Index:  0  1  2  3  4  5  ... 11  ... 14  ... 19  ...
+  Letter: a  b  c  d  e  f      l       o       t
+  Count: [0, 0, 1, 1, 3, 0, ..., 1, ..., 1, ..., 1, ...]
+                  c  d  e        l       o       t
+
+  Permutation check with [26]int:
+  a = "abc",  b = "cba"
+
+  Process simultaneously:
+  i=0: count['a']++, count['c']--  → [+1, 0, -1, ...]
+  i=1: count['b']++, count['b']--  → [+1, 0, -1, ...]
+  i=2: count['c']++, count['a']--  → [ 0, 0,  0, ...]
+
+  All zeros → permutation!  ✓
+
+  This technique: O(n) time, O(1) space (fixed 26 slots)
+```
+
 ---
 
 ## Example 10: Handling Special Characters and Escapes
@@ -393,6 +619,31 @@ func main() {
     fmt.Println(unquoted)          // hello
                                    // world
 }
+```
+
+**Textual Figure — Escape Sequences and Raw Strings:**
+
+```
+  Regular string (escapes processed):
+  "Hello\tWorld\n"  →  Hello→(tab)World↓(newline)
+
+  Common escape sequences:
+  ┌──────┬────────────┬─────────┬────────┐
+  │ Esc  │ Meaning    │ Decimal │ Hex    │
+  ├──────┼────────────┼─────────┼────────┤
+  │ \n   │ Newline    │ 10      │ 0x0A   │
+  │ \t   │ Tab        │ 9       │ 0x09   │
+  │ \\   │ Backslash  │ 92      │ 0x5C   │
+  │ \"   │ Quote      │ 34      │ 0x22   │
+  └──────┴────────────┴─────────┴────────┘
+
+  Raw string (backtick, no escapes):
+  `Hello\tWorld\n`  →  Hello\tWorld\n  (literal backslashes!)
+
+  Clean non-alphanumeric:
+  "A man, a plan..." → check each rune:
+  'A'✓ ' '✘ 'm'✓ 'a'✓ 'n'✓ ','✘ ' '✘ ...
+  Result: "AmanaplanacanelPanama"
 ```
 
 ---
