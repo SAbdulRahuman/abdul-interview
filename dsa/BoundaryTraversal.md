@@ -116,6 +116,36 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 1:**
+```
+ Boundary Traversal (Anti-clockwise):
+ ────────────────────────
+         1
+        / \
+       2   3
+      / \   \
+     4   5   6
+        / \
+       7   8
+
+ Three passes:
+ ┌────────────────────────────────────────────┐
+ │ 1. Root:            [1]                          │
+ │ 2. Left boundary:   [2] (top→bottom, skip leaves) │
+ │ 3. Leaves (L→R):    [4, 7, 8, 6]                 │
+ │ 4. Right boundary:  [3] (bottom→top, skip leaves) │
+ └────────────────────────────────────────────┘
+
+ Traversal path around the boundary:
+       → 1 →                   Anti-clockwise boundary:
+      ↓       ↑                 1 → 2 → 4 → 7 → 8
+      2        3                     ↓
+      ↓         ↑               → 6 → 3 (bottom to top)
+      4  5──6  ↑
+         |  |                   Result: [1, 2, 4, 7, 8, 6, 3]
+         7  8 →
+```
+
 ---
 
 ## Example 2: Left-Only Tree
@@ -184,6 +214,30 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 2:**
+```
+ Left-Only Tree Boundary:
+ ────────────────────
+   1                   Left boundary path:
+  /                    1 → 2 (has right, no left)
+ 2                       → 3 (has left, no right → go left)
+  \                      → stop (4 is a leaf)
+   3
+  /                    Left boundary: [2, 3]
+ 4                     Leaves: [4]
+                       Right boundary: none
+
+ ┌───────────────┬───────────────────────┐
+ │ Component     │ Nodes                 │
+ ├───────────────┼───────────────────────┤
+ │ Root          │ [1]                   │
+ │ Left boundary │ [2, 3] (skip leaf 4)  │
+ │ Leaves        │ [4]                   │
+ │ Right boundary│ [] (root.Right=nil)   │
+ └───────────────┴───────────────────────┘
+ Result: [1, 2, 3, 4]
+```
+
 ---
 
 ## Example 3: Right-Only Tree
@@ -249,6 +303,29 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 3:**
+```
+ Right-Only Tree Boundary:
+ ────────────────────
+   1                    Right boundary path (top→bottom):
+    \                   1 → 2 (has left, not right)
+     2                    → 3 (has right)
+    /                     → 4 (leaf, stop)
+   3
+    \                   Right boundary: [2, 3]
+     4                  Reversed: [3, 2]
+
+ ┌───────────────┬───────────────────────┐
+ │ Component     │ Nodes                 │
+ ├───────────────┼───────────────────────┤
+ │ Root          │ [1]                   │
+ │ Left boundary │ [] (root.Left=nil)    │
+ │ Leaves        │ [4]                   │
+ │ Right (rev)   │ [3, 2]                │
+ └───────────────┴───────────────────────┘
+ Result: [1, 4, 3, 2]
+```
+
 ---
 
 ## Example 4: Single Node & Two-Node Trees
@@ -310,6 +387,33 @@ func main() {
     both := &TreeNode{1, &TreeNode{2, nil, nil}, &TreeNode{3, nil, nil}}
     fmt.Println("Root+Both:", boundary(both)) // [1 2 3]
 }
+```
+
+**Textual Figure – Example 4:**
+```
+ Edge Cases — Single Node & Two-Node Trees:
+ ────────────────────────────────────
+
+ Case 1: Single node    Case 2: Root+Left
+   [42]                    1
+   isLeaf → return [42]   /
+                         2 (leaf)
+
+ Case 3: Root+Right     Case 4: Root+Both
+   1                       1
+    \                     / \
+     3 (leaf)            2   3 (both leaves)
+
+ ┌────────────┬─────┬────────┬─────────┬───────────┐
+ │ Case       │ R   │ LBound │ Leaves  │ RBound    │
+ ├────────────┼─────┼────────┼─────────┼───────────┤
+ │ Single     │[42]│ n/a    │ n/a     │ n/a       │
+ │ Root+Left  │ [1]│ []     │ [2]     │ []        │
+ │ Root+Right │ [1]│ []     │ [3]     │ []        │
+ │ Root+Both  │ [1]│ []     │ [2,3]   │ []        │
+ └────────────┴─────┴────────┴─────────┴───────────┘
+
+ Results: [42], [1,2], [1,3], [1,2,3]
 ```
 
 ---
@@ -402,6 +506,36 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 5:**
+```
+ Boundary Using Single DFS with Flags:
+ ───────────────────────────────
+         1 (flag=0, root)
+        / \
+       2   3              Flags:
+      / \   \               0 = root
+     4   5   6              1 = left boundary
+        / \                 2 = right boundary
+       7   8                3 = internal
+
+ DFS assigns flags to children:
+ ┌──────┬───────┬──────┬─────────────────────┐
+ │ Node │ Flag  │ Leaf │ Collected in        │
+ ├──────┼───────┼──────┼─────────────────────┤
+ │  1   │  0    │  No  │ left[]              │
+ │  2   │  1    │  No  │ left[]              │
+ │  4   │  1    │  Yes │ leaves[]            │
+ │  5   │  3    │  No  │ (internal)          │
+ │  7   │  3    │  Yes │ leaves[]            │
+ │  8   │  3    │  Yes │ leaves[]            │
+ │  3   │  2    │  No  │ right[]             │
+ │  6   │  2    │  Yes │ leaves[]            │
+ └──────┴───────┴──────┴─────────────────────┘
+
+ Combine: left[1,2] + leaves[4,7,8,6] + rev(right[3])
+ Result: [1, 2, 4, 7, 8, 6, 3]
+```
+
 ---
 
 ## Example 6: Outer Boundary Anti-Clockwise (LeetCode 545)
@@ -479,6 +613,36 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 6:**
+```
+ Outer Boundary (LeetCode 545):
+ ────────────────────────
+         1
+          \
+           2
+          / \
+         3   4
+        /   / \
+       5   6   7
+          / \
+         8   9
+
+ ┌───────────────┬────────────────────────────┐
+ │ Component     │ Nodes                      │
+ ├───────────────┼────────────────────────────┤
+ │ Root (not lf) │ [1]                        │
+ │ Left boundary │ [] (root.Left = nil)       │
+ │ Leaves (L→R)  │ [5, 8, 9, 7]               │
+ │ Right (rev)   │ stack=[2,4] → rev=[4, 2]   │
+ └───────────────┴────────────────────────────┘
+
+ Right boundary walk: 2→4→(7 is leaf, stop)
+ Stack: [2, 4], reversed: [4, 2]
+
+ Result: [1] + [] + [5,8,9,7] + [4,2]
+       = [1, 5, 8, 9, 7, 4, 2]
+```
+
 ---
 
 ## Example 7: Clockwise Boundary Traversal
@@ -540,6 +704,33 @@ func main() {
     fmt.Println("Clockwise:", clockwiseBoundary(root))
     // [1 3 7 6 5 4 2]
 }
+```
+
+**Textual Figure – Example 7:**
+```
+ Clockwise Boundary Traversal (reversed order):
+ ───────────────────────────────────────
+       1
+      / \             Anti-clockwise: root → L → leaves → R↑
+     2   3            Clockwise:     root → R → leaves← → L↑
+    / \ / \
+   4  5 6  7         ┌───────────────┬──────────────────┐
+                     │ Component     │ Nodes            │
+                     ├───────────────┼──────────────────┤
+                     │ Root          │ [1]              │
+                     │ Right bound.  │ [3] (top→bottom) │
+                     │ Leaves (R→L)  │ [7, 6, 5, 4]     │
+                     │ Left (rev)    │ [2]              │
+                     └───────────────┴──────────────────┘
+
+     1 →                  Clockwise:
+    ↑     ↓                1 → 3 → 7 → 6 → 5 → 4 → 2
+    2      3
+    ↑      ↓
+    4─5  6─7
+      ←──┘
+
+ Result: [1, 3, 7, 6, 5, 4, 2]
 ```
 
 ---
@@ -611,6 +802,33 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 8:**
+```
+ Leaf Sequence Comparison (LeetCode 872):
+ ────────────────────────────────────
+  Tree 1:              Tree 2:
+      3                    5
+     / \                  / \
+    5   1                6   2
+   / \ / \              / \
+  6  2 9  8            7   4
+    / \
+   7   4
+
+ Leaf extraction (DFS left → right):
+ ┌────────┬─────────────────────┐
+ │ Tree   │ Leaves              │
+ ├────────┼─────────────────────┤
+ │ Tree1  │ [6, 7, 4, 9, 8]     │
+ │ Tree2  │ [7, 4]              │
+ └────────┴─────────────────────┘
+
+ lengths differ (5 ≠ 2) → NOT leaf-similar
+
+ Leaf-similar trees have identical leaf sequences
+ when read left-to-right, regardless of structure.
+```
+
 ---
 
 ## Example 9: Sum of All Boundary Nodes
@@ -677,6 +895,36 @@ func main() {
     }
     fmt.Println("Boundary sum:", boundarySum(root)) // 1+2+4+5+6+7+3 = 28
 }
+```
+
+**Textual Figure – Example 9:**
+```
+ Sum of All Boundary Nodes:
+ ──────────────────────
+       1
+      / \              All nodes are boundary nodes
+     2   3             in this tree!
+    / \ / \
+   4  5 6  7
+
+ Boundary nodes (marked with *):
+      *1*               Root: 1
+      / \               Left boundary: 2
+    *2* *3*             Leaves: 4, 5, 6, 7
+    / \ / \             Right boundary: 3
+  *4**5**6**7*
+
+ Uses visited map to avoid double-counting:
+ ┌───────────────┬───────┬─────────────┐
+ │ Pass          │ Added │ Running sum │
+ ├───────────────┼───────┼─────────────┤
+ │ Root          │  1    │  1          │
+ │ Left bound.   │  2    │  3          │
+ │ Leaves        │ 4,5,  │  3+4+5+6+7  │
+ │               │ 6,7   │  = 25       │
+ │ Right bound.  │  3    │  25+3 = 28  │
+ └───────────────┴───────┴─────────────┘
+ Result: 28
 ```
 
 ---
@@ -759,6 +1007,40 @@ func main() {
     fmt.Println("N-ary boundary:", boundaryNary(root))
     // [1 2 5 8 6 3 9 10 7 4]
 }
+```
+
+**Textual Figure – Example 10:**
+```
+ N-ary Tree Boundary Traversal:
+ ────────────────────────────
+         1
+       / | \
+      2  3  4
+     / \     \
+    5   6     7
+   /         / \
+  8         9  10
+
+ N-ary boundary rules:
+   Left boundary:  always follow first child
+   Right boundary: always follow last child
+   Leaves: depth-first left-to-right
+
+ ┌───────────────┬────────────────────────┐
+ │ Component     │ Trace                  │
+ ├───────────────┼────────────────────────┤
+ │ Root          │ [1]                    │
+ │ Left bound.   │ 2→5 (1st child chain)  │
+ │               │ stop at 8 (leaf)       │
+ │               │ → [2, 5]               │
+ │ Leaves (L→R)  │ [8, 6, 3, 9, 10]       │
+ │ Right bound.  │ 4→7 (last child chain)  │
+ │               │ stop at 9/10 (leaves)  │
+ │               │ rev → [7, 4]           │
+ └───────────────┴────────────────────────┘
+
+ Result: [1] + [2,5] + [8,6,3,9,10] + [7,4]
+       = [1, 2, 5, 8, 6, 3, 9, 10, 7, 4]
 ```
 
 ---

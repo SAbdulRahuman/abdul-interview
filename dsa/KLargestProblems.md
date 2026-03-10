@@ -48,6 +48,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Find Kth Largest — Min Heap of size k=2
+Input: [3, 2, 1, 5, 6, 4]
+
+  ┌──────┬────────────────────────────────────────┬──────────────┐
+  │ Step │ Action                                 │ Min Heap (k=2)│
+  ├──────┼────────────────────────────────────────┼──────────────┤
+  │   1  │ Push 3                                 │ [3]          │
+  │   2  │ Push 2                                 │ [2, 3]       │
+  │   3  │ Push 1 → len=3 > k → Pop min(1)       │ [2, 3]       │
+  │   4  │ Push 5 → len=3 > k → Pop min(2)       │ [3, 5]       │
+  │   5  │ Push 6 → len=3 > k → Pop min(3)       │ [5, 6]       │
+  │   6  │ Push 4 → len=3 > k → Pop min(4)       │ [5, 6]       │
+  └──────┴────────────────────────────────────────┴──────────────┘
+
+  Final min heap:      Array: [5, 6]
+       5              ← root = kth largest
+      /
+     6
+
+  heap[0] = 5 → the 2nd largest element ✓
+
+  Key insight: min heap of size k keeps the k largest.
+  The root (minimum of those k) = the kth largest overall.
+```
+
 ---
 
 ## Example 2: Kth Largest Element in a Stream (LeetCode 703)
@@ -101,6 +129,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Kth Largest in Stream — k=3, init=[4, 5, 8, 2]
+
+  Build min heap of size k=3 from initial elements:
+  Push 4 → [4]         Push 5 → [4,5]       Push 8 → [4,5,8]
+  Push 2 → [2,4,5,8] → len=4 > 3 → Pop min(2) → [4,5,8]
+
+  Initial heap:      4         ← 3rd largest = 4
+                    / \
+                   5   8
+
+  Stream operations:
+  ┌────────┬──────────────────────────────┬─────────┬────────┐
+  │ Add(v) │ Action                       │ Heap    │ Return │
+  ├────────┼──────────────────────────────┼─────────┼────────┤
+  │  3     │ Push 3 → Pop min(3)          │ [4,5,8] │   4    │
+  │  5     │ Push 5 → Pop min(4)          │ [5,5,8] │   5    │
+  │  10    │ Push 10→ Pop min(5)          │ [5,8,10]│   5    │
+  │  9     │ Push 9 → Pop min(5)          │ [8,9,10]│   8    │
+  │  4     │ Push 4 → Pop min(4)          │ [8,9,10]│   8    │
+  └────────┴──────────────────────────────┴─────────┴────────┘
+
+  Heap always holds top-3 → root = 3rd largest
+```
+
 ---
 
 ## Example 3: Top K Frequent Elements (LeetCode 347)
@@ -149,6 +204,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Top K Frequent Elements — k=2
+Input: [1, 1, 1, 2, 2, 3]
+
+  Step 1 — Build frequency map:
+  ┌─────┬──────┐
+  │ Val │ Freq │
+  ├─────┼──────┤
+  │  1  │  3   │
+  │  2  │  2   │
+  │  3  │  1   │
+  └─────┴──────┘
+
+  Step 2 — Min heap (by freq) of size k=2:
+  ┌──────┬──────────────────────────────────┬───────────────────┐
+  │ Push │ Action                           │ Heap (val,freq)   │
+  ├──────┼──────────────────────────────────┼───────────────────┤
+  │(1,3) │ Push                             │ [(1,3)]           │
+  │(2,2) │ Push                             │ [(2,2),(1,3)]     │
+  │(3,1) │ Push → len=3>k → Pop min freq(3,1)│ [(2,2),(1,3)]   │
+  └──────┴──────────────────────────────────┴───────────────────┘
+
+  Final heap:     (2, freq=2)     ← min freq in top-k
+                   /
+               (1, freq=3)
+
+  Pop in reverse → Result: [1, 2]  (two most frequent) ✓
+```
+
 ---
 
 ## Example 4: K Closest Points to Origin (LeetCode 973)
@@ -192,6 +278,37 @@ func main() {
 	fmt.Println(kClosest([][]int{{1, 3}, {-2, 2}}, 1))           // [[-2 2]]
 	fmt.Println(kClosest([][]int{{3, 3}, {5, -1}, {-2, 4}}, 2))  // [[3 3] [-2 4]]
 }
+```
+
+**Textual Figure:**
+
+```
+K Closest Points to Origin — k=2
+Input: [[3,3], [5,-1], [-2,4]]
+
+  Step 1 — Compute squared distances:
+  ┌─────────┬────────────────────┬──────┐
+  │  Point  │ dist² = x²+y²     │ dist²│
+  ├─────────┼────────────────────┼──────┤
+  │ (3, 3)  │ 9 + 9              │  18  │
+  │ (5,-1)  │ 25 + 1             │  26  │
+  │ (-2,4)  │ 4 + 16             │  20  │
+  └─────────┴────────────────────┴──────┘
+
+  Step 2 — Max heap (by dist²) of size k=2:
+  ┌──────────┬─────────────────────────────┬──────────────────┐
+  │  Push    │ Action                      │ Max Heap (dist²) │
+  ├──────────┼─────────────────────────────┼──────────────────┤
+  │ (3,3)=18 │ Push                        │ [18]             │
+  │ (5,-1)=26│ Push                        │ [26, 18]         │
+  │ (-2,4)=20│ Push→len=3>k→Pop max(26)   │ [20, 18]         │
+  └──────────┴─────────────────────────────┴──────────────────┘
+
+  Final max heap:   (20)          Evicted (5,-1) — farthest
+                    /
+                  (18)
+
+  Result: [[3,3], [-2,4]]  (2 closest to origin) ✓
 ```
 
 ---
@@ -242,6 +359,38 @@ func main() {
 	fmt.Println(findClosestElements([]int{1, 2, 3, 4, 5}, 4, 3))      // [1 2 3 4]
 	fmt.Println(findClosestElements([]int{1, 2, 3, 4, 5}, 4, -1))     // [1 2 3 4]
 }
+```
+
+**Textual Figure:**
+
+```
+K Closest Elements — k=4, x=3
+Input: [1, 2, 3, 4, 5]
+
+  Step 1 — Compute |val - x| for each element:
+  ┌─────┬────────┬──────┐
+  │ Val │ |v-3|  │ Diff │
+  ├─────┼────────┼──────┤
+  │  1  │ |1-3|  │  2   │
+  │  2  │ |2-3|  │  1   │
+  │  3  │ |3-3|  │  0   │
+  │  4  │ |4-3|  │  1   │
+  │  5  │ |5-3|  │  2   │
+  └─────┴────────┴──────┘
+
+  Step 2 — Max heap (by diff, then val) of size k=4:
+  ┌────────┬──────────────────────────────────┬─────────────────────┐
+  │ Push   │ Action                           │ Max Heap (val,diff) │
+  ├────────┼──────────────────────────────────┼─────────────────────┤
+  │ (1,2)  │ Push                             │ [(1,2)]             │
+  │ (2,1)  │ Push                             │ [(1,2),(2,1)]       │
+  │ (3,0)  │ Push                             │ [(1,2),(2,1),(3,0)] │
+  │ (4,1)  │ Push (len=4=k)                   │ [(1,2),..(4,1)]     │
+  │ (5,2)  │ Push→len=5>k→Pop max diff(5,2)  │ [(1,2),(2,1),..     │
+  │        │ tie: 5>1→evict 5                 │  (3,0),(4,1)]       │
+  └────────┴──────────────────────────────────┴─────────────────────┘
+
+  Pop all → sort → Result: [1, 2, 3, 4] ✓
 ```
 
 ---
@@ -296,6 +445,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Top K Frequent Words — k=2
+Input: ["i", "love", "leetcode", "i", "love", "coding"]
+
+  Step 1 — Frequency map:
+  ┌────────────┬──────┐
+  │   Word     │ Freq │
+  ├────────────┼──────┤
+  │ "i"        │  2   │
+  │ "love"     │  2   │
+  │ "leetcode" │  1   │
+  │ "coding"   │  1   │
+  └────────────┴──────┘
+
+  Step 2 — Min heap (by freq, then reverse lex) of size k=2:
+    Less(): lower freq = lower priority
+            same freq → higher lex = lower priority (evicted first)
+
+  ┌────────────────┬──────────────────────────┬─────────────────────┐
+  │  Push           │ Action                    │ Heap (word,freq)    │
+  ├────────────────┼──────────────────────────┼─────────────────────┤
+  │ ("i",2)         │ Push                     │ [("i",2)]           │
+  │ ("love",2)      │ Push                     │ [("love",2),("i",2)]│
+  │ ("leetcode",1)  │ Push→Pop("leetcode",1)   │ [("love",2),("i",2)]│
+  │ ("coding",1)    │ Push→Pop("coding",1)     │ [("love",2),("i",2)]│
+  └────────────────┴──────────────────────────┴─────────────────────┘
+
+  Pop in reverse order → Result: ["i", "love"] ✓
+```
+
 ---
 
 ## Example 7: K Largest in Each Subarray
@@ -338,6 +519,36 @@ func main() {
 	fmt.Println(kLargestInSubarrays(nums, 4, 2))
 	// [[5 2] [8 5] [8 7] [8 7] [7 6]]
 }
+```
+
+**Textual Figure:**
+
+```
+K Largest in Each Subarray — windowSize=4, k=2
+Input: [1, 5, 2, 8, 3, 7, 4, 6]
+
+  Sliding window of size 4, extract top-2 via max heap:
+  ┌──────┬───────────────┬──────────────────────┬──────────┐
+  │ Win  │   Subarray    │ Max Heap             │ Top-2    │
+  ├──────┼───────────────┼──────────────────────┼──────────┤
+  │ 0-3  │ [1,5,2,8]     │     8                │ [8, 5]   │
+  │      │               │    / \               │          │
+  │      │               │   5   2              │          │
+  │      │               │  /                   │          │
+  │      │               │ 1                    │          │
+  ├──────┼───────────────┼──────────────────────┼──────────┤
+  │ 1-4  │ [5,2,8,3]     │     8                │ [8, 5]   │
+  │      │               │    / \               │          │
+  │      │               │   5   3              │          │
+  │      │               │  /                   │          │
+  │      │               │ 2                    │          │
+  ├──────┼───────────────┼──────────────────────┼──────────┤
+  │ 2-5  │ [2,8,3,7]     │ Pop 8,7              │ [8, 7]   │
+  │ 3-6  │ [8,3,7,4]     │ Pop 8,7              │ [8, 7]   │
+  │ 4-7  │ [3,7,4,6]     │ Pop 7,6              │ [7, 6]   │
+  └──────┴───────────────┴──────────────────────┴──────────┘
+
+  Result: [[8,5], [8,5], [8,7], [8,7], [7,6]]
 ```
 
 ---
@@ -389,6 +600,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+K Smallest Pairs Sum — k=3
+nums1 = [1, 7, 11],  nums2 = [2, 4, 6]
+
+  Pair sums grid (nums1[i] + nums2[j]):
+           j=0  j=1  j=2
+  i=0  │   3    5    7
+  i=1  │   9   11   13
+  i=2  │  13   15   17
+
+  BFS-like expansion with min heap:
+  Init: push (i=0,j=0), (i=1,j=0), (i=2,j=0)
+  Heap: [(0,0,sum=3), (1,0,sum=9), (2,0,sum=13)]
+
+  ┌──────┬─────────────┬─────────┬─────────────────┬─────────────┐
+  │ Step │    Pop      │   Sum   │ Push next       │   Result    │
+  ├──────┼─────────────┼─────────┼─────────────────┼─────────────┤
+  │   1  │ (0,0)       │  1+2=3  │ (0,1,sum=5)     │ [[1,2]]     │
+  │   2  │ (0,1)       │  1+4=5  │ (0,2,sum=7)     │ [[1,2],[1,4]]│
+  │   3  │ (0,2)       │  1+6=7  │ (none, j+1=3)  │ +[1,6]      │
+  └──────┴─────────────┴─────────┴─────────────────┴─────────────┘
+
+  Result: [[1,2], [1,4], [1,6]] ✓
+  Key: expand j+1 from popped (i,j) → BFS on sorted grid
+```
+
 ---
 
 ## Example 9: K-th Largest XOR Coordinate Value (LeetCode 1738)
@@ -435,6 +674,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Kth Largest XOR Coordinate Value — k=1
+Matrix: [[5, 2],      Prefix XOR grid:
+         [1, 6]]       pre[i][j] = XOR of submatrix (0,0)..(i-1,j-1)
+
+  Prefix XOR computation (1-indexed pre):
+  pre[1][1] = 0^0^0^5 = 5     pre[1][2] = 0^5^0^2 = 7
+  pre[2][1] = 5^0^0^1 = 4     pre[2][2] = 7^4^5^6 = 2
+
+  ┌─────┬───┬───┐     ┌─────┬───┬───┐
+  │ mat │ 0 │ 1 │     │ pre │ 1 │ 2 │
+  ├─────┼───┼───┤     ├─────┼───┼───┤
+  │  0  │ 5 │ 2 │     │  1  │ 5 │ 7 │
+  │  1  │ 1 │ 6 │     │  2  │ 4 │ 2 │
+  └─────┴───┴───┘     └─────┴───┴───┘
+
+  Min heap of size k=1 — track largest XOR:
+  Values seen: 5, 7, 4, 2
+  Push 5 → [5]   Push 7 → Pop 5 → [7]
+  Push 4 → Pop 4 → [7]   Push 2 → Pop 2 → [7]
+
+  Result: heap[0] = 7  (1st largest XOR value) ✓
+```
+
 ---
 
 ## Example 10: Pattern Summary — When to Use Which Heap
@@ -473,6 +738,40 @@ func main() {
 	fmt.Println("  For K SMALLEST → use MAX heap of size k (evict the largest)")
 	fmt.Println("  This is counterintuitive but correct!")
 }
+```
+
+**Textual Figure:**
+
+```
+K-Largest Problem Pattern Summary:
+
+  ┌────────────────────────────────────────────────────────┐
+  │          WHY min heap for K LARGEST?              │
+  ├────────────────────────────────────────────────────────┤
+  │                                                        │
+  │  All elements:  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]   │
+  │                                                        │
+  │  Want top-3:    keep [8, 9, 10] in min heap        │
+  │                                                        │
+  │  Min heap (k=3):    8    ← root = gatekeeper       │
+  │                     / \                                │
+  │                    9  10                               │
+  │                                                        │
+  │  New element 7:  7 < 8 → rejected (too small)      │
+  │  New element 11: 11> 8 → push, pop 8 → [9,10,11]  │
+  │                                                        │
+  │  Root = min of top-k = Kth largest overall!         │
+  └────────────────────────────────────────────────────────┘
+
+  Decision table:
+  ┌──────────────────┬────────────┬────────────────────────┐
+  │ Problem          │ Heap Type  │ Evict                  │
+  ├──────────────────┼────────────┼────────────────────────┤
+  │ K largest        │ MIN heap   │ smallest (not in top-k)│
+  │ K smallest       │ MAX heap   │ largest (not in bot-k) │
+  │ K most frequent  │ MIN (freq) │ least frequent         │
+  │ K closest        │ MAX (dist) │ farthest               │
+  └──────────────────┴────────────┴────────────────────────┘
 ```
 
 ---

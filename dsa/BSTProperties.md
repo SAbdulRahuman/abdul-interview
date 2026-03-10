@@ -67,6 +67,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Validate BST Using Min/Max Bounds:
+
+  ┌─── Valid BST ───┐          ┌─── Invalid BST ──┐
+  │       5         │          │       5          │
+  │      / \        │          │      / \         │
+  │     3   7       │          │     1   4 ← 4<5! │
+  │    / \ / \      │          │        / \       │
+  │   1  4 6  9     │          │       3   6      │
+  └─────────────────┘          └──────────────────┘
+
+  validate(5, -∞, +∞)
+  ├── 5 ∈ (-∞,+∞) ✓
+  ├── Left:  validate(3, -∞, 5)
+  │   ├── 3 ∈ (-∞,5) ✓
+  │   ├── validate(1, -∞, 3) ✓       validate(5, -∞, +∞)
+  │   └── validate(4, 3, 5)  ✓       ├── validate(1, -∞, 5) ✓
+  └── Right: validate(7, 5, +∞)      └── validate(4, 5, +∞)
+      ├── 7 ∈ (5,+∞) ✓                   4 ≤ 5 → ✗ INVALID!
+      ├── validate(6, 5, 7) ✓
+      └── validate(9, 7, +∞) ✓       Output: false
+
+  Output: true
+```
+
 ---
 
 ## Example 2: Validate BST Using Inorder Traversal
@@ -117,6 +143,33 @@ func main() {
 	}
 	fmt.Println(isValidBSTInorder(root2)) // false (equal values)
 }
+```
+
+**Textual Figure:**
+```
+Validate BST via Inorder Traversal (must be strictly increasing):
+
+  Tree 1 (Valid):              Tree 2 (Invalid):
+       2                            2
+      / \                          / \
+     1   3                        2   2
+
+  Inorder walk:                Inorder walk:
+  Step 1: visit 1             Step 1: visit 2
+          prev = -∞                   prev = -∞
+          1 > -∞ ✓                    2 > -∞ ✓
+          prev ← 1                   prev ← 2
+
+  Step 2: visit 2             Step 2: visit 2
+          2 > 1 ✓                    2 > 2? ✗ NOT STRICTLY INCREASING
+          prev ← 2                   → return false
+
+  Step 3: visit 3
+          3 > 2 ✓
+          prev ← 3
+
+  Sorted: [1, 2, 3] ✓         [2, 2, 2] has equal values ✗
+  Output: true                 Output: false
 ```
 
 ---
@@ -172,6 +225,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+LCA in BST — Follow Values (no full DFS needed):
+
+         6
+        / \
+       2   8
+      / \ / \
+     0  4 7  9
+       / \
+      3   5
+
+  ┌──────────────────────────────────────────────────────┐
+  │ LCA(2, 8):                                          │
+  │   root=6 → p=2 < 6 AND q=8 > 6 → split! return 6   │
+  │   Answer: 6                                         │
+  ├──────────────────────────────────────────────────────┤
+  │ LCA(2, 4):                                          │
+  │   root=6 → both 2,4 < 6 → go left                  │
+  │   root=2 → p=2 == 2 → split point! return 2        │
+  │   Answer: 2                                         │
+  ├──────────────────────────────────────────────────────┤
+  │ LCA(3, 5):                                          │
+  │   root=6 → both 3,5 < 6 → go left                  │
+  │   root=2 → both 3,5 > 2 → go right                 │
+  │   root=4 → p=3 < 4 AND q=5 > 4 → split! return 4   │
+  │   Answer: 4                                         │
+  └──────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 4: BST Property — Sorted Array to BST (LeetCode 108)
@@ -219,6 +302,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Sorted Array → Balanced BST (pick middle as root):
+
+  Input: [-10, -3, 0, 5, 9]
+                  ↑ mid=2 → root
+
+  Step 1: root = 0
+          left half  = [-10, -3]  → mid=0 → -10, right=-3
+          right half = [5, 9]     → mid=0 → 5, right=9
+
+  Resulting Balanced BST:
+             0
+            / \
+          -3    5
+          /      \
+        -10       9
+
+  Inorder: -10 -3 0 5 9  (sorted ✓)
+  Height: 3 (balanced ✓)
+
+  BST Property at every node:
+    0:  left(-3,-10) < 0 < right(5,9) ✓
+   -3:  left(-10) < -3               ✓
+    5:  5 < right(9)                 ✓
+```
+
 ---
 
 ## Example 5: BST Property — Range Sum Query (LeetCode 938)
@@ -255,6 +365,32 @@ func main() {
 	}
 	fmt.Println(rangeSumBST(root, 7, 15)) // 32 (7 + 10 + 15)
 }
+```
+
+**Textual Figure:**
+```
+Range Sum BST: sum of all nodes in [7, 15]
+
+         10          Range: [7, 15]
+        / \
+       5   15
+      / \    \
+     3   7   18
+
+  rangeSumBST(10, 7, 15):
+  ├── 10 ∈ [7,15] → include 10
+  ├── Left:  rangeSumBST(5, 7, 15)
+  │   └── 5 < 7 → prune left subtree (skip 3)
+  │       └── Right: rangeSumBST(7, 7, 15)
+  │           └── 7 ∈ [7,15] → include 7
+  │               (no children)
+  └── Right: rangeSumBST(15, 7, 15)
+      └── 15 ∈ [7,15] → include 15
+          └── Right: rangeSumBST(18, 7, 15)
+              └── 18 > 15 → prune right subtree
+
+  Sum = 7 + 10 + 15 = 32
+  Pruned nodes: 3, 5 (too small), 18 (too large)
 ```
 
 ---
@@ -314,6 +450,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Floor & Ceiling in BST:
+
+         10
+        / \
+       5   15
+      / \  / \
+     3  7 12  20
+
+  ┌──────────────────────────────────────────────┐
+  │ Floor(6): largest value ≤ 6              │
+  │   10 → 6<10 → go left                   │
+  │   5  → 5<6  → result=5, go right         │
+  │   7  → 7>6  → go left                    │
+  │   nil → done                              │
+  │   Answer: 5                               │
+  ├──────────────────────────────────────────────┤
+  │ Ceiling(6): smallest value ≥ 6           │
+  │   10 → 10>6 → result=10, go left          │
+  │   5  → 5<6  → go right                   │
+  │   7  → 7>6  → result=7, go left           │
+  │   nil → done                              │
+  │   Answer: 7                               │
+  ├──────────────────────────────────────────────┤
+  │ Ceiling(13):                              │
+  │   10 → 10<13 → go right                   │
+  │   15 → 15>13 → result=15, go left         │
+  │   12 → 12<13 → go right                   │
+  │   nil → done                              │
+  │   Answer: 15                              │
+  └──────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 7: Count Nodes in Range
@@ -348,6 +518,34 @@ func main() {
 	fmt.Println("Count [5,15]:", countInRange(root, 5, 15))   // 5
 	fmt.Println("Count [7,12]:", countInRange(root, 7, 12))   // 3
 }
+```
+
+**Textual Figure:**
+```
+Count Nodes in Range [5, 15]:
+
+         10
+        / \
+       5   15
+      / \  / \
+     3  7 12  20
+
+  countInRange(10, 5, 15):
+  ├── 10 ∈ [5,15] → count 1
+  ├── Left: countInRange(5, 5, 15)
+  │   ├── 5 ∈ [5,15] → count 1
+  │   ├── Left: 3 < 5 → prune left, go right only
+  │   │   └── countInRange(nil) = 0
+  │   └── Right: countInRange(7, 5, 15)
+  │       └── 7 ∈ [5,15] → count 1 (leaf)
+  └── Right: countInRange(15, 5, 15)
+      ├── 15 ∈ [5,15] → count 1
+      ├── Left: countInRange(12, 5, 15)
+      │   └── 12 ∈ [5,15] → count 1 (leaf)
+      └── Right: 20 > 15 → prune right
+
+  Total for [5,15]: 5 nodes {5, 7, 10, 12, 15}
+  Total for [7,12]: 3 nodes {7, 10, 12}
 ```
 
 ---
@@ -393,6 +591,34 @@ func main() {
 		fmt.Printf("k=%d → %d\n", k, kthSmallest(root, k))
 	}
 }
+```
+
+**Textual Figure:**
+```
+Kth Smallest in BST via Inorder Traversal:
+
+         5
+        / \
+       3   6
+      / \
+     2   4
+    /
+   1
+
+  Inorder traversal visits nodes in sorted order:
+
+  Step  Node  count  k?    Result
+  ────────────────────────────────
+   1     1     1    k=1? →  1
+   2     2     2    k=2? →  2
+   3     3     3    k=3? →  3
+   4     4     4    k=4? →  4
+   5     5     5    k=5? →  5
+   6     6     6    k=6? →  6
+
+  Output:
+  k=1 → 1,  k=2 → 2,  k=3 → 3
+  k=4 → 4,  k=5 → 5,  k=6 → 6
 ```
 
 ---
@@ -442,6 +668,32 @@ func main() {
 	inorder(root) // 28 27 25 22 18 13 7
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+BST to Greater Sum Tree (reverse inorder accumulation):
+
+  Before:               After (Greater Sum Tree):
+       4                      22
+      / \                    /  \
+     2   6                 27    13
+    / \ / \               / \   / \
+   1  3 5  7             28 25 18  7
+
+  Reverse inorder: 7 → 6 → 5 → 4 → 3 → 2 → 1
+
+  Step  Visit  sum    New Val
+  ────────────────────────────
+   1     7    0+7=7     7
+   2     6    7+6=13   13
+   3     5   13+5=18   18
+   4     4   18+4=22   22
+   5     3   22+3=25   25
+   6     2   25+2=27   27
+   7     1   27+1=28   28
+
+  Inorder output: 28 27 25 22 18 13 7
 ```
 
 ---
@@ -508,6 +760,31 @@ func main() {
 	fmt.Printf("Max: %d\n", info.Max)         // 20
 	fmt.Printf("Height: %d\n", info.Height)   // 3
 }
+```
+
+**Textual Figure:**
+```
+Analyze All BST Properties in One Pass:
+
+          10
+         / \
+        5   15
+       / \  / \
+      1  8 12  20
+
+  analyzeBST(10):
+  ├── Left subtree (rooted at 5):
+  │   ├── Left(1):  IsBST=✓ Size=1 Min=1  Max=1  Height=1
+  │   ├── Right(8): IsBST=✓ Size=1 Min=8  Max=8  Height=1
+  │   └── Node(5):  5>1(leftMax) ✓, 5<8(rightMin) ✓
+  │       IsBST=✓ Size=3 Min=1 Max=8 Height=2
+  ├── Right subtree (rooted at 15):
+  │   ├── Left(12): IsBST=✓ Size=1 Min=12 Max=12 Height=1
+  │   ├── Right(20):IsBST=✓ Size=1 Min=20 Max=20 Height=1
+  │   └── Node(15): 15>12 ✓, 15<20 ✓
+  │       IsBST=✓ Size=3 Min=12 Max=20 Height=2
+  └── Root(10): 10>8(leftMax) ✓, 10<12(rightMin) ✓
+      IsBST=true  Size=7  Min=1  Max=20  Height=3
 ```
 
 ---

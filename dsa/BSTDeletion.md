@@ -66,6 +66,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+BST Deletion — Three Cases:
+
+  Initial tree:        Delete 3 (two children):   Delete 5 (two children):
+       5                    5                          6
+      / \                  / \                        / \
+     3   6                4   6                      2   6  ← was 7
+    / \   \              /     \                    /     \
+   2   4   7            2       7                  4       7
+
+  Delete 3:
+  ┌──────────────────────────────────────────┐
+  │ Node 3 has TWO children (2 and 4)         │
+  │ Find inorder successor: 4 (min of right)  │
+  │ Copy 4’s value to node 3’s position       │
+  │ Delete successor 4 from right subtree     │
+  └──────────────────────────────────────────┘
+  Before: 2 3 4 5 6 7
+  After delete 3: 2 4 5 6 7
+  After delete 5: 2 4 6 7
+```
+
 ---
 
 ## Example 2: Iterative Deletion
@@ -150,6 +173,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Iterative Deletion — Delete 5 (root, two children):
+
+  Before:              After:
+       5                   6
+      / \                 / \
+     3   7               3   7
+    / \ / \             / \   \
+   2  4 6  8           2   4   8
+
+  Steps:
+  ┌────────────────────────────────────────────┐
+  │ 1. Find node 5 (it’s the root)              │
+  │ 2. Two children → find inorder successor    │
+  │    succParent=5, succ=7                     │
+  │    succ.Left=6 → succParent=7, succ=6       │
+  │    succ.Left=nil → succ=6 is the successor  │
+  │ 3. Copy: node.Val = 6                       │
+  │ 4. Remove succ: succParent(7).Left = nil     │
+  └────────────────────────────────────────────┘
+
+  Inorder: 2 3 4 6 7 8 (sorted, BST valid ✓)
+```
+
 ---
 
 ## Example 3: Delete Using Inorder Predecessor
@@ -200,6 +248,35 @@ func main() {
 	inorder(root) // 3 5 7 15
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+Delete Using Inorder Predecessor — Delete 10:
+
+  Before:               After:
+       10                   7
+      / \                  / \
+     5   15               5   15
+    / \                  / \
+   3   7                3   (removed)
+
+  Steps:
+  ┌───────────────────────────────────────────────┐
+  │ 1. Find node 10 (root)                       │
+  │ 2. Two children → find predecessor            │
+  │    pred = max of left subtree                 │
+  │    Start at 5, go right: 7 (no right child)  │
+  │    Predecessor = 7                            │
+  │ 3. Copy: node.Val = 7                         │
+  │ 4. Recursively delete 7 from left subtree     │
+  │    7 is a leaf → simply remove                │
+  └───────────────────────────────────────────────┘
+
+  Successor approach:  replace with min of right (next larger)
+  Predecessor approach: replace with max of left (next smaller)
+
+  Inorder: 3 5 7 15 (sorted, BST valid ✓)
 ```
 
 ---
@@ -273,6 +350,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Multiset BST — Delete with Frequency Tracking:
+
+  Insert [5, 3, 7, 3, 5, 1]:
+
+       5(x2)
+      / \
+    3(x2) 7(x1)
+    /
+  1(x1)
+
+  Delete one 5:            Delete another 5:
+     5(x1)  ← freq--        Actual removal!
+    / \                   Find successor: 7
+  3(x2) 7(x1)             Copy val+freq, delete 7
+  /
+ 1(x1)                       7(x1)
+                             /
+                           3(x2)
+                           /
+                         1(x1)
+
+  ┌────────────────────────────────────────┐
+  │ Before:            1(x1) 3(x2) 5(x2) 7(x1)│
+  │ After delete one 5: 1(x1) 3(x2) 5(x1) 7(x1)│
+  │ After delete two 5: 1(x1) 3(x2) 7(x1)      │
+  └────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Delete Leaf Nodes
@@ -316,6 +423,33 @@ func main() {
 	fmt.Println("After removing all leaves:")
 	printTree(root, "")
 }
+```
+
+**Textual Figure:**
+```
+Delete All Leaf Nodes:
+
+  Before:                After:
+       5                    5
+      / \                  / \
+     3   7                3   7
+    / \ / \
+   2  4 6  8         (all leaves removed)
+
+  Process (post-order):
+  ┌─────────────────────────────────────┐
+  │ Visit 2: leaf → return nil (remove) │
+  │ Visit 4: leaf → return nil (remove) │
+  │ Visit 3: not leaf → keep            │
+  │ Visit 6: leaf → return nil (remove) │
+  │ Visit 8: leaf → return nil (remove) │
+  │ Visit 7: not leaf → keep            │
+  │ Visit 5: not leaf → keep            │
+  └─────────────────────────────────────┘
+
+  printTree output:
+  Before: 5, L:3, L:2, R:4, R:7, L:6, R:8
+  After:  5, L:3, R:7
 ```
 
 ---
@@ -362,6 +496,38 @@ func main() {
 	root = trimBST(root, 5, 15)
 	inorder(root); fmt.Println()       // 5 7 10 12 15
 }
+```
+
+**Textual Figure:**
+```
+Trim BST — Remove nodes outside range [5, 15]:
+
+  Before:                 After trimming [5,15]:
+         10                      10
+        / \                     / \
+       5   15                  5   15
+      / \  / \                  \  /
+     3  7 12  20                7 12
+
+  Process:
+  ┌─────────────────────────────────────────────┐
+  │ trim(10, 5, 15):                             │
+  │   10∈[5,15] → keep                           │
+  │   Left:  trim(5, 5, 15)                      │
+  │     5∈[5,15] → keep                          │
+  │     Left: trim(3, 5, 15)                     │
+  │       3 < 5 → discard 3 & its left           │
+  │       return trim(nil) = nil                  │
+  │     Right: trim(7) → 7∈[5,15], keep (leaf)   │
+  │   Right: trim(15, 5, 15)                     │
+  │     15∈[5,15] → keep                         │
+  │     Left: trim(12) → 12∈[5,15], keep         │
+  │     Right: trim(20)                          │
+  │       20 > 15 → discard 20 & its right       │
+  └─────────────────────────────────────────────┘
+
+  Inorder before: 3 5 7 10 12 15 20
+  Inorder after:  5 7 10 12 15
 ```
 
 ---
@@ -421,6 +587,37 @@ func main() {
 	// Tree rooted at 6: 6
 	// Tree rooted at 7: 7
 }
+```
+
+**Textual Figure:**
+```
+Delete Nodes and Return Forest — delete [3, 5]:
+
+  Before:                 After deleting {3, 5}:
+       1                       1
+      / \                     /
+     2   3  ← delete         2
+    / \ / \                 /
+   4  5 6  7              4     6    7
+      ↑ delete
+                      (3 separate trees in forest)
+
+  Process (DFS post-order):
+  ┌───────────────────────────────────────────────┐
+  │ dfs(1, isRoot=true):                           │
+  │   1 not in delSet → add to forest              │
+  │   dfs(2, deleted=false):                       │
+  │     dfs(4, false) → keep                       │
+  │     dfs(5, false) → 5 in delSet!               │
+  │       children are roots → but 5 is leaf        │
+  │       return nil                                │
+  │   dfs(3, deleted=false):                       │
+  │     3 in delSet! → children become roots        │
+  │     dfs(6, isRoot=true) → add 6 to forest      │
+  │     dfs(7, isRoot=true) → add 7 to forest      │
+  └───────────────────────────────────────────────┘
+
+  Forest: [Tree(1: 4,2), Tree(6), Tree(7)]
 ```
 
 ---
@@ -486,6 +683,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Delete and Rebalance (Rebuild from sorted values):
+
+  Before (skewed):       After delete 5:        After rebalance:
+  10                     10                          6
+   \                      \                        /   \
+    9                      9                      3     9
+     \                      \                    / \   / \
+      8                      8                  2   4  7  10
+       \                      \                /       \
+        7                      7              1         8
+         \                      \
+          ...                    6
+           \                      \
+            1                      ...
+                                    1
+  height=10               height=9            height=4
+
+  Process:
+  ┌───────────────────────────────────────────┐
+  │ 1. Delete node 5 from skewed tree         │
+  │ 2. Collect inorder: [1,2,3,4,6,7,8,9,10]  │
+  │ 3. Build balanced: pick mid recursively    │
+  │ 4. Height drops from 9 → 4                │
+  └───────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 9: Lazy Deletion (Mark as Deleted)
@@ -549,6 +774,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Lazy Deletion (mark nodes instead of removing):
+
+  Initial BST:           After lazy-delete 3, 7:
+       5                      5
+      / \                    / \
+     3   7                 [3]  [7]  ← marked Deleted=true
+    / \ / \               / \  / \
+   1  4 6  8             1  4  6  8
+
+  Tree structure unchanged! Nodes 3,7 still exist but
+  are skipped during traversal and search.
+
+  ┌───────────────────────────────────┐
+  │ lazyDelete(3):                  │
+  │   Walk: 5→3 (found)             │
+  │   Set Deleted=true              │
+  │                                 │
+  │ search(3): walk to 3,           │
+  │   found but Deleted=true        │
+  │   → return false                │
+  │                                 │
+  │ search(5): walk to 5,           │
+  │   Deleted=false → return true   │
+  └───────────────────────────────────┘
+
+  Inorder (active only): 1 4 5 6 8
+  Advantage: O(h) delete, no restructuring
+```
+
 ---
 
 ## Example 10: Delete and Merge Subtrees
@@ -605,6 +861,33 @@ func main() {
 	root = deleteWithMerge(root, 5)
 	fmt.Print("After delete 5 (merge): "); inorder(root); fmt.Println() // 2 3 4 6 7 8
 }
+```
+
+**Textual Figure:**
+```
+Delete and Merge Subtrees — Delete 5:
+
+  Before:              Merge left & right:     Result:
+       5                  3                      3
+      / \                / \                    / \
+     3   7              2   4                  2   4
+    / \ / \                  \                      \
+   2  4 6  8                  7                      7
+                             / \                    / \
+                            6   8                  6   8
+
+  Steps:
+  ┌─────────────────────────────────────────────┐
+  │ 1. Found node 5                              │
+  │ 2. merge(left=3, right=7):                   │
+  │    Walk to rightmost of left subtree          │
+  │    3 → 4 (rightmost, cur.Right==nil)          │
+  │    Attach right subtree (7) as 4.Right       │
+  │ 3. Return left subtree root (3) as result    │
+  └─────────────────────────────────────────────┘
+
+  Inorder: 2 3 4 6 7 8 (sorted, BST valid ✓)
+  Note: tree may become unbalanced with this approach
 ```
 
 ---

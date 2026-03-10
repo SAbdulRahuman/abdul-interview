@@ -52,6 +52,26 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Recursive BST Insertion: insert [5, 3, 7, 1, 4, 6, 8]
+
+  Step 1: insert 5        Step 2: insert 3      Step 3: insert 7
+      5                       5                      5
+                             /                      / \
+                            3                      3   7
+
+  Step 4: insert 1        Step 5: insert 4      Steps 6-7: insert 6,8
+      5                       5                      5
+     / \                     / \                    / \
+    3   7                   3   7                  3   7
+   /                       / \                    / \ / \
+  1                       1   4                  1  4 6  8
+
+  Inorder traversal: 1 3 4 5 6 7 8 (sorted ✓)
+  BST property at every node: left < root < right ✓
+```
+
 ---
 
 ## Example 2: Iterative Insertion
@@ -106,6 +126,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Iterative BST Insertion: insert [10, 5, 15, 3, 7]
+
+  Step 1: insert 10       Step 2: insert 5
+      10                     10
+                            /
+                           5
+
+  Step 3: insert 15       Step 4: insert 3
+      10                     10
+     / \                    / \
+    5   15                 5   15
+                          /
+                         3
+
+  Step 5: insert 7
+      10
+     / \
+    5   15
+   / \
+  3   7
+
+  Iterative walk for insert 7:
+  cur=10 → 7<10 → cur=5 → 7>5 → cur.Right==nil → attach 7
+
+  Inorder: 3 5 7 10 15 (sorted ✓)
+```
+
 ---
 
 ## Example 3: Insert with Parent Pointer
@@ -154,6 +203,33 @@ func main() {
 	fmt.Println(root.Left.Val, "parent:", root.Left.Parent.Val) // 3 parent: 8
 	fmt.Println(root.Left.Left.Val, "parent:", root.Left.Left.Parent.Val) // 1 parent: 3
 }
+```
+
+**Textual Figure:**
+```
+Insert with Parent Pointers: insert [8, 3, 10, 1, 6]
+
+  Final BST with parent pointers (↑ = parent link):
+
+          8  (parent=nil)
+         / \
+        3   10
+   ↑=8 /     ↑=8
+      /
+     3
+    / \
+   1   6
+ ↑=3  ↑=3
+
+  Parent pointer verification:
+  ┌─────────────────────────┐
+  │ Node 3 → parent = 8   ✓ │
+  │ Node 1 → parent = 3   ✓ │
+  │ Node 6 → parent = 3   ✓ │
+  │ Node 10→ parent = 8   ✓ │
+  └─────────────────────────┘
+
+  Insert 6: walk 8→3(left)→6>3→right→nil → attach, parent=3
 ```
 
 ---
@@ -215,6 +291,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Insertion Order Determines Tree Shape:
+
+  Random order [5,3,7,1,4,6,8]:     Sorted order [1,2,3,4,5,6,7]:
+
+        5                             1
+       / \                             \
+      3   7          vs                 2
+     / \ / \                             \
+    1  4 6  8                             3
+                                           \
+  height = 3                                4
+  (balanced!)                                \
+                                              5
+                                               \
+                                                6
+                                                 \
+                                                  7
+                                            height = 7
+                                            (degenerate/skewed!)
+
+  Preorder balanced: 5 3 1 4 7 6 8
+  Preorder skewed:   1 2 3 4 5 6 7
+
+  ⚠ Sorted input → O(n) height → O(n) search!
+```
+
 ---
 
 ## Example 5: Insert and Return Path
@@ -267,6 +371,29 @@ func main() {
 	root, path = insertWithPath(root, 4)
 	fmt.Println("Path to insert 4:", path) // [10 5 3]
 }
+```
+
+**Textual Figure:**
+```
+Insert and Return Path:
+
+  Before:                After insert 12:        After insert 4:
+       10                     10                     10
+      / \                    / \                    / \
+     5   15                 5   15                 5   15
+    / \    \               / \  / \               / \  / \
+   3   7   20             3  7 12  20            3  7 12  20
+                                                /
+                                               4
+
+  Insert 12:                      Insert 4:
+  ┌─────────────────────────┐   ┌─────────────────────────┐
+  │ 10 → 12>10 → right    │   │ 10 → 4<10  → left     │
+  │ 15 → 12<15 → left     │   │ 5  → 4<5   → left     │
+  │ nil → attach 12       │   │ 3  → 4>3   → right    │
+  │ Path: [10, 15]        │   │ nil → attach 4        │
+  └─────────────────────────┘   │ Path: [10, 5, 3]      │
+                               └─────────────────────────┘
 ```
 
 ---
@@ -326,6 +453,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Insert with Subtree Counts (Order Statistics):
+
+  Insert [5, 3, 7, 1, 4, 6, 8] → each node tracks subtree size:
+
+           5 (count=7)
+          / \
+    (3) 3     7 (3)
+       / \   / \
+  (1) 1  4  6  8 (1)
+         (1)(1)
+
+  kthSmallest using counts:
+  ┌─────────────────────────────────────────┐
+  │ k=1: root=5, leftCount=3, 1≤3  │
+  │   → go left(3), leftCount=1    │
+  │   1≤1 → go left(1), leftCount=0│
+  │   k==0+1 → return 1            │
+  ├─────────────────────────────────────────┤
+  │ k=4: root=5, leftCount=3       │
+  │   k==3+1 → return 5 (root!)    │
+  └─────────────────────────────────────────┘
+
+  Output: k=1→1, k=2→3, k=3→4, k=4→5, k=5→6, k=6→7, k=7→8
+```
+
 ---
 
 ## Example 7: BST from Preorder Traversal (LeetCode 1008)
@@ -370,6 +524,32 @@ func main() {
 	inorder(root) // 1 5 7 8 10 12
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+BST from Preorder [8, 5, 1, 7, 10, 12]:
+
+  Preorder = root, left subtree, right subtree
+
+  build(lo=-∞, hi=+∞):
+  idx=0: val=8, 8∈(-∞,+∞) → root=8
+  ├── build(lo=-∞, hi=8):  Left subtree
+  │   idx=1: val=5, 5∈(-∞,8) → node=5
+  │   ├── build(-∞,5): idx=2: val=1 → node=1 (leaf)
+  │   └── build(5,8):  idx=3: val=7 → node=7 (leaf)
+  └── build(lo=8, hi=+∞):  Right subtree
+      idx=4: val=10, 10∈(8,+∞) → node=10
+      ├── build(8,10): idx=5: val=12, 12>10 → nil
+      └── build(10,+∞): idx=5: val=12 → node=12 (leaf)
+
+  Result:       8
+               / \
+              5   10
+             / \    \
+            1   7   12
+
+  Inorder: 1 5 7 8 10 12 (sorted ✓)
 ```
 
 ---
@@ -417,6 +597,28 @@ func main() {
 	inorder(root) // 1(x1) 3(x2) 5(x3) 7(x1)
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+Multi-set BST (handle duplicates with frequency count):
+
+  Insert [5, 3, 7, 3, 5, 5, 1]:
+
+  Step 1: 5 → root       Step 2: 3 → left    Step 3: 7 → right
+    5(x1)                  5(x1)                5(x1)
+                          /                    / \
+                        3(x1)               3(x1) 7(x1)
+
+  Step 4: 3 (dup!)       Step 5-6: 5,5 (dup!) Step 7: 1
+    5(x1)                  5(x3)                5(x3)
+   / \                    / \                  / \
+ 3(x2) 7(x1)           3(x2) 7(x1)          3(x2) 7(x1)
+  Freq++ !               Freq++ twice!       /
+                                           1(x1)
+
+  Inorder: 1(x1) 3(x2) 5(x3) 7(x1)
+  Total elements: 1+2+3+1 = 7 ✓
 ```
 
 ---
@@ -472,6 +674,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Batch Insert with Balanced Result:
+
+  Input: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Sort → dedup → [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Pick middle recursively:
+
+  buildBalanced([1..10]):
+    mid=5 → root
+    left=[1..4] → mid=2   right=[6..10] → mid=8
+
+               5
+             /   \
+           2       8
+          / \     / \
+         1   3   6   9
+              \   \   \
+               4   7  10
+
+  Height: 4 (optimal for 10 nodes)
+  ⌈log₂(10)⌉ + 1 = 4 ✓
+
+  vs naive sequential insert [1..10]:
+  1→2→3→...→10  height=10 (degenerate!)
+```
+
 ---
 
 ## Example 10: Insert and Verify BST Invariant
@@ -515,6 +744,37 @@ func main() {
 		fmt.Printf("After insert %d: valid=%v\n", v, valid)
 	}
 }
+```
+
+**Textual Figure:**
+```
+Insert and Verify BST Invariant After Each Insertion:
+
+  Insertions: [50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45]
+
+  After insert 50:  50          valid=✓
+  After insert 30:  50          valid=✓
+                   /
+                  30
+  After insert 70:  50          valid=✓
+                   / \
+                  30  70
+  ...
+  Final tree after all insertions:
+
+              50
+            /    \
+          30      70
+         / \     / \
+        20  40  60  80
+       / \  / \
+      10 25 35 45
+
+  BST invariant check at each step:
+  isValidBST(node, min, max) → every node.Val ∈ (min, max)
+
+  All 11 insertions maintain BST property: valid=true ✓
+  Height = 4 (well-balanced due to random-ish order)
 ```
 
 ---

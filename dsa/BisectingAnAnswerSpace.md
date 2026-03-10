@@ -53,6 +53,36 @@ func main() {
 
 **Answer space:** `[0, len(removable)]`. Maximize removals while `p` remains a subsequence of modified `s`.
 
+**Textual Figure: maximumRemovals("abcacb", "ab", [3,1,0])**
+
+```
+Answer Space: [0, 3]  (maximize k removals keeping p="ab" as subsequence)
+
+Iteration 1: lo=0, hi=3
+  mid = 0 + (3−0+1)/2 = 2
+  Remove indices [3,1] → s = "a_ca_b"
+  Subsequence check "ab":  a✓ → b✓  → feasible ✓
+  ┌─────────────────────────────────────────┐
+  │ Answer Space:  0     1     2     3      │
+  │                lo          mid   hi     │
+  │                ├─────────── ✓ ──────┤   │
+  │ → lo = mid = 2                          │
+  └─────────────────────────────────────────┘
+
+Iteration 2: lo=2, hi=3
+  mid = 2 + (3−2+1)/2 = 3
+  Remove indices [3,1,0] → s = "__ca_b"
+  Subsequence check "ab":  no 'a' → NOT feasible ✗
+  ┌─────────────────────────────────────────┐
+  │ Answer Space:  0     1     2     3      │
+  │                            lo   mid=hi  │
+  │                            ├──── ✗ ─┤   │
+  │ → hi = mid−1 = 2                        │
+  └─────────────────────────────────────────┘
+
+Result: lo = hi = 2 → return 2 ✓
+```
+
 ---
 
 ## Example 2: Cutting Ribbons (LeetCode 1891)
@@ -91,6 +121,37 @@ func main() {
 }
 ```
 
+**Textual Figure: maxLength([9, 7, 5], k=3)**
+
+```
+Answer Space: [0, 9]  (maximize cut length, need ≥ 3 pieces)
+
+Ribbons: ┌───────────┐ ┌─────────┐ ┌───────┐
+         │     9     │ │    7    │ │   5   │
+         └───────────┘ └─────────┘ └───────┘
+
+Iteration 1: lo=0, hi=9
+  mid = 0 + (9+1)/2 = 5
+  Pieces: 9/5=1 + 7/5=1 + 5/5=1 = 3 ≥ 3 → feasible ✓  → lo=5
+
+Iteration 2: lo=5, hi=9
+  mid = 5 + (9−5+1)/2 = 7
+  Pieces: 9/7=1 + 7/7=1 + 5/7=0 = 2 < 3 → NOT feasible ✗  → hi=6
+
+Iteration 3: lo=5, hi=6
+  mid = 5 + (6−5+1)/2 = 6
+  Pieces: 9/6=1 + 7/6=1 + 5/6=0 = 2 < 3 → NOT feasible ✗  → hi=5
+
+  ┌──────────────────────────────────────────────┐
+  │  0   1   2   3   4  [5]  6   7   8   9      │
+  │  ✓   ✓   ✓   ✓   ✓   ✓   ✗   ✗   ✗   ✗    │
+  │                      ↑                      │
+  │                   lo=hi=5                    │
+  └──────────────────────────────────────────────┘
+
+Result: lo = hi = 5 → return 5 ✓
+```
+
 ---
 
 ## Example 3: Minimum Time to Complete Trips (LeetCode 2187)
@@ -121,6 +182,31 @@ func main() {
 	fmt.Println(minimumTime([]int{1, 2, 3}, 5)) // 3
 	fmt.Println(minimumTime([]int{2}, 1))         // 2
 }
+```
+
+**Textual Figure: minimumTime([1, 2, 3], totalTrips=5)**
+
+```
+Answer Space: [1, 5]  (minimize time to complete 5 trips)
+Buses: speed=1 (1 trip/unit), speed=2 (1 trip/2 units), speed=3 (1 trip/3 units)
+
+Iteration 1: lo=1, hi=5
+  mid = 1 + (5−1)/2 = 3
+  Trips in 3 units: 3/1=3 + 3/2=1 + 3/3=1 = 5 ≥ 5 → feasible ✓  → hi=3
+
+Iteration 2: lo=1, hi=3
+  mid = 1 + (3−1)/2 = 2
+  Trips in 2 units: 2/1=2 + 2/2=1 + 2/3=0 = 3 < 5 → NOT feasible ✗  → lo=3
+
+  ┌──────────────────────────────────────┐
+  │  Time:  1     2    [3]    4     5   │
+  │         ✗     ✗     ✓     ✓     ✓   │
+  │                     ↑               │
+  │                  lo=hi=3             │
+  │         ←NOT OK→ ←──── OK ────→     │
+  └──────────────────────────────────────┘
+
+Result: lo = hi = 3 → return 3 ✓
 ```
 
 ---
@@ -161,6 +247,36 @@ func main() {
 	fmt.Println(maxRunTime(2, []int{3, 3, 3}))   // 4
 	fmt.Println(maxRunTime(2, []int{1, 1, 1, 1})) // 2
 }
+```
+
+**Textual Figure: maxRunTime(n=2, batteries=[3, 3, 3])**
+
+```
+Answer Space: [1, 4]  (sum=9, sum/n=4; maximize runtime per computer)
+
+Batteries:  ┌───┐ ┌───┐ ┌───┐
+            │ 3 │ │ 3 │ │ 3 │   sum = 9
+            └───┘ └───┘ └───┘
+
+Iteration 1: lo=1, hi=4
+  mid = 1 + (4−1+1)/2 = 3
+  Contribute: min(3,3)+min(3,3)+min(3,3) = 9 ≥ 3×2=6 → feasible ✓  → lo=3
+
+Iteration 2: lo=3, hi=4
+  mid = 3 + (4−3+1)/2 = 4
+  Contribute: min(3,4)+min(3,4)+min(3,4) = 9 ≥ 4×2=8 → feasible ✓  → lo=4
+
+  ┌────────────────────────────────────────┐
+  │  Runtime:  1     2     3    [4]       │
+  │            ✓     ✓     ✓     ✓        │
+  │                              ↑        │
+  │                           lo=hi=4     │
+  └────────────────────────────────────────┘
+
+  Computer 1: ████████████████ (4 units from bat1=3 + bat3=1)
+  Computer 2: ████████████████ (4 units from bat2=3 + bat3=1)
+
+Result: lo = hi = 4 → return 4 ✓
 ```
 
 ---
@@ -214,6 +330,42 @@ func main() {
 }
 ```
 
+**Textual Figure: allocateBooks([12, 34, 67, 90], students=2)**
+
+```
+Answer Space: [90, 203]  (minimize the maximum pages any student reads)
+
+Books: ┌────┐ ┌─────┐ ┌──────┐ ┌───────┐
+       │ 12 │ │  34 │ │  67  │ │  90   │  total = 203
+       └────┘ └─────┘ └──────┘ └───────┘
+
+Iteration 1: lo=90, hi=203 → mid=146
+  Student 1: [12,34,67]=113 ≤ 146 ✓
+  Student 2: [90]=90 ≤ 146 ✓  → 2 students → feasible ✓  → hi=146
+
+Iteration 2: lo=90, hi=146 → mid=118
+  Student 1: [12,34,67]=113 ≤ 118 ✓
+  Student 2: [90]=90 ≤ 118 ✓  → 2 students → feasible ✓  → hi=118
+
+Iteration 3: lo=90, hi=118 → mid=104
+  Student 1: [12,34]=46 → +67=113 > 104 → split!
+  Student 2: [67] → +90=157 > 104 → split!
+  Needs 3 students > 2 → NOT feasible ✗  → lo=105
+
+  ... (continues narrowing) ...
+
+Iteration N: lo=113, hi=113
+  ┌────────────────────────────────────────────────┐
+  │  90  ···  104   ···  [113]  ···  146  ···  203│
+  │   ✗         ✗          ✓          ✓         ✓ │
+  │                        ↑                      │
+  │                     lo=hi=113                  │
+  └────────────────────────────────────────────────┘
+  Student 1: [12, 34, 67] = 113   Student 2: [90] = 90
+
+Result: return 113 ✓
+```
+
 ---
 
 ## Example 6: Find the Smallest Sufficient Team Size
@@ -255,6 +407,52 @@ func main() {
 	fmt.Println(minMaxLoad([]int{3, 2, 4, 1, 5, 2}, 3)) // 6
 	fmt.Println(minMaxLoad([]int{7, 2, 5, 10, 8}, 2))    // 18
 }
+```
+
+**Textual Figure: minMaxLoad([3, 2, 4, 1, 5, 2], k=3)**
+
+```
+Answer Space: [5, 17]  (minimize max load across 3 workers)
+
+Tasks: ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+       │ 3 │ │ 2 │ │ 4 │ │ 1 │ │ 5 │ │ 2 │  sum = 17
+       └───┘ └───┘ └───┘ └───┘ └───┘ └───┘
+
+Iteration 1: lo=5, hi=17 → mid=11
+  Worker 1: [3,2,4,1]=10 ≤ 11  Worker 2: [5,2]=7 ≤ 11
+  workers=2 ≤ 3 → feasible ✓  → hi=11
+
+Iteration 2: lo=5, hi=11 → mid=8
+  Worker 1: [3,2]=5, +4=9>8 → split
+  Worker 2: [4,1]=5, +5=10>8 → split
+  Worker 3: [5,2]=7 ≤ 8
+  workers=3 ≤ 3 → feasible ✓  → hi=8
+
+Iteration 3: lo=5, hi=8 → mid=6
+  Worker 1: [3,2]=5, +4=9>6 → split
+  Worker 2: [4,1]=5, +5=10>6 → split
+  Worker 3: [5], +2=7>6 → split → Worker 4: [2]
+  workers=4 > 3 → NOT feasible ✗  → lo=7
+
+Iteration 4: lo=7, hi=8 → mid=7
+  Worker 1: [3,2]=5, +4=9>7 → split
+  Worker 2: [4,1]=5, +5=10>7 → split
+  Worker 3: [5,2]=7 ≤ 7
+  workers=3 ≤ 3 → feasible ✓  → hi=7
+
+  ┌──────────────────────────────────────────────────┐
+  │  Load:  5    6   [7]   8    ···   11   ···  17  │
+  │         ✗    ✗    ✓    ✓          ✓         ✓   │
+  │                   ↑                             │
+  │                lo=hi=7                           │
+  │         ←NOT OK→  ←────── OK ──────────→        │
+  └──────────────────────────────────────────────────┘
+
+  Worker 1: │███ 3 ██│██ 2 ██│ = 5
+  Worker 2: │████ 4 ████│█ 1 █│ = 5
+  Worker 3: │█████ 5 █████│██ 2 ██│ = 7  ← max load
+
+Result: lo = hi = 7 → return 7 ✓
 ```
 
 ---
@@ -313,6 +511,50 @@ func main() {
 	mat := [][]int{{1, 1, 3, 2, 4, 3, 2}, {1, 1, 3, 2, 4, 3, 2}, {1, 1, 3, 2, 4, 3, 2}}
 	fmt.Println(maxSideLength(mat, 4)) // 2
 }
+```
+
+**Textual Figure: maxSideLength(mat, threshold=4)**
+
+```
+Answer Space: [0, 3]  (maximize side length with sub-square sum ≤ 4)
+
+Matrix (3×7):
+  ┌───┬───┬───┬───┬───┬───┬───┐
+  │ 1 │ 1 │ 3 │ 2 │ 4 │ 3 │ 2 │
+  ├───┼───┼───┼───┼───┼───┼───┤
+  │ 1 │ 1 │ 3 │ 2 │ 4 │ 3 │ 2 │
+  ├───┼───┼───┼───┼───┼───┼───┤
+  │ 1 │ 1 │ 3 │ 2 │ 4 │ 3 │ 2 │
+  └───┴───┴───┴───┴───┴───┴───┘
+
+Iteration 1: lo=0, hi=3 → mid = 0+(3+1)/2 = 2
+  Check all 2×2 sub-squares:
+  ┌───┬───┐
+  │ 1 │ 1 │ sum = 1+1+1+1 = 4 ≤ 4  ✓ found!
+  ├───┼───┤
+  │ 1 │ 1 │
+  └───┴───┘
+  → lo = 2
+
+Iteration 2: lo=2, hi=3 → mid = 2+(3−2+1)/2 = 3
+  Check all 3×3 sub-squares:
+  ┌───┬───┬───┐
+  │ 1 │ 1 │ 3 │ sum = 15 > 4  ✗
+  ├───┼───┼───┤
+  │ 1 │ 1 │ 3 │ (all 3×3 sums exceed 4)
+  ├───┼───┼───┤
+  │ 1 │ 1 │ 3 │
+  └───┴───┴───┘
+  No 3×3 square found → hi = 2
+
+  ┌──────────────────────────────────┐
+  │  Side:  0    1   [2]   3        │
+  │         ✓    ✓    ✓    ✗        │
+  │                   ↑             │
+  │                lo=hi=2          │
+  └──────────────────────────────────┘
+
+Result: lo = hi = 2 → return 2 ✓
 ```
 
 ---
@@ -374,6 +616,45 @@ func main() {
 }
 ```
 
+**Textual Figure: minimumEffortPath([[1,2,2],[3,8,2],[5,3,5]])**
+
+```
+Answer Space: [0, 1000000]  (minimize max absolute diff along path)
+
+Grid with edge weights (absolute differences):
+  ┌───┐─1─┌───┐─0─┌───┐
+  │ 1 │   │ 2 │   │ 2 │
+  └───┘   └───┘   └───┘
+    │2      │6      │0
+  ┌───┐─5─┌───┐─6─┌───┐
+  │ 3 │   │ 8 │   │ 2 │
+  └───┘   └───┘   └───┘
+    │2      │5      │3
+  ┌───┐─2─┌───┐─2─┌───┐
+  │ 5 │   │ 3 │   │ 5 │  ← goal (2,2)
+  └───┘   └───┘   └───┘
+
+Optimal path (max effort = 2):
+  (0,0)→(1,0)→(2,0)→(2,1)→(2,2)
+    1  →  3  →  5  →  3  →  5
+  diffs:  2     2     2     2    max = 2
+
+Binary search converges:
+  ┌────────────────────────────────────────────┐
+  │  Effort:  0     1    [2]    3    ···  10⁶  │
+  │           ✗     ✗     ✓     ✓         ✓    │
+  │                       ↑                    │
+  │                    lo=hi=2                  │
+  │           ←NO PATH→   ←── PATH EXISTS ──→  │
+  └────────────────────────────────────────────┘
+
+  mid=2: DFS from (0,0)→(1,0)[|3−1|=2✓]→(2,0)[|5−3|=2✓]
+         →(2,1)[|3−5|=2✓]→(2,2)[|5−3|=2✓] → reachable ✓
+  mid=1: No path exists with all diffs ≤ 1 → ✗
+
+Result: lo = hi = 2 → return 2 ✓
+```
+
 ---
 
 ## Example 9: Minimum Number of Days to Disconnect Island (Concept)
@@ -410,6 +691,37 @@ func main() {
 	fmt.Println(minOps(arr, 6)) // 1 (add 1: [2,4,6,8,10], 3 values >= 6)
 	fmt.Println(minOps(arr, 10)) // 3
 }
+```
+
+**Textual Figure: minOps([1, 3, 5, 7, 9], threshold=10)**
+
+```
+Answer Space: [0, 5]  (minimize ops so ≥ len/2=2 elements reach threshold)
+
+Array:  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐
+        │ 1 │ │ 3 │ │ 5 │ │ 7 │ │ 9 │   threshold = 10
+        └───┘ └───┘ └───┘ └───┘ └───┘
+
+Iteration 1: lo=0, hi=5 → mid=2
+  v+2 ≥ 10?  3✗  5✗  7✗  9✗  11✓ → count=1 < 2 → ✗  → lo=3
+
+Iteration 2: lo=3, hi=5 → mid=4
+  v+4 ≥ 10?  5✗  7✗  9✗  11✓  13✓ → count=2 ≥ 2 → ✓  → hi=4
+
+Iteration 3: lo=3, hi=4 → mid=3
+  v+3 ≥ 10?  4✗  6✗  8✗  10✓  12✓ → count=2 ≥ 2 → ✓  → hi=3
+
+  ┌──────────────────────────────────────┐
+  │  Ops:  0   1   2  [3]  4   5        │
+  │        ✗   ✗   ✗   ✓   ✓   ✓        │
+  │                     ↑               │
+  │                  lo=hi=3             │
+  │        ←NOT OK→  ←── OK ────→       │
+  └──────────────────────────────────────┘
+
+  After +3: [4, 6, 8, 10✓, 12✓]  → 2 values ≥ 10  ✓
+
+Result: lo = hi = 3 → return 3 ✓
 ```
 
 ---
@@ -459,6 +771,67 @@ func main() {
 	})
 	fmt.Println("Max x where x²≤50:", ans) // 7
 }
+```
+
+**Textual Figure: bisectMinimize / bisectMaximize Templates**
+
+```
+═══════════════════════════════════════════════════════════════
+  bisectMinimize(0, 50, x² ≥ 50)  →  Find smallest x where x²≥50
+═══════════════════════════════════════════════════════════════
+
+Iteration 1: lo=0, hi=50 → mid=25
+  25²=625 ≥ 50 → ✓ hi=25
+Iteration 2: lo=0, hi=25 → mid=12
+  12²=144 ≥ 50 → ✓ hi=12
+Iteration 3: lo=0, hi=12 → mid=6
+  6²=36 < 50  → ✗ lo=7
+Iteration 4: lo=7, hi=12 → mid=9
+  9²=81 ≥ 50  → ✓ hi=9
+Iteration 5: lo=7, hi=9  → mid=8
+  8²=64 ≥ 50  → ✓ hi=8
+Iteration 6: lo=7, hi=8  → mid=7
+  7²=49 < 50  → ✗ lo=8
+
+  ┌──────────────────────────────────────────────┐
+  │  x:  ··· 6    7   [8]   9   ···  25  ··· 50 │
+  │      ··· ✗    ✗    ✓    ✓        ✓        ✓  │
+  │          36   49   64   81                   │
+  │                    ↑                         │
+  │                 lo=hi=8                       │
+  │       ←x²<50→     ←──── x²≥50 ────→         │
+  └──────────────────────────────────────────────┘
+  Result: 8  (8²=64 ≥ 50 ✓,  7²=49 < 50 ✗)
+
+═══════════════════════════════════════════════════════════════
+  bisectMaximize(0, 50, x² ≤ 50)  →  Find largest x where x²≤50
+═══════════════════════════════════════════════════════════════
+
+Iteration 1: lo=0, hi=50 → mid=26   (upper‑mid)
+  26²=676 > 50 → ✗ hi=25
+  ···  (narrowing similarly)
+Iteration N: lo=7, hi=8 → mid=8   (upper‑mid)
+  8²=64 > 50  → ✗ hi=7
+
+  ┌──────────────────────────────────────────────┐
+  │  x:  ··· 5    6   [7]   8   ···  25  ··· 50 │
+  │      ··· ✓    ✓    ✓    ✗        ✗        ✗  │
+  │          25   36   49   64                   │
+  │                    ↑                         │
+  │                 lo=hi=7                       │
+  │       ←x²≤50────→  ←── x²>50 ────→          │
+  └──────────────────────────────────────────────┘
+  Result: 7  (7²=49 ≤ 50 ✓,  8²=64 > 50 ✗)
+
+  ┌─────────────────────────────────────────┐
+  │  MINIMIZE template:  hi = mid    (✓)   │
+  │                      lo = mid+1  (✗)   │
+  │  Finds FIRST ✓ (leftmost feasible)     │
+  │                                        │
+  │  MAXIMIZE template:  lo = mid    (✓)   │
+  │   (upper‑mid!)       hi = mid−1  (✗)   │
+  │  Finds LAST ✓ (rightmost feasible)     │
+  └─────────────────────────────────────────┘
 ```
 
 ---

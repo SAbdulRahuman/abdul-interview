@@ -84,6 +84,33 @@ cur=4: left exists → pred=3 → 3.Right==4 (thread!) → restore, visit 4 → 
 cur=6: same pattern...
 ```
 
+**Textual Figure – Example 1:**
+```
+ Morris Inorder — Threading & Visiting:
+ ───────────────────────────────────
+       4                     Step 1: Thread 3→4
+      / \                           4
+     2   6                         / \
+    / \ / \                       2   6
+   1  3 5  7                     / \
+                                1   3──┐
+ Step 2: Thread 1→2                  │ thread
+       4                            ↓
+      / \                    Step 3: Visit 1, follow
+     2   6                   thread to 2
+    / \
+   1   3                 Step 4: Remove thread 1→2
+   └─┐ └─┐               Visit 2, go right to 3
+     ↓   ↓
+  thread thread          Step 5: Visit 3, follow
+                         thread to 4
+ Result: [1, 2, 3, 4, 5, 6, 7]
+ ───────────────────────────────────
+ Threads created:  3→R→4, 1→R→2, 5→R→6
+ Threads removed:  same (tree restored)
+ Visit order:      1 → 2 → 3 → 4 → 5 → 6 → 7
+```
+
 ---
 
 ## Example 2: Morris Preorder Traversal
@@ -135,6 +162,30 @@ func main() {
     }
     fmt.Println(morrisPreorder(root)) // [4 2 1 3 6 5 7]
 }
+```
+
+**Textual Figure – Example 2:**
+```
+ Morris Preorder vs Inorder — When to visit:
+ ────────────────────────────────────
+       4                  Preorder: visit BEFORE going left
+      / \                 Inorder:  visit AFTER returning
+     2   6
+    / \ / \            Step-by-step:
+   1  3 5  7           cur=4: create thread 3→4, VISIT 4, go left
+                       cur=2: create thread 1→2, VISIT 2, go left
+ ┌───────────────────────────────────┐
+ │ Inorder:  visit at thread removal  │
+ │ → [1, 2, 3, 4, 5, 6, 7]           │
+ │                                    │
+ │ Preorder: visit at thread creation  │
+ │ → [4, 2, 1, 3, 6, 5, 7]           │
+ └───────────────────────────────────┘
+            4 (visit 1st)
+           / \
+    (2nd) 2   6 (5th)
+         / \ / \
+   (3rd)1  3 5  7 (4th,6th,7th)
 ```
 
 **Key difference from inorder**: Visit the node when *creating* the thread (first time), not when *removing* it.
@@ -217,6 +268,38 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 3:**
+```
+ Morris Postorder — Reverse right boundary technique:
+ ──────────────────────────────────────
+  dummy(0)               Uses a dummy node pointing
+     \                   to root as its left child.
+      4
+     / \                 When thread is found (2nd visit):
+    2   6                  → reverse-print path from
+   / \ / \                   cur.Left to pred
+  1  3 5  7
+
+ Step-by-step:
+ ┌─────┬─────────────────────────────────────┐
+ │ cur │ Action                                │
+ ├─────┼─────────────────────────────────────┤
+ │  D  │ thread 3→D, go left to 4             │
+ │  4  │ thread 3→4... go left to 2            │
+ │  2  │ thread 1→2, go left to 1              │
+ │  1  │ no left → go right(thread→2)          │
+ │  2  │ thread found! reverse print 1 → [1]   │
+ │  3  │ no left → go right(thread→4)          │
+ │  4  │ thread found! reverse print 2→3 →[3,2]│
+ │  6  │ thread 5→6, go left to 5              │
+ │  5  │ no left → go right(thread→6)          │
+ │  6  │ thread found! reverse print 5 → [5]   │
+ │  7  │ no left → go right(thread→D)          │
+ │  D  │ thread found! reverse 4→6→7 →[7,6,4]│
+ └─────┴─────────────────────────────────────┘
+ Result: [1] + [3,2] + [5] + [7,6,4] = [1,3,2,5,7,6,4]
+```
+
 ---
 
 ## Example 4: Validate BST Using Morris (LeetCode 98)
@@ -279,6 +362,34 @@ func main() {
     }
     fmt.Println(isValidBST(root2)) // false (4 < 5 but right child)
 }
+```
+
+**Textual Figure – Example 4:**
+```
+ Morris BST Validation — Inorder must be strictly increasing:
+ ────────────────────────────────────────────
+ Valid BST:          Invalid BST:
+    2                   5
+   / \                 / \
+  1   3               1   4     ← 4 < 5 but right child!
+                         / \
+                        3   6
+
+ Morris inorder on valid BST:
+  prev=-∞ → visit 1 (1>-∞ ✓) → visit 2 (2>1 ✓) → visit 3 (3>2 ✓)
+  Result: true
+
+ Morris inorder on invalid BST:
+  prev=-∞ → visit 1 (1>-∞ ✓) → visit 3 (3>1 ✓)
+         → visit 4 (4>3 ✓) → visit 5 (5>4 ✓)
+         → visit 6 (6>5 ✓)
+  Wait — inorder = [1,3,4,5,6] looks sorted?
+  Actually inorder = [1,3,5,4,6]
+                          ↑ ↑
+                          5>4 is NOT sorted → false!
+ ┌────────────────────────────────────┐
+ │ cur.Val(4) <= prev.Val(5) → false │
+ └────────────────────────────────────┘
 ```
 
 ---
@@ -344,6 +455,27 @@ func main() {
         fmt.Printf("k=%d → %d\n", k, kthSmallest(root, k))
     }
 }
+```
+
+**Textual Figure – Example 5:**
+```
+ Morris Kth Smallest — Count during inorder:
+ ───────────────────────────────────
+       5
+      / \
+     3   6                 Inorder: 1, 2, 3, 4, 5, 6
+    / \
+   2   4                   ┌────┬────────┬─────────┐
+  /                        │  k │ count  │ kth val │
+ 1                         ├────┼────────┼─────────┤
+                           │  1 │  1✓    │    1    │
+ Morris inorder visits:    │  2 │  2✓    │    2    │
+  1(cnt=1) → 2(cnt=2)      │  3 │  3✓    │    3    │
+  → 3(cnt=3) → 4(cnt=4)   │  4 │  4✓    │    4    │
+  → 5(cnt=5) → 6(cnt=6)   │  5 │  5✓    │    5    │
+                           │  6 │  6✓    │    6    │
+ Stop when count==k         └────┴────────┴─────────┘
+ O(1) space, O(k) average time to reach kth element
 ```
 
 ---
@@ -424,6 +556,30 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 6:**
+```
+ Morris Recover BST — Find two swapped nodes:
+ ───────────────────────────────────────
+      3                Correct BST inorder:  [1,2,3,4,5]
+     / \               Swapped BST inorder:  [1,4,3,2,5]
+    4   2                                       ↑   ↑
+   /     \             nodes 2 and 4 are swapped
+  1       5
+
+ Morris inorder traversal detects violations:
+ ┌──────┬──────┬────────────────────────────┐
+ │ prev │ cur  │ prev > cur?                  │
+ ├──────┼──────┼────────────────────────────┤
+ │  -∞  │  1   │ No                           │
+ │  1   │  4   │ No                           │
+ │  4   │  3   │ YES → first=4, second=3      │
+ │  3   │  2   │ YES → second=2 (update)      │
+ │  2   │  5   │ No                           │
+ └──────┴──────┴────────────────────────────┘
+ Swap first(4) ↔ second(2) → tree restored
+ After: [1, 2, 3, 4, 5] ✓
+```
+
 ---
 
 ## Example 7: Count BST Nodes in Range Using Morris
@@ -477,6 +633,30 @@ func main() {
     }
     fmt.Println(rangeSumBST(root, 7, 15)) // 32 (7 + 10 + 15)
 }
+```
+
+**Textual Figure – Example 7:**
+```
+ Morris Range Sum — Sum values in [low, high]:
+ ─────────────────────────────────────
+       10
+      /  \            low=7, high=15
+     5   15
+    / \    \
+   3   7   18
+
+ Morris inorder: 3, 5, 7, 10, 15, 18
+ ┌───────┬───────────┬───────────┐
+ │ Visit │ In range? │ sum       │
+ ├───────┼───────────┼───────────┤
+ │   3   │  3<7  No  │  0        │
+ │   5   │  5<7  No  │  0        │
+ │   7   │  7≥7 Yes  │  0+7=7    │
+ │  10   │ 10≤15 Yes │  7+10=17  │
+ │  15   │ 15≤15 Yes │  17+15=32 │
+ │  18   │ 18>15 No  │  32       │
+ └───────┴───────────┴───────────┘
+ Result: 32 (7 + 10 + 15)
 ```
 
 ---
@@ -541,6 +721,32 @@ func main() {
     }
     fmt.Println() // 1 2 3 4 5 6 7
 }
+```
+
+**Textual Figure – Example 8:**
+```
+ Morris Flatten BST to Sorted Linked List:
+ ─────────────────────────────────────
+  Input BST:              Output linked list:
+       4                  (via right pointers)
+      / \
+     2   6               dummy → 1 → 2 → 3 → 4 → 5 → 6 → 7 → nil
+    / \ / \
+   1  3 5  7              Each node in inorder
+                          gets appended to tail.
+ Process during Morris inorder:
+ ┌───────┬──────────────────────────────┐
+ │ Visit │ tail.Right = cur, tail = cur │
+ ├───────┼──────────────────────────────┤
+ │   1   │ dummy→R=1, tail=1             │
+ │   2   │ 1→R=2, tail=2, Left=nil       │
+ │   3   │ 2→R=3, tail=3                 │
+ │   4   │ 3→R=4, tail=4                 │
+ │   5   │ 4→R=5, tail=5                 │
+ │   6   │ 5→R=6, tail=6                 │
+ │   7   │ 6→R=7, tail=7, 7→R=nil       │
+ └───────┴──────────────────────────────┘
+ Result: 1 → 2 → 3 → 4 → 5 → 6 → 7
 ```
 
 ---
@@ -613,6 +819,26 @@ func main() {
     root := &TreeNode{1, nil, &TreeNode{2, &TreeNode{2, nil, nil}, nil}}
     fmt.Println(findMode(root)) // [2]
 }
+```
+
+**Textual Figure – Example 9:**
+```
+ Morris Find Mode in BST:
+ ──────────────────────
+   1                   Morris inorder: [1, 2, 2]
+    \
+     2                 ┌───────┬────────┬──────────┬──────┐
+    /                  │ visit │ curCnt │ maxCount │ modes│
+   2                   ├───────┼────────┼──────────┼──────┤
+                       │   1   │   1    │    1     │ [1]  │
+                       │   2   │   1    │    1     │[1,2] │
+                       │   2   │   2    │    2     │ [2]  │
+                       └───────┴────────┴──────────┴──────┘
+
+ curCount tracks consecutive equal values.
+ When curCount > maxCount → new mode found, reset list.
+ When curCount == maxCount → add to modes list.
+ Result: [2] (appears 2 times, most frequent)
 ```
 
 ---
@@ -710,6 +936,35 @@ func main() {
     fmt.Printf("Stack:     %d nodes, %v\n", c2, t2)
     fmt.Printf("Recursive: %d nodes, %v\n", c3, t3)
 }
+```
+
+**Textual Figure – Example 10:**
+```
+ Morris vs Stack vs Recursive — Comparison:
+ ──────────────────────────────────────────
+
+ ┌────────────┬────────┬────────┬──────────────┐
+ │ Method     │ Time   │ Space  │ Modifies Tree │
+ ├────────────┼────────┼────────┼──────────────┤
+ │ Morris     │ O(n)   │ O(1)   │ Yes (temp)    │
+ │ Stack      │ O(n)   │ O(h)   │ No            │
+ │ Recursive  │ O(n)   │ O(h)   │ No            │
+ └────────────┴────────┴────────┴──────────────┘
+
+ For n=1,000,000 balanced BST (h ≈ 20):
+
+ Memory usage:
+  Morris:    █ (constant)
+  Stack:     █████ (~20 pointers on stack)
+  Recursive: █████ (~20 frames on call stack)
+
+ Morris wins in space-constrained environments.
+ All three: O(n) time, same visit count.
+
+ Key trade-off:
+  ┌───────────────────────────────────┐
+  │ O(1) space ↔ temporary tree mods │
+  └───────────────────────────────────┘
 ```
 
 ---

@@ -61,6 +61,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ Red-Black Tree Node Structure:
+
+        10(B)
+       /    \
+     5(R)   15(R)
+    / \     / \
+  nil nil nil nil   ← all NIL leaves are BLACK
+
+ Legend: (B) = BLACK, (R) = RED
+
+ ┌───────────────────────────────────────────────┐
+ │ Property checks:                              │
+ │  1. Every node is RED or BLACK          ✓     │
+ │  2. Root is BLACK                       ✓     │
+ │  3. NIL leaves are BLACK                ✓     │
+ │  4. RED children are BLACK? N/A (leaves) ✓    │
+ │  5. Black height: root→NIL = 2 on all   ✓    │
+ │     10(B)→15(R)→NIL(B) : bh=2            │
+ │     10(B)→ 5(R)→NIL(B) : bh=2            │
+ │                                               │
+ │ New nodes are always inserted as RED           │
+ └───────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 2: Left-Leaning Red-Black Tree (LLRB) — Insert
@@ -130,6 +156,37 @@ func main() {
 	inorder(root) // sorted with colors
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+ LLRB Insert [10, 20, 30, 15, 25, 5, 1]:
+
+ Insert 10:       Insert 20:          Insert 30:
+   10(B)           10(B)                20(B)
+                     \    rotateLeft   /    \
+                    20(R)  ─────→   10(R)  30(R)
+                              then     ↑ flipColors
+                              fix     10(B)  30(B)
+
+ LLRB fix-up rules (applied bottom-up):
+ ┌──────────────────────────────────────────────┐
+ │ Condition             │ Action          │
+ ├───────────────────────┼──────────────────────┤
+ │ Right RED, Left BLACK │ Rotate Left     │
+ │ Left RED, LeftLeft RED│ Rotate Right    │
+ │ Both children RED     │ Flip Colors     │
+ └───────────────────────┴──────────────────────┘
+
+ Final LLRB after all inserts:
+           15(B)
+          /     \
+       5(R)     25(B)
+      / \       /  \
+    1(B) 10(B) 20(R) 30(R)
+
+ Inorder: 1(R) 5(B) 10(B) 15(R) 20(R) 25(B) 30(B)
+ Root forced BLACK after each insert
 ```
 
 ---
@@ -210,6 +267,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ After inserting 1..20 into LLRB:
+
+ Verification of Red-Black properties:
+ ┌───────────────────────────────────────────────┐
+ │ Check 1: Root is BLACK              → ✓ PASS │
+ │ Check 2: No consecutive RED nodes   → ✓ PASS │
+ │ Check 3: Equal black heights (all   → ✓ PASS │
+ │          root→NIL paths same bh)              │
+ └───────────────────────────────────────────────┘
+
+ noConsecutiveReds(node) check:
+          8(B)
+         /    \
+       4(R)   12(R)       ← RED nodes
+      / \     / \
+    2(B) 6(B) 10(B) 16(B) ← children are BLACK ✓
+
+ blackHeight(node) count:
+   Path: root → left → left → ... → NIL
+   Count BLACK nodes only → same on all paths ✓
+
+ Result: Valid=true, Black height=k
+```
+
 ---
 
 ## Example 4: LLRB Delete Minimum
@@ -283,6 +366,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ LLRB Delete Minimum from [5, 3, 7, 1, 4, 6, 8, 2]:
+
+ Before:                 After deleteMin:
+        5(B)                    5(B)
+       /    \                  /    \
+     3(B)    7(B)            3(B)    7(B)
+    /   \   /   \           /   \   /   \
+  1(B) 4(B) 6(B) 8(B)     2(B) 4(B) 6(B) 8(B)
+    \
+    2(R)
+
+ deleteMin algorithm:
+ ┌────────────────────────────────────────────┐
+ │ Step 1: Walk left to find minimum      │
+ │ Step 2: If left child & its left child │
+ │         are both BLACK → moveRedLeft    │
+ │ Step 3: Delete leftmost node (1)       │
+ │ Step 4: fixUp on way back up           │
+ │         (rotateLeft/Right, flipColors)  │
+ └────────────────────────────────────────────┘
+
+ Min removed: 1
+ Inorder after: 2 3 4 5 6 7 8
+```
+
 ---
 
 ## Example 5: Red-Black Tree Height Analysis
@@ -351,6 +461,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ Red-Black Tree Height Analysis (sorted insertions 1..N):
+
+ ┌──────────┬──────────┬──────────────┬──────────────────┐
+ │    N     │  Height  │ Black Height │ 2×log₂(N+1)     │
+ ├──────────┼──────────┼──────────────┼──────────────────┤
+ │    100   │   ~11    │      ~7      │     13.3        │
+ │  1,000   │   ~17    │     ~10      │     19.9        │
+ │ 10,000   │   ~23    │     ~14      │     26.6        │
+ │100,000   │   ~29    │     ~17      │     33.2        │
+ └──────────┴──────────┴──────────────┴──────────────────┘
+
+ Key insight: height ≤ 2 × log₂(N+1) always holds ✓
+ black_height ≈ log₂(N) (shortest paths are all-black)
+
+ Height vs N (logarithmic growth):
+ h |
+ 30|                                      *
+ 25|                          *
+ 20|                *
+ 15|     *
+ 10|  *
+   +────────────────────────────────────> N
+     100   1K     10K           100K
+```
+
 ---
 
 ## Example 6: Simulate Go's Map — TreeMap using RB Tree
@@ -415,6 +552,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ TreeMap using LLRB — sorted key-value store:
+
+ Operations: Put(3,30) Put(1,10) Put(4,40) Put(1,100) Put(5,50) Put(2,20)
+
+ Internal LLRB (sorted by key):
+          3(B)
+         /    \
+       1(B)    4(B)
+         \       \
+         2(R)    5(R)
+
+ Key 1 updated: value 10 → 100 (Put overwrites)
+
+ InOrder traversal (sorted by key):
+   [1:100] → [2:20] → [3:30] → [4:40] → [5:50]
+
+ ┌───────────┬───────┬───────┐
+ │ Operation │ Value │ Found │
+ ├───────────┼───────┼───────┤
+ │ Get(1)    │  100  │ true  │
+ │ Get(9)    │   0   │ false │
+ └───────────┴───────┴───────┘
+```
+
 ---
 
 ## Example 7: RB Tree — Count Red and Black Nodes
@@ -470,6 +633,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ After inserting 1..31 into LLRB:
+
+              16(B)
+            /      \
+         8(B)      24(B)
+        /   \      /   \
+      4(R) 12(R) 20(R) 28(R)
+     / \   / \   / \   / \
+    2  6  10 14 18 22 26 30  (BLACK)
+   /\ /\ /\ /\ /\ /\ /\ /\
+  1 3 5 7 ...              (some RED)
+
+ Color distribution:
+ ┌───────────┬─────────┐
+ │  Color    │  Count  │
+ ├───────────┼─────────┤
+ │  BLACK    │  ~21    │
+ │  RED      │  ~10    │
+ │  Total    │   31    │
+ └───────────┴─────────┘
+
+ Ratio: ~2:1 (BLACK:RED)
+ RED nodes appear as left-leaning links only (LLRB)
+```
+
 ---
 
 ## Example 8: RB vs AVL — Structural Comparison
@@ -521,6 +711,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ Structural comparison (sorted inserts 1..N):
+
+ ┌─────────┬─────────────┬─────────────┐
+ │    N    │  RB Height  │ AVL Height  │
+ ├─────────┼─────────────┼─────────────┤
+ │    100  │     ~11     │      7      │
+ │  1,000  │     ~17     │     10      │
+ │ 10,000  │     ~23     │     14      │
+ └─────────┴─────────────┴─────────────┘
+
+ AVL (stricter balance):     RB (relaxed balance):
+     |bf| ≤ 1 always           h ≤ 2×log₂(N+1)
+     Shorter trees             Fewer rotations on delete
+     Better for reads          Better for writes
+
+      AVL            RB
+       7             11        (N=100)
+      10             17        (N=1000)
+      14             23        (N=10000)
+       ↑              ↑
+   Tighter          Looser (but ≤ 3 rotations/delete)
+```
+
 ---
 
 ## Example 9: Red-Black Tree Properties Cheat Sheet
@@ -568,6 +783,35 @@ func main() {
 		fmt.Printf("%-20s %-25s %-25s\n", c.Metric, c.AVL, c.RedBlack)
 	}
 }
+```
+
+**Textual Figure:**
+```
+ ┌────────────────────┬─────────────────┬────────────────────┐
+ │ Metric             │      AVL        │    Red-Black         │
+ ├────────────────────┼─────────────────┼────────────────────┤
+ │ Height             │ ≤1.44 log₂ n   │ ≤2 log₂(n+1)        │
+ │ Search             │ Slightly faster │ Slightly slower      │
+ │ Insert rotations   │ ≤2              │ ≤2                   │
+ │ Delete rotations   │ O(log n)        │ ≤3                   │
+ │ Recoloring         │ None            │ O(log n)             │
+ │ Best for           │ Read-heavy      │ Write-heavy          │
+ │ Used in            │ Databases       │ Linux, Java TreeMap  │
+ └────────────────────┴─────────────────┴────────────────────┘
+
+ RB Tree 5 Properties:
+   1. Every node → RED or BLACK
+   2. Root → always BLACK
+   3. NIL leaves → BLACK
+   4. RED node → children must be BLACK
+   5. All root→NIL paths → same BLACK count
+
+   10(B)
+  /    \
+ 5(R)  15(R)    ← No two consecutive REDs
+ / \   / \
+ 3  7 12  20    ← RED's children are BLACK
+(B)(B)(B)(B)
 ```
 
 ---
@@ -652,6 +896,33 @@ func main() {
 		fmt.Printf("Get(%d): val=%q found=%v rank=%d\n", k, v, ok, tree.Rank(k))
 	}
 }
+```
+
+**Textual Figure:**
+```
+ LLRB Full Implementation with Size-augmented nodes:
+
+ Keys inserted: 1, 2, 3, 4, 5, 6, 9
+ (from map iteration, order may vary)
+
+ Internal LLRB tree:
+          4(B, size=7)
+         /          \
+      2(R, s=3)    6(B, s=3)
+     / \           / \
+   1(B) 3(B)    5(B) 9(B)
+
+ ┌───────┬───────┬───────┬──────┐
+ │  Key  │  Val  │ Found │ Rank │
+ ├───────┼───────┼───────┼──────┤
+ │   1   │ "A2"  │ true  │  0   │  (0 keys < 1)
+ │   3   │ "C"   │ true  │  2   │  (keys 1,2 < 3)
+ │   5   │ "E"   │ true  │  4   │  (keys 1,2,3,4 < 5)
+ │   7   │  ""   │ false │  5   │  (keys 1,2,3,4,5 < 7)
+ └───────┴───────┴───────┴──────┘
+
+ Rank = # of keys strictly less than given key
+ Size field enables O(log n) rank queries
 ```
 
 ---

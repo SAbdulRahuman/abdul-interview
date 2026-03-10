@@ -88,6 +88,31 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 1:**
+```
+ Preorder DFS Serialization:
+ ─────────────────────────
+       1                 Preorder DFS visit:
+      / \                1 → 2 → # → # → 3 → 4 → # → # → 5 → # → #
+     2   3
+        / \              Serialized: "1,2,#,#,3,4,#,#,5,#,#,"
+       4   5
+
+ Deserialization (rebuild from token stream):
+ ┌──────┬─────────┬─────────────────────────────┐
+ │ idx  │ token   │ action                        │
+ ├──────┼─────────┼─────────────────────────────┤
+ │  0   │  "1"    │ create node(1), recurse L & R │
+ │  1   │  "2"    │ create node(2), recurse L & R │
+ │  2   │  "#"    │ return nil (2's left)          │
+ │  3   │  "#"    │ return nil (2's right)         │
+ │  4   │  "3"    │ create node(3), recurse L & R │
+ │  5   │  "4"    │ create node(4) → L=#, R=#     │
+ │  8   │  "5"    │ create node(5) → L=#, R=#     │
+ └──────┴─────────┴─────────────────────────────┘
+ Tree rebuilt identically.
+```
+
 ---
 
 ## Example 2: BFS Level-Order Serialization
@@ -175,6 +200,30 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 2:**
+```
+ BFS Level-Order Serialization:
+ ───────────────────────────────
+       1          Level 0: [1]
+      / \         Level 1: [2, 3]
+     2   3        Level 2: [null, null, 4, 5]
+        / \
+       4   5      BFS queue processes level by level:
+
+ ┌───────┬─────────────┬────────────────────────┐
+ │ deque │ output      │ enqueue children       │
+ ├───────┼─────────────┼────────────────────────┤
+ │  1    │ "1"         │ enqueue 2, 3           │
+ │  2    │ "2"         │ enqueue nil, nil       │
+ │  3    │ "3"         │ enqueue 4, 5           │
+ │ nil   │ "null"      │ (no children)          │
+ │ nil   │ "null"      │ (no children)          │
+ │  4    │ "4"         │ enqueue nil, nil       │
+ │  5    │ "5"         │ enqueue nil, nil       │
+ └───────┴─────────────┴────────────────────────┘
+ After trimming trailing nulls: "1,2,3,null,null,4,5"
+```
+
 ---
 
 ## Example 3: Parenthesis-Based Serialization
@@ -257,6 +306,36 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 3:**
+```
+ Parenthesis-Based Serialization:
+ ────────────────────────────
+       1
+      / \         Encoding rule:
+     2   3          node(left)(right)
+        / \
+       4   5      1(2)(3(4)(5))
+                   │ │  └──────┘
+                   │ │   right subtree of 1
+                   │ └─ left subtree of 1
+                   └── root value
+
+ Parse trace:
+ ┌───────┬────────┬───────────────────────────┐
+ │ idx   │ char   │ action                      │
+ ├───────┼────────┼───────────────────────────┤
+ │  0    │  '1'   │ parse num → node(1)        │
+ │  1    │  '('   │ enter left subtree          │
+ │  2    │  '2'   │ parse num → node(2)        │
+ │  3    │  ')'   │ return from left             │
+ │  4    │  '('   │ enter right subtree         │
+ │  5    │  '3'   │ parse num → node(3)        │
+ │  6-10 │ (4)(5) │ parse 3's children          │
+ │  11   │  ')'   │ return, tree complete        │
+ └───────┴────────┴───────────────────────────┘
+ No null markers needed! Structure encoded in parens.
+```
+
 ---
 
 ## Example 4: Serialize BST with Preorder Only (LeetCode 449)
@@ -337,6 +416,30 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 4:**
+```
+ BST Preorder-Only Serialization (no null markers!):
+ ──────────────────────────────────────────
+       5               Preorder: [5, 3, 1, 4, 7, 6, 8]
+      / \              (no # markers — BST property
+     3   7              determines structure)
+    / \ / \
+   1  4 6  8           Rebuild using bounds (lo, hi):
+
+ ┌─────┬───────┬───────────┬────────────────────────┐
+ │ idx │ val   │ bounds    │ action                  │
+ ├─────┼───────┼───────────┼────────────────────────┤
+ │  0  │  5    │ (-∞,+∞)  │ root=5, L(-∞,5) R(5,+∞) │
+ │  1  │  3    │ (-∞, 5)  │ node=3, L(-∞,3) R(3,5) │
+ │  2  │  1    │ (-∞, 3)  │ node=1 (leaf)           │
+ │  3  │  4    │ (3, 5)    │ node=4 (leaf)           │
+ │  4  │  7    │ (5, +∞)  │ node=7, L(5,7) R(7,+∞) │
+ │  5  │  6    │ (5, 7)    │ node=6 (leaf)           │
+ │  6  │  8    │ (7, +∞)  │ node=8 (leaf)           │
+ └─────┴───────┴───────────┴────────────────────────┘
+ Inorder check: 1 3 4 5 6 7 8 ✓
+```
+
 ---
 
 ## Example 5: Serialize Using Preorder + Inorder
@@ -409,6 +512,43 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 5:**
+```
+ Reconstruct Tree from Preorder + Inorder:
+ ───────────────────────────────────────
+  Preorder: [3, 9, 20, 15, 7]  (root first)
+  Inorder:  [9, 3, 15, 20, 7]  (root splits L/R)
+
+ Step 1: root = preorder[0] = 3
+         inorder split at 3:
+         left = [9]     right = [15, 20, 7]
+
+ Step 2:       3
+             / \
+           [9] [20,15,7]
+            ↓     ↓
+            9    root=20
+     (leaf)      inorder split at 20:
+                 left=[15] right=[7]
+
+ Step 3:       3
+             / \
+            9  20
+              /  \
+             15   7
+
+ ┌──────┬─────────────┬──────────────────────┐
+ │ Call │ preorder    │ inorder              │
+ ├──────┼─────────────┼──────────────────────┤
+ │  1   │ [3,9,20..] │ [9,3,15,20,7]        │
+ │  2   │ [9]        │ [9] → leaf            │
+ │  3   │ [20,15,7]  │ [15,20,7] root=20    │
+ │  4   │ [15]       │ [15] → leaf           │
+ │  5   │ [7]        │ [7] → leaf            │
+ └──────┴─────────────┴──────────────────────┘
+ Requires unique values (for finding root in inorder).
+```
+
 ---
 
 ## Example 6: Binary Encoding (Compact Serialization)
@@ -479,6 +619,29 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 6:**
+```
+ Binary Encoding (Compact Serialization):
+ ────────────────────────────────
+       1                 Each int32: 4 bytes
+      / \                Sentinel -1: marks nil
+     2   3
+    /     \
+   4      (nil)          Byte stream (little-endian):
+       \                 ┌───┬───┬───┬───┬───┬───┬───┬───┐
+       (nil)             │ 1 │ 2 │ 4 │-1 │-1 │-1 │ 3 │-1 │
+                         └───┴───┴───┴───┴───┴───┴───┴───┘
+                           ↑       ↑ nil markers
+                          root
+
+ Preorder encoding: 1, 2, 4, -1, -1, -1, 3, -1, -1
+                             ↑        ↑      ↑
+                           4.L=nil  2.R=nil  3.R=nil
+ Total size: 9 x 4 = 36 bytes
+ vs string "1,2,4,#,#,#,3,#,#" = 19 chars
+ Binary more compact for large values.
+```
+
 ---
 
 ## Example 7: JSON Serialization
@@ -517,6 +680,31 @@ func main() {
     pretty, _ := json.MarshalIndent(root, "", "  ")
     fmt.Println(string(pretty))
 }
+```
+
+**Textual Figure – Example 7:**
+```
+ JSON Serialization:
+ ────────────────
+       1            JSON output:
+      / \           {"val":1,
+     2   3           "left":{"val":2},
+        / \          "right":{"val":3,
+       4   5           "left":{"val":4},
+                       "right":{"val":5}}}
+
+ Struct tags control serialization:
+ ┌──────────────────────────────────────┐
+ │ Tag              │ Effect              │
+ ├──────────────────┼────────────────────┤
+ │ json:"val"        │ key name = "val"    │
+ │ json:",omitempty" │ skip if nil/zero    │
+ └──────────────────┴────────────────────┘
+ omitempty prevents nil children from appearing
+ as "left":null in the output.
+
+ Pro: human-readable, standard format
+ Con: verbose, slower than binary
 ```
 
 ---
@@ -608,6 +796,35 @@ func main() {
 }
 ```
 
+**Textual Figure – Example 8:**
+```
+ N-ary → Binary (Left-Child Right-Sibling) Encoding:
+ ────────────────────────────────────────────
+
+ N-ary Tree:           Binary Tree (LC-RS):
+       1                    1
+      /|\                  /
+     3 2 4                3          Mapping:
+    / \                  / \           Left  = first child
+   5   6                5   2         Right = next sibling
+                         \   \
+                          6   4
+
+ Conversion rules:
+ ┌────────────────────────────────────────┐
+ │ N-ary           →  Binary              │
+ ├────────────────────────────────────────┤
+ │ children[0]     →  Left child           │
+ │ children[1..n]  →  Right chain from [0] │
+ └────────────────────────────────────────┘
+
+ 1.Left=3, 3.Right=2, 2.Right=4
+ 3.Left=5, 5.Right=6
+
+ Binary tree can be serialized normally,
+ then deserialized back to N-ary tree.
+```
+
 ---
 
 ## Example 9: Serialize with Bit-Level Structure Encoding
@@ -677,6 +894,32 @@ func main() {
     tree := codec.decode()
     fmt.Print("Decoded: "); printPreorder(tree); fmt.Println()
 }
+```
+
+**Textual Figure – Example 9:**
+```
+ Bit-Level Structure Encoding:
+ ────────────────────────────
+       1               2 bits per node encode structure:
+      / \                bit0 = hasLeft
+     2   3               bit1 = hasRight
+    /     \
+   4       5           ┌──────┬───────┬─────┬────────────────┐
+                       │ Node │ L?  R? │ bin │ flag (decimal)│
+                       ├──────┼───────┼─────┼────────────────┤
+                       │  1   │ Y   Y  │  11 │      3       │
+                       │  2   │ Y   N  │  01 │      1       │
+                       │  4   │ N   N  │  00 │      0       │
+                       │  3   │ N   Y  │  10 │      2       │
+                       │  5   │ N   N  │  00 │      0       │
+                       └──────┴───────┴─────┴────────────────┘
+
+ Values: [1, 2, 4, 3, 5]  (preorder)
+ Flags:  [3, 1, 0, 2, 0]
+
+ No null markers needed — flags tell decoder
+ whether to recurse left/right!
+ Savings: 2 bits vs full sentinel values.
 ```
 
 ---
@@ -758,6 +1001,33 @@ func main() {
         fmt.Printf("Test %d: serialized=%q, match=%v\n", i, s, ok)
     }
 }
+```
+
+**Textual Figure – Example 10:**
+```
+ Serialize/Deserialize with Verification:
+ ──────────────────────────────────
+
+ Test cases and their serialized forms:
+ ┌──────┬───────────────┬────────────────────┬───────┐
+ │ Test │ Tree          │ Serialized           │ Match │
+ ├──────┼───────────────┼────────────────────┼───────┤
+ │  0   │ nil           │ "N"                  │ true  │
+ │  1   │ [42]          │ "42,N,N"             │ true  │
+ │  2   │ 1─L→2         │ "1,2,N,N,N"          │ true  │
+ │  3   │ 1─R→3         │ "1,N,3,N,N"          │ true  │
+ │  4   │ 1(-2)(3(4)(5))│ "1,-2,N,N,3,4,N,N,.." │ true  │
+ └──────┴───────────────┴────────────────────┴───────┘
+
+ Round-trip verification:
+  tree → serialize → string → deserialize → tree'
+  isSameTree(tree, tree') must be true for all cases.
+
+ Edge cases handled:
+  • nil root        → "N"
+  • negative values  → "-2" parsed correctly
+  • single node      → "42,N,N"
+  • left-only/right-only subtrees
 ```
 
 ---

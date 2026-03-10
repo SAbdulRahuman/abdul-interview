@@ -65,9 +65,32 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 2: Inorder Predecessor — Search from Root
+ Inorder: 5 → 10 → 15 → 20 → 25 → 30 → 35
+
+ Successor search from root (go left when cur > target, track succ):
+ ┌──────┬───────────┬─────────────────────────────────────┐
+ │ Node │ Successor │ Trace                               │
+ ├──────┼───────────┼─────────────────────────────────────┤
+ │   5  │    10     │ 20>5→succ=20,L; 10>5→succ=10,L    │
+ │  10  │    15     │ 20>10→succ=20,L; 10→10,R; 15>10    │
+ │  15  │    20     │ 20>15→succ=20,L; 10<15→R; 15→15  │
+ │  20  │    25     │ 20→20,R; 30>20→succ=30,L; 25>20    │
+ │  25  │    30     │ 20<25→R; 30>25→succ=30,L; 25→25  │
+ │  30  │    35     │ 20<30→R; 30→30,R; 35>30→succ=35   │
+ │  35  │   none    │ 20<35→R; 30<35→R; 35→35,R; nil   │
+ └──────┴───────────┴─────────────────────────────────────┘
+```
+
+--- — Search from Root
 
 ```go
 package main
@@ -119,9 +142,32 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 3: Successor with Parent Pointer (LeetCode 285)
+ Inorder: 5 → 10 → 15 → 20 → 25 → 30 → 35
+
+ Predecessor search from root (go right when cur < target, track pred):
+ ┌──────┬─────────────┬───────────────────────────────────┐
+ │ Node │ Predecessor │ Trace                             │
+ ├──────┼─────────────┼───────────────────────────────────┤
+ │   5  │    none     │ 20>5→L; 10>5→L; 5→5,L; nil     │
+ │  10  │     5       │ 20>10→L; 10→10,L; 5<10→pred=5  │
+ │  15  │    10       │ 20>15→L; 10<15→pred=10,R; 15   │
+ │  20  │    15       │ 20→20,L; 10<20→pred=10,R; 15<20 │
+ │  25  │    20       │ 20<25→pred=20,R; 30>25→L; 25   │
+ │  30  │    25       │ 20<30→pred=20,R; 30→30,L; 25<30 │
+ │  35  │    30       │ 20<35→pred=20,R; 30<35→pred=30 │
+ └──────┴─────────────┴───────────────────────────────────┘
+```
+
+--- (LeetCode 285)
 
 ```go
 package main
@@ -184,9 +230,40 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST with parent pointers:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 4: Predecessor with Parent Pointer
+ Case 1: Node has right subtree
+   → Successor = leftmost in right subtree
+   Example: Successor(20) = leftmost of {30,25,35} = 25
+
+ Case 2: No right subtree → go up until coming from left child
+   Example: Successor(15):
+     15 is RIGHT child of 10 → go up
+     10 is LEFT child of 20  → STOP → Successor = 20
+
+ ┌──────┬────────────┬───────────┬─────────────────────┐
+ │ Node │ Has Right? │   Case    │ Successor           │
+ ├──────┼────────────┼───────────┼─────────────────────┤
+ │   5  │    No      │  Up→10(L) │  10 (came from left) │
+ │  10  │   Yes(15)  │  leftmost │  15                   │
+ │  15  │    No      │  Up→10(R) │  20 (10→up, left of   │
+ │      │            │  Up→20(L) │  20)                  │
+ │  20  │   Yes(30)  │  leftmost │  25                   │
+ │  25  │    No      │  Up→30(L) │  30                   │
+ │  30  │   Yes(35)  │  leftmost │  35                   │
+ │  35  │    No      │  Up→30(R) │  none (root reached)  │
+ │      │            │  Up→nil   │                       │
+ └──────┴────────────┴───────────┴─────────────────────┘
+```
+
+---
 
 ```go
 package main
@@ -236,9 +313,35 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST with parent pointers:
+          20
+         /  \
+       10    30
+      /  \
+     5    15
 
-## Example 5: Find Both Successor and Predecessor of a Value
+ Case 1: Node has left subtree
+   → Predecessor = rightmost in left subtree
+   Example: Predecessor(20) = rightmost of {10,5,15} = 15
+
+ Case 2: No left subtree → go up until coming from right child
+   Example: Predecessor(5):
+     5 is LEFT child of 10 → go up
+     10 is LEFT child of 20 → go up
+     20 has no parent → Predecessor = nil
+
+ ┌──────┬────────────┬─────────────────┬─────────────┐
+ │ Node │ Has Left?  │     Case          │ Predecessor │
+ ├──────┼────────────┼─────────────────┼─────────────┤
+ │  15  │    No      │ Up→10 (R child)   │     10      │
+ │  20  │  Yes(10)   │ rightmost of left │     15      │
+ │   5  │    No      │ Up→10(L)→20(L)→nil│    none     │
+ └──────┴────────────┴─────────────────┴─────────────┘
+```
+
+--- of a Value
 
 ```go
 package main
@@ -303,9 +406,31 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 6: Delete Using Inorder Successor
+ findSuccPred(key) — finds both successor and predecessor:
+ ┌─────┬───────────────┬──────┬──────┬─────────────────────────────────┐
+ │ Key │ In tree?      │ Pred │ Succ │ How                             │
+ ├─────┼───────────────┼──────┼──────┼─────────────────────────────────┤
+ │ 10  │ Yes           │   5  │  15  │ rightmost(left)=5, leftmost(R)=15│
+ │ 20  │ Yes           │  15  │  25  │ rightmost(left)=15,leftmost(R)=25│
+ │ 12  │ No            │  10  │  15  │ tracked during search: 10<12,15>12│
+ │ 35  │ Yes           │  30  │ nil  │ rightmost(left)=30, no right     │
+ │  3  │ No            │ nil  │   5  │ no val<3 found, 5>3→succ        │
+ └─────┴───────────────┴──────┴──────┴─────────────────────────────────┘
+
+ When key is IN tree: use subtree (rightmost of left, leftmost of right)
+ When key is NOT in tree: tracked during search path
+```
+
+---
 
 ```go
 package main
@@ -359,9 +484,32 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST Delete using inorder successor:
 
-## Example 7: Inorder Successor for All Nodes
+ Before:               After deleting 50:
+       50                     60
+      /  \                   /  \
+    30    70               30    70
+   / \   / \              / \     \
+  20 40 60  80           20  40    80
+
+ Delete 50 algorithm:
+ ┌─────────────────────────────────────────────┐
+ │ Step 1: Find node 50 (has both children) │
+ │ Step 2: Find successor = leftmost in     │
+ │         right subtree = 60               │
+ │ Step 3: Replace 50's value with 60       │
+ │ Step 4: Delete 60 from right subtree     │
+ │         (60 has no left child → easy)    │
+ └─────────────────────────────────────────────┘
+
+ Inorder before: 20 30 40 50 60 70 80
+ Inorder after:  20 30 40 60 70 80
+```
+
+---
 
 ```go
 package main
@@ -415,9 +563,32 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 8: Inorder Predecessor for All Nodes
+ Reverse inorder traversal (right → root → left):
+   35 → 30 → 25 → 20 → 15 → 10 → 5
+
+ Building successor map (prev tracks last visited):
+   Visit 35: prev=nil  → no entry
+   Visit 30: prev=35   → succ[30] = 35
+   Visit 25: prev=30   → succ[25] = 30
+   Visit 20: prev=25   → succ[20] = 25
+   Visit 15: prev=20   → succ[15] = 20
+   Visit 10: prev=15   → succ[10] = 15
+   Visit  5: prev=10   → succ[5]  = 10
+
+ Result:
+   5→10  10→15  15→20  20→25  25→30  30→35  35→none
+```
+
+---
 
 ```go
 package main
@@ -470,9 +641,32 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 9: Threaded Binary Tree (Successor via Threads)
+ Inorder traversal (left → root → right):
+   5 → 10 → 15 → 20 → 25 → 30 → 35
+
+ Building predecessor map (prev tracks last visited):
+   Visit  5: prev=nil  → no entry
+   Visit 10: prev=5    → pred[10] = 5
+   Visit 15: prev=10   → pred[15] = 10
+   Visit 20: prev=15   → pred[20] = 15
+   Visit 25: prev=20   → pred[25] = 20
+   Visit 30: prev=25   → pred[30] = 25
+   Visit 35: prev=30   → pred[35] = 30
+
+ Result:
+   5←none  10←5  15←10  20←15  25←20  30←25  35←30
+```
+
+---
 
 ```go
 package main
@@ -534,9 +728,37 @@ func main() {
 }
 ```
 
----
+**Textual Figure:**
+```
+ Original BST:
+          20
+         /  \
+       10    30
+      /  \   / \
+     5   15 25  35
 
-## Example 10: BST Iterator Using Successor Logic
+ Threaded Binary Tree (right threads point to successor):
+
+   5 ──thread─→ 10 ──thread─→ 15 ──thread─→ 20
+
+   20 ──thread─→ 25 ──thread─→ 30 ──thread─→ 35 ─→ nil
+
+ RightThread = true:
+   Right pointer → inorder successor (not a real child)
+
+ Traversal without stack or recursion:
+ ┌───────────────────────────────────────┐
+ │ cur = 5  → print 5                  │
+ │ cur.RightThread=true → cur = 10     │
+ │ cur = 10 → print 10                 │
+ │ cur.RightThread=true → cur = 15     │
+ │ ...continues until cur = nil        │
+ └───────────────────────────────────────┘
+
+ Output: 5 10 15 20 25 30 35
+```
+
+---
 
 ```go
 package main
@@ -620,6 +842,36 @@ func main() {
 	for rev.HasNext() { fmt.Printf("%d ", rev.Next()) }
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+ BST:
+          7
+         / \
+        3   11
+       / \  / \
+      1  5 9  13
+
+ Forward Iterator (successor logic via stack):
+ ┌──────────────────────────────────────────────┐
+ │ pushLeft(7): stack = [7, 3, 1]              │
+ │ Next(): pop 1, pushLeft(nil)  → return 1    │
+ │ Next(): pop 3, pushLeft(5)    → return 3    │
+ │   stack = [7, 5]                             │
+ │ Next(): pop 5, pushLeft(nil)  → return 5    │
+ │ Next(): pop 7, pushLeft(11,9) → return 7    │
+ │   stack = [11, 9]                            │
+ │ Next(): pop 9, pushLeft(nil)  → return 9    │
+ │ Next(): pop 11, pushLeft(13)  → return 11   │
+ │ Next(): pop 13                → return 13   │
+ └──────────────────────────────────────────────┘
+
+ Forward:   1 → 3 → 5 → 7 → 9 → 11 → 13
+ Backward: 13 → 11 → 9 → 7 → 5 → 3 → 1
+   (Reverse iterator uses pushRight instead)
+
+ O(h) space, O(1) amortized per Next() call
 ```
 
 ---

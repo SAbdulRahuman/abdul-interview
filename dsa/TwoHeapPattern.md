@@ -81,6 +81,37 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Find Median from Data Stream — Two Heap Approach
+
+  MaxHeap (lower half) │ MinHeap (upper half)
+  top = max of lower   │ top = min of upper
+
+  ┌─────────┬────────────────┬────────────────┬─────────┐
+  │  Add(n) │  MaxHeap (lo)  │  MinHeap (hi)  │ Median  │
+  ├─────────┼────────────────┼────────────────┼─────────┤
+  │    1    │ [1]            │ []             │  1.0    │
+  │    2    │ [1]            │ [2]            │  1.5    │
+  │    3    │ [2, 1]         │ [3]            │  2.0    │
+  │    4    │ [2, 1]         │ [3, 4]         │  2.5    │
+  │    5    │ [3, 2, 1]      │ [4, 5]         │  3.0    │
+  └─────────┴────────────────┴────────────────┴─────────┘
+
+  After Add(5):
+    MaxHeap (lo)        MinHeap (hi)
+       3                   4
+      / \                 /
+     2   1               5
+
+  Median: lo.Len() > hi.Len() → return lo[0] = 3.0
+
+  Invariant: |lo.Len() - hi.Len()| ≤ 1
+  Odd count  → median = lo[0]
+  Even count → median = (lo[0] + hi[0]) / 2
+```
+
 ---
 
 ## Example 2: Sliding Window Median (LeetCode 480)
@@ -181,6 +212,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Sliding Window Median — k=3
+Input: [1, 3, -1, -3, 5, 3, 6, 7]
+
+  Two heaps with lazy deletion (by index):
+  ┌──────┬─────────────┬──────────────┬─────────────┬─────────┐
+  │ Win  │   Window    │  MaxH (lo)   │ MinH (hi)   │ Median  │
+  ├──────┼─────────────┼──────────────┼─────────────┼─────────┤
+  │ 0-2  │ [1, 3, -1]  │ [1, -1]      │ [3]         │  1.0    │
+  │ 1-3  │ [3, -1, -3] │ [-1, -3]     │ [3]         │ -1.0    │
+  │ 2-4  │ [-1, -3, 5] │ [-1, -3]     │ [5]         │ -1.0    │
+  │ 3-5  │ [-3, 5, 3]  │ [3, -3]      │ [5]         │  3.0    │
+  │ 4-6  │ [5, 3, 6]   │ [5, 3]       │ [6]         │  5.0    │
+  │ 5-7  │ [3, 6, 7]   │ [6, 3]       │ [7]         │  6.0    │
+  └──────┴─────────────┴──────────────┴─────────────┴─────────┘
+
+  Lazy deletion: expired indices marked in map, pruned on access
+  k=3 (odd) → median = lo[0] (max of lower half)
+  Result: [1.0, -1.0, -1.0, 3.0, 5.0, 6.0] ✓
+```
+
 ---
 
 ## Example 3: IPO — Maximize Capital (LeetCode 502)
@@ -230,6 +284,33 @@ func main() {
 	fmt.Println(findMaximizedCapital(2, 0, []int{1, 2, 3}, []int{0, 1, 1})) // 4
 	fmt.Println(findMaximizedCapital(3, 0, []int{1, 2, 3}, []int{0, 1, 2})) // 6
 }
+```
+
+**Textual Figure:**
+
+```
+IPO — Maximize Capital
+k=2, w=0, profits=[1,2,3], capital=[0,1,1]
+
+  Projects sorted by capital:
+  ┌─────────┬─────────┬────────┐
+  │ Project │ Capital │ Profit │
+  ├─────────┼─────────┼────────┤
+  │   A     │    0    │   1    │
+  │   B     │    1    │   2    │
+  │   C     │    1    │   3    │
+  └─────────┴─────────┴────────┘
+
+  Greedy rounds (pick max profit from affordable):
+  ┌───────┬──────┬────────────────────┬───────────────┬──────┐
+  │ Round │  w   │ Affordable → heap  │ Pick (max)    │  w'  │
+  ├───────┼──────┼────────────────────┼───────────────┼──────┤
+  │   1   │  0   │ A(cap=0≤0) → [1]   │ Pop 1         │  1   │
+  │   2   │  1   │ B,C(cap≤1)→ [2,3] │ Pop 3         │  4   │
+  └───────┴──────┴────────────────────┴───────────────┴──────┘
+
+  Result: w = 4 ✓
+  Pattern: sort by capital → max profit heap of affordable projects
 ```
 
 ---
@@ -305,6 +386,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Balanced Two Heaps — Generic Template
+Input stream: [5, 2, 8, 1, 9, 3]
+
+  ┌──────┬────────────────────────────────────────────┬────────┐
+  │ Add  │ MaxH (lo)         │ MinH (hi)        │ Median │
+  ├──────┼─────────────────────┼─────────────────────┼────────┤
+  │  5   │ [5]               │ []                │  5.0   │
+  │  2   │ [2]               │ [5]               │  3.5   │
+  │  8   │ [5, 2]            │ [8]               │  5.0   │
+  │  1   │ [2, 1]            │ [5, 8]            │  3.5   │
+  │  9   │ [5, 2, 1]         │ [8, 9]            │  5.0   │
+  │  3   │ [3, 2, 1]         │ [5, 8, 9]         │  4.0   │
+  └──────┴─────────────────────┴─────────────────────┴────────┘
+
+  Final state:
+    MaxH (lo)         MinH (hi)
+       3                 5
+      / \               / \
+     2   1             8   9
+
+  Sorted: [1, 2, 3 | 5, 8, 9]   median = (3+5)/2 = 4.0
+```
+
 ---
 
 ## Example 5: Percentile Tracking
@@ -377,6 +484,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Percentile Tracking — P50 (Median) via Two Heaps
+Input: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+  MaxH (lo) = bottom pct      MinH (hi) = top (1-pct)
+  target lo size = ceil(total * 0.5)
+
+  ┌──────┬───────┬────────────────────┬────────────────────┬─────┐
+  │  Add │ Total │ MaxH (lo)          │ MinH (hi)          │ P50 │
+  ├──────┼───────┼────────────────────┼────────────────────┼─────┤
+  │  10  │   1   │ [10]               │ []                 │  10 │
+  │  20  │   2   │ [10]               │ [20]               │  10 │
+  │  30  │   3   │ [20, 10]           │ [30]               │  20 │
+  │  40  │   4   │ [20, 10]           │ [30, 40]           │  20 │
+  │  50  │   5   │ [30, 20, 10]       │ [40, 50]           │  30 │
+  │  60  │   6   │ [30, 20, 10]       │ [40, 50, 60]       │  30 │
+  │  70  │   7   │ [40, 30, 20, 10]   │ [50, 60, 70]       │  40 │
+  │  80  │   8   │ [40, 30, 20, 10]   │ [50, 60, 70, 80]   │  40 │
+  │  90  │   9   │ [50, 40, .., 10]   │ [60, 70, 80, 90]   │  50 │
+  │ 100  │  10   │ [50, 40, .., 10]   │ [60, .., 100]      │  50 │
+  └──────┴───────┴────────────────────┴────────────────────┴─────┘
+
+  P50 = lo[0] = top of max heap (max of lower half)
+  Generalizes to any percentile by adjusting target size.
+```
+
 ---
 
 ## Example 6: Minimize Deviation in Array (LeetCode 1675)
@@ -426,6 +561,31 @@ func main() {
 	fmt.Println(minimumDeviation([]int{4, 1, 5, 20, 3})) // 3
 	fmt.Println(minimumDeviation([]int{2, 10, 8}))        // 3
 }
+```
+
+**Textual Figure:**
+
+```
+Minimize Deviation — Max Heap Approach
+Input: [1, 2, 3, 4]
+
+  Step 1 — Normalize: make all even (odd ×2)
+  [1×2=2, 2, 3×2=6, 4]  →  [2, 2, 6, 4]
+  Track minVal = 2
+
+  Build max heap: [6, 4, 2, 2]    deviation = 6-2 = 4
+
+  Step 2 — Shrink max while even:
+  ┌──────┬──────┬────────────────────┬───────┬───────┐
+  │ Iter │ Top  │ Action             │ Min   │ Dev   │
+  ├──────┼──────┼────────────────────┼───────┼───────┤
+  │  0   │  6   │ 6/2=3 → push 3    │   2   │ 4-2=2 │
+  │  1   │  4   │ 4/2=2 → push 2    │   2   │ 3-2=1 │
+  │  2   │  3   │ 3 is odd → STOP   │   2   │ 3-2=1 │
+  └──────┴──────┴────────────────────┴───────┴───────┘
+
+  Result: min deviation = 1 ✓
+  Key: can only halve evens, so stop when top is odd.
 ```
 
 ---
@@ -488,6 +648,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Minimum Cost to Hire K Workers — k=2
+quality=[10,20,5], wage=[70,50,30]
+
+  Step 1 — Compute wage/quality ratio, sort ascending:
+  ┌────────┬─────────┬──────┬─────────┐
+  │ Worker │ Quality │ Wage │  Ratio  │
+  ├────────┼─────────┼──────┼─────────┤
+  │   B    │   20    │  50  │  2.50   │
+  │   C    │    5    │  30  │  6.00   │
+  │   A    │   10    │  70  │  7.00   │
+  └────────┴─────────┴──────┴─────────┘
+
+  Step 2 — Process by ratio, max heap of quality:
+  ┌────────┬───────┬───────────────┬──────┬────────────────┐
+  │ Worker │ Ratio │ Heap (qual)   │ sumQ │ cost=r*sumQ    │
+  ├────────┼───────┼───────────────┼──────┼────────────────┤
+  │   B    │ 2.50  │ [20]          │  20  │  (len<k)       │
+  │   C    │ 6.00  │ [20, 5]       │  25  │  6.0*25=150.0  │
+  │   A    │ 7.00  │ [10,5] pop 20 │  15  │  7.0*15=105.0✓│
+  └────────┴───────┴───────────────┴──────┴────────────────┘
+
+  Result: min cost = 105.00000 ✓
+```
+
 ---
 
 ## Example 8: Maximum Profit in Job Scheduling Variant
@@ -539,6 +726,42 @@ func jobScheduling(startTime, endTime, profit []int) int {
 func main() {
 	fmt.Println(jobScheduling([]int{1, 2, 3, 3}, []int{3, 4, 5, 6}, []int{50, 10, 40, 70})) // 120
 }
+```
+
+**Textual Figure:**
+
+```
+Job Scheduling with Heap — Maximize Profit
+start=[1,2,3,3], end=[3,4,5,6], profit=[50,10,40,70]
+
+  Jobs sorted by start time:
+  ┌─────┬───────┬─────┬────────┐
+  │ Job │ Start │ End │ Profit │
+  ├─────┼───────┼─────┼────────┤
+  │  A  │   1   │  3  │   50   │
+  │  B  │   2   │  4  │   10   │
+  │  C  │   3   │  5  │   40   │
+  │  D  │   3   │  6  │   70   │
+  └─────┴───────┴─────┴────────┘
+
+  Timeline:  1   2   3   4   5   6
+             A[50]===█
+                 B[10]===█
+                     C[40]===█
+                     D[70]========█
+
+  Process (min heap by end time):
+  ┌─────┬────────────────────────┬────────────────────┬───────────┐
+  │ Job │ Release ended jobs   │ Push (end, prof)   │ maxProfit │
+  ├─────┼────────────────────────┼────────────────────┼───────────┤
+  │  A  │ none                 │ (3, 0+50=50)       │    0      │
+  │  B  │ none                 │ (4, 0+10=10)       │    0      │
+  │  C  │ pop(3,50)→maxP=50   │ (5, 50+40=90)      │   50      │
+  │  D  │ (already popped)     │ (6, 50+70=120)     │   50      │
+  └─────┴────────────────────────┴────────────────────┴───────────┘
+
+  Drain heap: pop (4,10)→50, pop (5,90)→90, pop (6,120)→120
+  Result: maxProfit = 120 ✓
 ```
 
 ---
@@ -603,6 +826,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Two Heaps for Balanced Partition
+Input: [1, 5, 11, 5]
+
+  Greedy: assign each element to the smaller-sum side.
+  ┌───────┬───────────────────┬─────────┬─────────┬───────────┐
+  │ Elem  │ Assign to         │ loSum   │ hiSum   │ |lo-hi|   │
+  ├───────┼───────────────────┼─────────┼─────────┼───────────┤
+  │   1   │ lo (loSum≤hiSum)  │    1    │    0    │     1     │
+  │   5   │ hi (loSum>hiSum)  │    1    │    5    │     4     │
+  │  11   │ lo (loSum≤hiSum)  │   12    │    5    │     7     │
+  │   5   │ hi (loSum>hiSum)  │   12    │   10    │     2     │
+  └───────┴───────────────────┴─────────┴─────────┴───────────┘
+
+  Partition:  lo = {1, 11} sum=12    hi = {5, 5} sum=10
+  Diff = |12 - 10| = 2
+
+  Note: greedy with heaps is approximate — not always optimal.
+  Exact solution needs DP (subset sum). Heap approach is O(n log n).
+```
+
 ---
 
 ## Example 10: When to Use Two Heaps
@@ -638,6 +884,35 @@ func main() {
 	fmt.Println("Core insight: Two heaps let you track the boundary between")
 	fmt.Println("two halves of a dynamically changing dataset in O(log n).")
 }
+```
+
+**Textual Figure:**
+
+```
+Two Heap Pattern — When to Use Summary
+
+  ┌────────────────────────────────────────────────────────┐
+  │   Data stream: 1  5  2  8  3  7  4  9  6 ...  │
+  │                                                        │
+  │        MaxHeap (lo)     │     MinHeap (hi)      │
+  │   ┌───────────────────┼────────────────────┐  │
+  │   │  lower half       │  upper half          │  │
+  │   │  [1, 2, 3, 4]     │  [5, 6, 7, 8, 9]     │  │
+  │   │  top=4 ─────────┼──────── top=5       │  │
+  │   └───────────────────┴────────────────────┘  │
+  │            median = (4+5)/2 = 4.5              │
+  └────────────────────────────────────────────────────────┘
+
+  Pattern applies to:
+  ┌────────────────────┬──────────────────────────────────┐
+  │ Problem            │ Key Insight                      │
+  ├────────────────────┼──────────────────────────────────┤
+  │ Streaming median   │ Balance sizes ±1               │
+  │ Sliding median     │ + lazy deletion by index       │
+  │ Percentile         │ Adjust target lo size          │
+  │ Balanced partition │ Assign to smaller-sum side     │
+  │ IPO / scheduling   │ Max profit heap + sort by cap  │
+  └────────────────────┴──────────────────────────────────┘
 ```
 
 ---

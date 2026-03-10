@@ -53,6 +53,32 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Check if BST is Balanced:
+
+  Balanced tree:                 Skewed tree:
+       5                           1
+      / \                           \
+     3   7                           2
+    / \ / \                           \
+   1  4 6  8                           3
+
+  height(5):                     height(1):
+  ├─ L: height(3)                ├─ L: height(nil) = 0
+  │  ├─ L: height(1)=1          └─ R: height(2)
+  │  └─ R: height(4)=1             ├─ L: height(nil) = 0
+  │  |1-1|=0 ≤ 1 ✓ return 2       └─ R: height(3) = 1
+  ├─ R: height(7)                   |0-1|=1 ≤ 1 ✓ return 2
+  │  ├─ L: height(6)=1          height(1):
+  │  └─ R: height(8)=1            |0-2|=2 > 1 → return -1
+  │  |1-1|=0 ≤ 1 ✓ return 2       ✗ NOT BALANCED!
+  |2-2|=0 ≤ 1 ✓ return 3
+  ✓ BALANCED!
+
+  Output: Balanced: true         Output: Skewed: false
+```
+
 ---
 
 ## Example 2: Sorted Array to Balanced BST (LeetCode 108)
@@ -98,6 +124,35 @@ func main() {
 	inorder(root); fmt.Println()
 	fmt.Println("Height:", heightOf(root)) // 3
 }
+```
+
+**Textual Figure:**
+```
+Sorted Array → Balanced BST:
+
+  Input: [1, 2, 3, 4, 5, 6, 7]
+                  ↑ mid=3 → root=4
+
+  Recursive mid-picking:
+  build([1,2,3,4,5,6,7]):
+    mid=3 → root=4
+    ├─ left = build([1,2,3]) → mid=1 → node=2
+    │   ├─ left = build([1]) → node=1
+    │   └─ right= build([3]) → node=3
+    └─ right= build([5,6,7]) → mid=1 → node=6
+        ├─ left = build([5]) → node=5
+        └─ right= build([7]) → node=7
+
+  Result:
+         4
+        / \
+       2   6
+      / \ / \
+     1  3 5  7
+
+  Inorder: 1 2 3 4 5 6 7 (sorted ✓)
+  Height: 3 (perfectly balanced with 7 nodes)
+  2^3 - 1 = 7 ✓ (complete binary tree)
 ```
 
 ---
@@ -154,6 +209,39 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Sorted Linked List → Balanced BST:
+
+  Input: -10 → -3 → 0 → 5 → 9  (n=5)
+
+  build(0, 4):  mid=2
+  ├─ build(0,1): mid=0
+  │   ├─ build(0,-1) = nil
+  │   │  node(-10), cur advances to -3
+  │   └─ build(1,1): mid=1
+  │      ├─ build(1,0) = nil
+  │      │  node(-3), cur advances to 0
+  │      └─ build(2,1) = nil
+  │  (subtree: -10 → left=nil, right=-3)
+  ├─ node(0), cur advances to 5      ← mid node
+  └─ build(3,4): mid=3
+     ├─ build(3,2) = nil
+     │  node(5), cur advances to 9
+     └─ build(4,4): mid=4
+        node(9)
+
+  Result:
+         0
+        / \
+      -10   5
+        \    \
+        -3    9
+
+  Inorder: -10 -3 0 5 9 ✓
+  Key: uses inorder simulation — no random access needed!
+```
+
 ---
 
 ## Example 4: Rebalance an Unbalanced BST (LeetCode 1382)
@@ -205,6 +293,33 @@ func main() {
 	balanced := balanceBST(skewed)
 	fmt.Println("After height:", heightOf(balanced)) // 3
 }
+```
+
+**Textual Figure:**
+```
+Rebalance an Unbalanced BST:
+
+  Before (skewed):          After rebalancing:
+  1                              3
+   \                            / \
+    2                          1   4
+     \                          \   \
+      3                          2   5
+       \
+        4
+         \
+          5
+  height=5                  height=3
+
+  Steps:
+  ┌─────────────────────────────────────────┐
+  │ 1. Inorder traversal → [1, 2, 3, 4, 5]    │
+  │ 2. Build balanced from sorted array:      │
+  │    mid=2 → root=3                         │
+  │    left=[1,2] → mid=0 → 1, right=2       │
+  │    right=[4,5] → mid=0 → 4, right=5      │
+  │ 3. Height: 5 → 3                          │
+  └─────────────────────────────────────────┘
 ```
 
 ---
@@ -309,6 +424,40 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Day–Stout–Warren Algorithm (in-place rebalance):
+
+  Step 1: Tree → Right Vine (backbone):
+  1                       1
+   \                       \
+    2         Right         2
+     \       rotations       \
+      3      ──────→           3
+       \                       \
+        4                       4
+         \                       \
+          5                       5
+           \                       \
+            6                       6
+             \                       \
+              7                       7
+  (already a vine!)        n=7 nodes
+
+  Step 2: Vine → Balanced Tree (left rotations + compress):
+  leaves = 7+1 - 2^(⌊log₂(8)⌋) = 8-8 = 0
+  compress(0), then compress(3), compress(1):
+
+          4
+        /   \
+       2     6
+      / \   / \
+     1   3 5   7
+
+  height: 7 → 3   O(n) time, O(1) space!
+  Inorder: 1 2 3 4 5 6 7 (preserved ✓)
+```
+
 ---
 
 ## Example 6: Merge Two Balanced BSTs
@@ -370,6 +519,43 @@ func main() {
 	merged := mergeBSTs(t1, t2)
 	inorder(merged); fmt.Println() // 1 2 3 4 5 6 7 8 9 10
 }
+```
+
+**Textual Figure:**
+```
+Merge Two Balanced BSTs:
+
+  Tree 1:          Tree 2:
+     3                4
+    / \              / \
+   1   5            2   8
+    \   \          /   / \
+     3?  9        2?  6  10
+  Actually:       Actually:
+     5               6
+    / \             / \
+   1   7           2   8
+    \   \         /   / \
+     3   9       2?  4  10
+
+  (Built from [1,3,5,7,9] and [2,4,6,8,10])
+
+  Steps:
+  ┌─────────────────────────────────────────────┐
+  │ 1. Inorder(T1) → [1, 3, 5, 7, 9]             │
+  │ 2. Inorder(T2) → [2, 4, 6, 8, 10]            │
+  │ 3. Merge sorted: [1,2,3,4,5,6,7,8,9,10]      │
+  │ 4. Build balanced BST:                        │
+  │              5                                │
+  │            /   \                              │
+  │           2     8                             │
+  │          / \   / \                            │
+  │         1   3  6   9                          │
+  │              \  \   \                         │
+  │               4  7  10                        │
+  └─────────────────────────────────────────────┘
+  Inorder: 1 2 3 4 5 6 7 8 9 10 ✓
+  Time: O(n+m),  Space: O(n+m)
 ```
 
 ---
@@ -443,6 +629,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Fix Imbalance with One Rotation:
+
+  Before (left-heavy, BF=2):     After right rotation:
+       30                            20
+      /                             / \
+    20                             10  30
+   /
+  10
+
+  Right Rotate(30):
+  ┌─────────────────────────────────────────┐
+  │   y=30, x=y.Left=20                │
+  │   y.Left = x.Right (nil)           │
+  │   x.Right = y (30)                 │
+  │   return x (20) as new root        │
+  └─────────────────────────────────────────┘
+
+  Four rotation cases:
+  LL (left-left):   right rotate
+  RR (right-right): left rotate
+  LR (left-right):  left rotate child, then right rotate
+  RL (right-left):  right rotate child, then left rotate
+
+  BF before: 2,  BF after: 0,  root: 20
+```
+
 ---
 
 ## Example 8: Weight-Balanced BST
@@ -499,6 +713,34 @@ func main() {
 	}
 	fmt.Printf("Skewed weight-balanced (alpha=%.1f): %v\n", alpha, isWeightBalanced(skewed, alpha)) // false
 }
+```
+
+**Textual Figure:**
+```
+Weight-Balanced BST (balance by subtree sizes):
+
+  Balanced tree (size annotations):    Skewed tree:
+           5 (7)                        1 (5)
+          / \                            \
+     (3) 3   7 (3)                      2 (4)
+        / \ / \                            \
+   (1) 1 4 6  8 (1)                       3 (3)
+       (1)(1)                                \
+                                            4 (2)
+  alpha = 0.7                                  \
+                                              5 (1)
+  Check: size(child) ≤ alpha * size(parent)?
+
+  ┌── Balanced tree: ────────────────────────┐
+  │ Node 5: left=3, right=3                │
+  │   3 ≤ 0.7*7=4.9 ✓  3 ≤ 4.9 ✓           │
+  │ Node 3: left=1, right=1, both ≤0.7*3 ✓ │
+  │ Weight-balanced: true                  │
+  ├── Skewed tree: ─────────────────────────┤
+  │ Node 1: left=0, right=4                │
+  │   4 ≤ 0.7*5=3.5? NO! 4 > 3.5 ✗         │
+  │ Weight-balanced: false                 │
+  └────────────────────────────────────────┘
 ```
 
 ---
@@ -567,6 +809,38 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+BST → Balanced Doubly Linked List:
+
+  Input (skewed BST):    Step 1: Collect inorder    Step 2: Build balanced
+  1                      [1, 2, 3, 4, 5]                3
+   \                                                   / \
+    2                                                  1   4
+     \                                                  \   \
+      3                                                  2   5
+       \
+        4                Step 3: Flatten to DLL
+         \
+          5
+
+  Doubly Linked List (using Left=prev, Right=next):
+
+  nil ← 1 ↔ 2 ↔ 3 ↔ 4 ↔ 5 → nil
+        ↑                   ↑
+       head               tail
+
+  ┌─────────────────────────────────────┐
+  │ Node 1: Left=nil,  Right=2          │
+  │ Node 2: Left=1,    Right=3          │
+  │ Node 3: Left=2,    Right=4          │
+  │ Node 4: Left=3,    Right=5          │
+  │ Node 5: Left=4,    Right=nil        │
+  └─────────────────────────────────────┘
+
+  Output: 1 2 3 4 5
+```
+
 ---
 
 ## Example 10: Balanced BST from Preorder + Inorder
@@ -623,6 +897,40 @@ func main() {
 	fmt.Println("Height:", heightOf(root))     // 3
 	fmt.Println("Balanced:", isBalanced(root))  // true
 }
+```
+
+**Textual Figure:**
+```
+Balanced BST from Preorder + Inorder:
+
+  Preorder: [4, 2, 1, 3, 6, 5, 7]
+  Inorder:  [1, 2, 3, 4, 5, 6, 7]
+
+  Build process:
+  ┌──────────────────────────────────────────────┐
+  │ pre[0]=4 → root                                │
+  │ Find 4 in inorder at index 3                   │
+  │   left inorder:  [1,2,3]   right: [5,6,7]      │
+  │   left preorder: [2,1,3]   right: [6,5,7]      │
+  │                                                 │
+  │ Left:  pre[0]=2 → node                          │
+  │   inorder idx=1 → L:[1] R:[3]                   │
+  │   node(1), node(3)                              │
+  │                                                 │
+  │ Right: pre[0]=6 → node                          │
+  │   inorder idx=1 → L:[5] R:[7]                   │
+  │   node(5), node(7)                              │
+  └──────────────────────────────────────────────┘
+
+  Result:
+         4
+        / \
+       2   6
+      / \ / \
+     1  3 5  7
+
+  Height: 3   Balanced: true ✓
+  (Perfect binary tree with 2^3 - 1 = 7 nodes)
 ```
 
 ---

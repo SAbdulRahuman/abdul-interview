@@ -74,6 +74,44 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [12, 11, 13, 5, 6, 7]
+
+  Phase 1: Build MAX heap (bottom-up)
+  ┌─────────────────────────────────────────────┐
+  │  Initial:        12                          │
+  │                 /  \                          │
+  │               11    13                        │
+  │              / \   /                          │
+  │             5   6  7                          │
+  │                                               │
+  │  i=2: 13>7 → no swap                         │
+  │  i=1: 11<5,6? no, 11>6>5 → no swap           │
+  │  i=0: 12<13 → swap 12↔13                      │
+  │                                               │
+  │  Max heap:       13                           │
+  │                 /  \                          │
+  │               11    12                        │
+  │              / \   /                          │
+  │             5   6  7                          │
+  └─────────────────────────────────────────────┘
+
+  Phase 2: Extract max + siftDown
+  ┌──────┬────────────────┬─────────────────┐
+  │ Swap │ Heap portion   │ Sorted portion │
+  ├──────┼────────────────┼─────────────────┤
+  │ 13↔7 │ [12,11,7,5,6] │ [13]           │
+  │ 12↔6 │ [11,6,7,5]    │ [12, 13]       │
+  │ 11↔5 │ [7,6,5]       │ [11,12,13]     │
+  │  7↔5 │ [6,5]         │ [7,11,12,13]   │
+  │  6↔5 │ [5]           │ [6,7,11,12,13] │
+  └──────┴────────────────┴─────────────────┘
+
+  Result: [5, 6, 7, 11, 12, 13]
+```
+
 ---
 
 ## Example 2: Iterative Sift Down
@@ -119,6 +157,31 @@ func main() {
 	heapSort(arr)
 	fmt.Println(arr) // [1 2 3 4 5 6 7 8 9 10]
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [4, 10, 3, 5, 1, 8, 7, 2, 9, 6]
+
+  Iterative siftDown vs Recursive:
+  ┌────────────────────────────────────────────┐
+  │ Recursive: uses call stack O(log n)      │
+  │ Iterative: loop, root = largest, O(1)    │
+  │ Both: O(log n) per sift, same result     │
+  └────────────────────────────────────────────┘
+
+  Build max heap (iterative siftDown):
+           10(0)
+          /      \
+        9(1)      8(2)
+       /    \    /    \
+      5(3)  6(4) 3(5) 7(6)
+     /  \   /
+    2(7) 4(8) 1(9)
+
+  Extract all 10 → sort ascending:
+  Result: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
 **Why iterative?** Avoids stack overflow on deep heaps; same O(log n) per sift.
@@ -169,6 +232,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [3, 1, 4, 1, 5, 9, 2, 6]
+
+  Build MIN heap (siftDownMin uses < instead of >):
+           1(0)
+          /     \
+        1(1)     2(2)
+       /   \    /   \
+      3(3) 5(4) 9(5) 4(6)
+     /
+    6(7)
+
+  Extract min to end → descending order:
+  ┌──────┬────────────────┬─────────────────┐
+  │ Swap │ Heap portion   │ Sorted portion │
+  ├──────┼────────────────┼─────────────────┤
+  │ 1↔6 │ [1,3,2,6,5,9,4]│ [1]            │
+  │ 1↔4 │ [2,3,4,6,5,9]  │ [1,1]          │
+  │ 2↔9 │ [3,5,4,6,9]    │ [2,1,1]        │
+  │  ...                  ...              │
+  └──────┴────────────────┴─────────────────┘
+
+  Result: [9, 6, 5, 4, 3, 2, 1, 1]  (descending!)
+
+  Key: min heap + extract-min-to-end = descending sort
+       max heap + extract-max-to-end = ascending sort
+```
+
 ---
 
 ## Example 4: Using Go's container/heap for Sort
@@ -206,6 +299,35 @@ func main() {
 	sorted := heapSortViaLib(arr)
 	fmt.Println(sorted) // [3 9 10 27 38 43 82]
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [38, 27, 43, 3, 9, 82, 10]
+
+  heap.Init → build min heap O(n):
+          3(0)
+        /      \
+      9(1)     10(2)
+     /   \     /   \
+   27(3) 38(4) 82(5) 43(6)
+
+  Pop all into result (O(n log n)):
+  ┌─────┬───────┬──────────────────────────┐
+  │ Pop │  Val  │ result so far             │
+  ├─────┼───────┼──────────────────────────┤
+  │  1  │   3   │ [3]                      │
+  │  2  │   9   │ [3, 9]                   │
+  │  3  │  10   │ [3, 9, 10]               │
+  │  4  │  27   │ [3, 9, 10, 27]           │
+  │  5  │  38   │ [3, 9, 10, 27, 38]       │
+  │  6  │  43   │ [3, 9, 10, 27, 38, 43]   │
+  │  7  │  82   │ [3, 9, 10, 27, 38, 43, 82]│
+  └─────┴───────┴──────────────────────────┘
+
+  Note: uses O(n) extra space (result array)
+  True in-place heap sort doesn't need extra array.
 ```
 
 **Note:** This uses O(n) extra space. True heap sort is in-place.
@@ -251,6 +373,33 @@ func main() {
 	arr := []int{3, 1, 4, 1, 5, 9, 2, 6, 5, 3}
 	fmt.Println("Top 3:", topK(arr, 3)) // [9 6 5]
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [3, 1, 4, 1, 5, 9, 2, 6, 5, 3]    k=3
+
+  Build max heap:
+             9(0)
+           /      \
+         6(1)      4(2)
+        /    \    /    \
+      5(3)  5(4) 3(5)  2(6)
+     / \   /
+    1   1  3
+
+  Extract only k=3 (NOT full sort):
+  ┌─────────┬───────┬──────────────────────┐
+  │ Extract │ Value │ Heap after siftDown  │
+  ├─────────┼───────┼──────────────────────┤
+  │    1    │   9   │ [6, 5, 4, 1, 5, ...]  │
+  │    2    │   6   │ [5, 5, 4, 1, 3, ...]  │
+  │    3    │   5   │ (stop here)           │
+  └─────────┴───────┴──────────────────────┘
+
+  Top 3: [9, 6, 5]
+  Time: O(n + k log n)  ← much better than O(n log n) when k << n
 ```
 
 **Why?** When k << n, partial heap sort is faster than full sort.
@@ -299,6 +448,42 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [4, 10, 3, 5, 1]
+
+  Phase 1: Build max heap
+  ┌─────────────────────────────────────────────┐
+  │  Original:       4                           │
+  │                /   \                          │
+  │              10     3                         │
+  │             /  \                              │
+  │            5    1                             │
+  │                                               │
+  │  i=1: 10>5,1 → no swap                       │
+  │  i=0: 4<10 → swap 4↔10, then 4<5 → swap 4↔5  │
+  │                                               │
+  │  Max heap:      10        [10, 5, 3, 4, 1]   │
+  │                /   \                          │
+  │               5     3                         │
+  │              / \                              │
+  │             4   1                             │
+  └─────────────────────────────────────────────┘
+
+  Phase 2: Extract max, swap to end
+  ┌─────────┬─────────────────┬─────────────────┐
+  │ Swap    │ Heap portion    │ Sorted portion │
+  ├─────────┼─────────────────┼─────────────────┤
+  │ 10↔1   │ [5, 4, 3, 1]    │ [10]           │
+  │  5↔1   │ [4, 1, 3]       │ [5, 10]        │
+  │  4↔3   │ [3, 1]          │ [4, 5, 10]     │
+  │  3↔1   │ [1]             │ [3, 4, 5, 10]  │
+  └─────────┴─────────────────┴─────────────────┘
+
+  Result: [1, 3, 4, 5, 10]
+```
+
 ---
 
 ## Example 7: Heap Sort Strings
@@ -336,6 +521,31 @@ func main() {
 	heapSortStrings(words)
 	fmt.Println(words) // [apple banana cherry date elderberry]
 }
+```
+
+**Textual Figure:**
+
+```
+Input: ["banana", "apple", "cherry", "date", "elderberry"]
+
+  Build max heap (lexicographic comparison):
+          "elderberry"(0)
+            /           \
+      "date"(1)      "cherry"(2)
+       /       \
+  "banana"(3) "apple"(4)
+
+  Extract max to end:
+  ┌──────┬───────────────┬───────────────────────────┐
+  │ Step │ Extract       │ Sorted (end)              │
+  ├──────┼───────────────┼───────────────────────────┤
+  │   1  │ "elderberry"  │ [elderberry]              │
+  │   2  │ "date"        │ [date, elderberry]        │
+  │   3  │ "cherry"      │ [cherry, date, elderberry]│
+  │   4  │ "banana"      │ [...banana...]            │
+  └──────┴───────────────┴───────────────────────────┘
+
+  Result: [apple, banana, cherry, date, elderberry]
 ```
 
 ---
@@ -386,6 +596,36 @@ func main() {
 	fmt.Println("This proves heap sort is NOT stable.")
 	fmt.Println("For stable sorting, use merge sort or Go's sort.Stable().")
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [(3,A), (1,B), (3,C), (1,D), (2,E)]
+
+  Build max heap (by key):
+          (3,A)(0)
+          /       \
+       (1,B)(1)  (3,C)(2)
+       /     \
+    (1,D)(3) (2,E)(4)
+
+  After heapify:
+          (3,?)(0)            Keys 3: A and C may swap!
+          /       \
+       (2,E)(1)  (3,?)(2)
+       /     \
+    (1,D)(3) (1,B)(4)
+
+  Heap sort extracts:
+  ┌──────────────────────────────────────────┐
+  │  Stable sort: (1,B)(1,D)(2,E)(3,A)(3,C)  │
+  │  Heap sort:   (1,D)(1,B)(2,E)(3,C)(3,A)  │
+  │                  ↑                 ↑      │
+  │             B↔D swapped!      A↔C swapped!│
+  │                                            │
+  │  ∴ Heap sort is NOT stable                │
+  └──────────────────────────────────────────┘
 ```
 
 ---
@@ -450,6 +690,28 @@ func main() {
 	fmt.Println("| Quick Sort  | O(nlogn)| O(nlogn) | O(n²)    | O(logn)| No    |")
 	fmt.Println("| Merge Sort  | O(nlogn)| O(nlogn) | O(nlogn) | O(n)  | Yes    |")
 }
+```
+
+**Textual Figure:**
+
+```
+Sorting Algorithm Comparison (n=1,000,000 random ints):
+
+  ┌──────────────┬─────────┬──────────┬──────────┬─────────┬────────┐
+  │  Algorithm  │  Best   │ Average  │  Worst   │  Space  │ Stable │
+  ├──────────────┼─────────┼──────────┼──────────┼─────────┼────────┤
+  │ Heap Sort   │ O(nlogn)│ O(nlogn) │ O(nlogn) │ O(1)    │   No   │
+  │ Quick Sort  │ O(nlogn)│ O(nlogn) │ O(n²)    │ O(logn) │   No   │
+  │ Merge Sort  │ O(nlogn)│ O(nlogn) │ O(nlogn) │ O(n)    │   Yes  │
+  └──────────────┴─────────┴──────────┴──────────┴─────────┴────────┘
+
+  Trade-offs:
+  • Heap Sort:  guaranteed O(nlogn), in-place, but poor cache locality
+  • Quick Sort: fastest in practice (cache-friendly), O(n²) worst case
+  • Merge Sort: stable + guaranteed O(nlogn), but O(n) extra space
+
+  In practice: Quick Sort ≈ Go sort.Ints > Heap Sort
+  (due to cache effects and constant factors)
 ```
 
 ---
@@ -563,6 +825,45 @@ func main() {
 	fmt.Println("  - Uses InsertionSort for small subarrays (< 16 elements)")
 	fmt.Println("  - This is what C++ std::sort uses!")
 }
+```
+
+**Textual Figure:**
+
+```
+IntroSort: Hybrid sorting algorithm
+
+  Decision tree:
+                    introSort(arr)
+                         │
+                ┌────────┴────────┐
+                │                 │
+          size < 16?        depth == 0?
+           │    │             │     │
+          Yes   No           Yes    No
+           │    │             │     │
+     InsertionSort     HeapSort   QuickSort
+      O(n²) but       O(nlogn)   O(nlogn) avg
+      fast for        guaranteed  fastest in
+      tiny arrays     worst case  practice
+                                      │
+                              recurse with
+                              depth - 1
+
+  maxDepth = 2 × floor(log₂(n))
+
+  Example: arr = [38, 27, 43, 3, 9, 82, 10, 55, 1, 99, 42, 7]
+  n=12, maxDepth = 2 × 3 = 6
+
+  ┌─────────────────────────────────────┐
+  │ Uses QuickSort partitions normally  │
+  │ If depth exhausted → HeapSort       │
+  │ If subarray < 16 → InsertionSort    │
+  │                                     │
+  │ Result: guaranteed O(n log n)       │
+  │ This is what C++ std::sort uses!    │
+  └─────────────────────────────────────┘
+
+  Output: [1, 3, 7, 9, 10, 27, 38, 42, 43, 55, 82, 99]
 ```
 
 ---

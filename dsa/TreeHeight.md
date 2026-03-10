@@ -435,6 +435,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1          depth 1
+      /|\
+     3 2 4        depth 2
+    / \
+   5   6          depth 3
+
+  N-ary max depth:
+  ┌──────┬─────────────────┬────────────────┐
+  │ Node │ Children depth  │ maxDepth       │
+  ├──────┼─────────────────┼────────────────┤
+  │  5   │ (no children)   │ 1              │
+  │  6   │ (no children)   │ 1              │
+  │  3   │ max(1,1)=1      │ 2              │
+  │  2   │ (no children)   │ 1              │
+  │  4   │ (no children)   │ 1              │
+  │  1   │ max(2,1,1)=2    │ 3 ★            │
+  └──────┴─────────────────┴────────────────┘
+```
+
 ---
 
 ## Example 7: Depth of All Nodes
@@ -472,6 +493,27 @@ func main() {
         fmt.Printf("Node %d: depth %d\n", val, depth)
     }
 }
+```
+
+**Textual Figure:**
+```
+       1  depth=0
+      / \
+     2   3  depth=1
+    / \   \
+   4   5   6  depth=2
+
+  DFS with depth parameter:
+  ┌───────────────────────────────────┐
+  │ dfs(1, d=0)                       │
+  │  ├─ dfs(2, d=1)                   │
+  │  │   ├─ dfs(4, d=2) → depth[4]=2 │
+  │  │   └─ dfs(5, d=2) → depth[5]=2 │
+  │  └─ dfs(3, d=1)                   │
+  │      └─ dfs(6, d=2) → depth[6]=2 │
+  └───────────────────────────────────┘
+
+  depths: {1:0, 2:1, 3:1, 4:2, 5:2, 6:2}
 ```
 
 ---
@@ -533,6 +575,29 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+       1        depth 0
+      / \
+     2   3      depth 1
+    / \
+   4   5        depth 2
+
+  Depth accumulation:
+  ┌──────┬───────┬───────────────────┐
+  │ Node │ Depth │ Running Total     │
+  ├──────┼───────┼───────────────────┤
+  │  1   │   0   │ 0                 │
+  │  2   │   1   │ 0 + 1 = 1         │
+  │  4   │   2   │ 1 + 2 = 3         │
+  │  5   │   2   │ 3 + 2 = 5         │
+  │  3   │   1   │ 5 + 1 = 6 ★       │
+  └──────┴───────┴───────────────────┘
+
+  Sum of depths: 6
+  Average depth: 6/5 = 1.20
+```
+
 ---
 
 ## Example 9: Height-Balanced BST from Sorted Array (LeetCode 108)
@@ -578,6 +643,36 @@ func main() {
     fmt.Print("Inorder: "); printInorder(root); fmt.Println()
     fmt.Println("Height:", maxDepth(root)) // 3 — balanced!
 }
+```
+
+**Textual Figure:**
+```
+  Input: [-10, -3, 0, 5, 9]
+
+  Divide-and-conquer BST construction:
+         mid=2
+  [-10,-3] [0] [5,9]
+      │     │    │
+      ↓     ↓    ↓
+
+  Result (balanced BST):
+         0
+        / \
+      -3   9
+      /   /
+    -10  5
+
+  ┌────────────────────────────────────┐
+  │ Recursive split:                    │
+  │  sortedArray([...], mid=2) → 0      │
+  │   L: [...], mid=0 → -3              │
+  │     L: mid=0 → -10                  │
+  │   R: [...], mid=0 → 9               │
+  │     L: mid=0 → 5                    │
+  └────────────────────────────────────┘
+
+  Inorder: -10 -3 0 5 9  (sorted!)
+  Height: 3 — balanced!
 ```
 
 ---
@@ -632,6 +727,30 @@ func main() {
     }
     fmt.Println("Max depth (iterative):", maxDepthIterative(root)) // 4
 }
+```
+
+**Textual Figure:**
+```
+       1           depth=1
+      / \
+     2   3         depth=2
+    /
+   4               depth=3
+  /
+ 7                 depth=4
+
+  Iterative DFS with explicit stack:
+  ┌──────┬──────────────────┬───────┬────────┐
+  │ Step │ Pop (node,depth) │ maxD  │ Push   │
+  ├──────┼──────────────────┼───────┼────────┤
+  │  1   │ (1, 1)           │   1   │ 2,3    │
+  │  2   │ (3, 2)           │   2   │ -      │
+  │  3   │ (2, 2)           │   2   │ 4      │
+  │  4   │ (4, 3)           │   3   │ 7      │
+  │  5   │ (7, 4)           │   4 ★ │ -      │
+  └──────┴──────────────────┴───────┴────────┘
+
+  Max depth (iterative): 4
 ```
 
 ---

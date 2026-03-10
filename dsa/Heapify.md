@@ -82,6 +82,54 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [4, 10, 3, 5, 1, 8, 7]
+
+  Initial tree:                 Array: [4, 10, 3, 5, 1, 8, 7]
+          4(0)                  Index:  0   1  2  3  4  5  6
+        /      \
+      10(1)     3(2)
+     /   \     /   \
+    5(3) 1(4) 8(5) 7(6)
+
+  Step 1: siftDown(i=2, val=3)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 8(5), 7(6)                        │
+  │ 3 < 7 < 8 → already smallest → no swap     │
+  └─────────────────────────────────────────────┘
+
+  Step 2: siftDown(i=1, val=10)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 5(3), 1(4)                        │
+  │ smallest = 1 at index 4                     │
+  │ Swap 10 ↔ 1                                 │
+  └─────────────────────────────────────────────┘
+          4                     Array: [4, 1, 3, 5, 10, 8, 7]
+        /      \
+       1        3
+     /   \     /   \
+    5    10   8     7
+
+  Step 3: siftDown(i=0, val=4)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 1(1), 3(2)                        │
+  │ smallest = 1 at index 1 → Swap 4 ↔ 1       │
+  │ Continue at i=1: children 5(3), 10(4)       │
+  │ 4 < 5 and 4 < 10 → done                    │
+  └─────────────────────────────────────────────┘
+
+  Final min heap:               Array: [1, 4, 3, 5, 10, 8, 7]
+          1(0)
+        /      \
+       4(1)     3(2)
+     /   \     /   \
+    5(3) 10(4) 8(5) 7(6)
+
+  Verify: 1≤4 ✓  1≤3 ✓  4≤5 ✓  4≤10 ✓  3≤8 ✓  3≤7 ✓
+```
+
 ---
 
 ## Example 2: Bottom-Up Heapify (Max Heap)
@@ -125,6 +173,53 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [4, 10, 3, 5, 1, 8, 7]
+
+  Initial tree:                 Array: [4, 10, 3, 5, 1, 8, 7]
+          4(0)
+        /      \
+      10(1)     3(2)
+     /   \     /   \
+    5(3) 1(4) 8(5) 7(6)
+
+  Step 1: siftDown(i=2, val=3)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 8(5), 7(6) → largest = 8          │
+  │ Swap 3 ↔ 8                                  │
+  └─────────────────────────────────────────────┘
+          4                     Array: [4, 10, 8, 5, 1, 3, 7]
+        /      \
+      10        8
+     /   \     /   \
+    5     1   3     7
+
+  Step 2: siftDown(i=1, val=10)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 5(3), 1(4)                        │
+  │ 10 > 5 and 10 > 1 → already largest → done  │
+  └─────────────────────────────────────────────┘
+
+  Step 3: siftDown(i=0, val=4)
+  ┌─────────────────────────────────────────────┐
+  │ Children: 10(1), 8(2) → largest = 10        │
+  │ Swap 4 ↔ 10                                 │
+  │ Continue at i=1: children 5(3), 1(4)        │
+  │ 4 < 5 → Swap 4 ↔ 5                         │
+  └─────────────────────────────────────────────┘
+
+  Final max heap:               Array: [10, 5, 8, 4, 1, 3, 7]
+         10(0)
+        /      \
+       5(1)     8(2)
+     /   \     /   \
+    4(3) 1(4) 3(5) 7(6)
+
+  Verify: 10≥5 ✓  10≥8 ✓  5≥4 ✓  5≥1 ✓  8≥3 ✓  8≥7 ✓
+```
+
 ---
 
 ## Example 3: Using Go's heap.Init
@@ -159,6 +254,42 @@ func main() {
 	}
 	fmt.Println()
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [9, 5, 7, 1, 3, 8, 2, 6, 4]
+
+  Before heap.Init:             Array: [9, 5, 7, 1, 3, 8, 2, 6, 4]
+            9(0)
+          /       \
+        5(1)       7(2)
+       /    \     /    \
+      1(3)  3(4) 8(5)  2(6)
+     /   \
+    6(7) 4(8)
+
+  heap.Init → bottom-up heapify (O(n)):
+  ┌──────────────────────────────────────┐
+  │ Process nodes from i=3 down to i=0  │
+  │ i=3: val=1, children 6,4 → no swap  │
+  │ i=2: val=7, children 8,2 → swap 7↔2 │
+  │ i=1: val=5, children 1,3 → swap 5↔1 │
+  │ i=0: val=9, children 1,2 → swap 9↔1 │
+  │       then 9 at i=1 → swap 9↔3      │
+  └──────────────────────────────────────┘
+
+  After heap.Init (min heap):   Array: [1, 3, 2, 4, 5, 8, 7, 6, 9]
+            1(0)
+          /       \
+        3(1)       2(2)
+       /    \     /    \
+      4(3)  5(4) 8(5)  7(6)
+     /   \
+    6(7) 9(8)
+
+  Pop order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 ```
 
 ---
@@ -230,6 +361,44 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Top-Down vs Bottom-Up Heapify Comparison
+
+  Top-Down (insert one by one, sift UP):
+  ┌─────────────────────────────────────────────┐
+  │ Insert 4:    [4]                             │
+  │ Insert 10:   [4,10]     → sift up, no swap  │
+  │ Insert 3:    [3,10,4]   → sift up, swap 3↔4 │
+  │ Insert 5:    [3,5,4,10] → sift up, swap 5↔10│
+  │ Insert 1:    sift up through multiple levels │
+  │ ...each insert = O(log n) → total O(n log n)│
+  └─────────────────────────────────────────────┘
+
+  Bottom-Up (start from last internal, sift DOWN):
+  ┌─────────────────────────────────────────────┐
+  │ Place all into tree, then fix from bottom:   │
+  │   Level 3 (leaves): 0 work    ← n/2 nodes!  │
+  │   Level 2: sift down 1 level  ← n/4 nodes   │
+  │   Level 1: sift down 2 levels ← n/8 nodes   │
+  │   Level 0: sift down 3 levels ← 1 node      │
+  │ Total = O(n) — most nodes do minimal work    │
+  └─────────────────────────────────────────────┘
+
+  Work distribution (n=1,000,000):
+  ┌──────────┬───────────┬──────────┐
+  │  Level   │   Nodes   │ Sift Dist│
+  ├──────────┼───────────┼──────────┤
+  │ Leaves   │  500,000  │    0     │
+  │ Level h-1│  250,000  │    1     │
+  │ Level h-2│  125,000  │    2     │
+  │   ...    │    ...    │   ...    │
+  │ Root     │     1     │    20    │
+  └──────────┴───────────┴──────────┘
+  Bottom-up is typically 2-3x faster in practice.
+```
+
 ---
 
 ## Example 5: Heapify for Partial Array
@@ -271,6 +440,46 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [9, 7, 5, 3, 1, 8, 6, 4, 2]    k=5 (heapify first 5 only)
+
+  Full array as tree:
+            9(0)
+          /       \
+        7(1)       5(2)
+       /    \     /    \
+      3(3)  1(4) 8(5)  6(6)
+     /   \
+    4(7) 2(8)
+
+  Partial heapify: only indices 0..4
+  ┌─────────────────────────────────────────┐
+  │ k=5, last internal = k/2-1 = 1         │
+  │                                         │
+  │ i=1: val=7, children 3(3),1(4)          │
+  │   smallest=1 → Swap 7↔1                │
+  │                                         │
+  │ i=0: val=9, children 1(1),5(2)          │
+  │   smallest=1 → Swap 9↔1                │
+  │   continue i=1: children 7(3),9→no 4<5 │
+  │   smallest=3(val=3)? → Swap 9↔3         │
+  └─────────────────────────────────────────┘
+
+  Result:   [1, 3, 5, 9, 7,│ 8, 6, 4, 2]
+             ├─heapified──┤  ├─unchanged─┤
+
+  Heapified portion as tree:
+       1(0)
+      /     \
+    3(1)    5(2)
+   /    \
+  9(3)  7(4)
+
+  Use case: When you only need top-k from first k elements.
+```
+
 ---
 
 ## Example 6: Visualize Heapify Steps
@@ -307,6 +516,51 @@ func main() {
 	arr := []int{8, 5, 3, 10, 2, 7, 1}
 	heapifyWithTrace(arr)
 }
+```
+
+**Textual Figure:**
+
+```
+Input: [8, 5, 3, 10, 2, 7, 1]
+
+  Initial tree:                 Array: [8, 5, 3, 10, 2, 7, 1]
+          8(0)
+        /      \
+       5(1)     3(2)
+      /   \    /   \
+    10(3) 2(4) 7(5) 1(6)
+
+  siftDown i=2 (val=3):
+  ┌──────────────────────────────────────┐
+  │  3(2)       children: 7(5), 1(6)   │
+  │   \                                │
+  │    → Swap 3 ↔ 1 (smallest child)   │
+  │  Result: [8, 5, 1, 10, 2, 7, 3]    │
+  └──────────────────────────────────────┘
+
+  siftDown i=1 (val=5):
+  ┌──────────────────────────────────────┐
+  │  5(1)       children: 10(3), 2(4)  │
+  │   \                                │
+  │    → Swap 5 ↔ 2 (smallest child)   │
+  │  Result: [8, 2, 1, 10, 5, 7, 3]    │
+  └──────────────────────────────────────┘
+
+  siftDown i=0 (val=8):
+  ┌──────────────────────────────────────┐
+  │  8(0)       children: 2(1), 1(2)   │
+  │   → Swap 8 ↔ 1                     │
+  │  Now 8 at i=2: children 7(5),3(6)  │
+  │   → Swap 8 ↔ 3                     │
+  │  Result: [1, 2, 3, 10, 5, 7, 8]    │
+  └──────────────────────────────────────┘
+
+  Final min heap:               Array: [1, 2, 3, 10, 5, 7, 8]
+          1(0)
+        /      \
+       2(1)     3(2)
+      /   \    /   \
+    10(3) 5(4) 7(5) 8(6)
 ```
 
 ---
@@ -355,6 +609,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input: [3, 7, 2, 11, 5, 1, 9, 8]    k=3
+
+  Step 1: Build max heap
+           11(0)
+         /       \
+        8(1)      9(2)
+       /   \     /   \
+      7(3) 5(4) 1(5) 2(6)
+     /
+    3(7)
+  Array: [11, 8, 9, 7, 5, 1, 2, 3]
+
+  Step 2: Extract top k=3
+  ┌────────────────────────────────────────────┐
+  │ Extract 1: root=11                        │
+  │   Move last(3) to root → siftDown         │
+  │       9                                    │
+  │      / \                                   │
+  │     8   3  → [9, 8, 3, 7, 5, 1, 2]        │
+  │    / \  /                                  │
+  │   7  5 1                                   │
+  │                                            │
+  │ Extract 2: root=9                          │
+  │   Move last(2) → siftDown                  │
+  │   [8, 7, 3, 2, 5, 1]                       │
+  │                                            │
+  │ Extract 3: root=8                          │
+  └────────────────────────────────────────────┘
+
+  Result: [11, 9, 8]   (top 3 largest)
+```
+
 ---
 
 ## Example 8: Verify Heap Property
@@ -398,6 +687,40 @@ func main() {
 	fmt.Println(isMaxHeap([]int{9, 7, 8, 3, 5}))  // true
 	fmt.Println(isMaxHeap([]int{9, 10, 8, 3, 5})) // false
 }
+```
+
+**Textual Figure:**
+
+```
+Verify Heap Property — check parent vs children at every node:
+
+  Test: isMinHeap([1, 3, 2, 7, 4]) → true
+       1(0)             1≤3 ✓  1≤2 ✓
+      / \               3≤7 ✓  3≤4 ✓
+     3   2
+    / \
+   7   4
+
+  Test: isMinHeap([1, 0, 2, 7, 4]) → false
+       1(0)             1≤0? ✘ (0 < 1)
+      / \
+     0   2              ← child < parent!
+    / \
+   7   4
+
+  Test: isMaxHeap([9, 7, 8, 3, 5]) → true
+       9(0)             9≥7 ✓  9≥8 ✓
+      / \               7≥3 ✓  7≥5 ✓
+     7   8
+    / \
+   3   5
+
+  Test: isMaxHeap([9, 10, 8, 3, 5]) → false
+       9(0)             9≥10? ✘ (10 > 9)
+      / \
+    10   8              ← child > parent!
+    / \
+   3   5
 ```
 
 ---
@@ -450,6 +773,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+
+```
+Input tasks: [("debug",3), ("deploy",1), ("test",2), ("review",5)]
+Comparator: a.priority < b.priority (min-priority first)
+
+  After heap.Init (min-priority heap):
+
+         (deploy,1)
+        /          \
+    (debug,3)    (test,2)
+       /
+  (review,5)
+
+  Array: [(deploy,1), (debug,3), (test,2), (review,5)]
+
+  Pop order:
+  ┌─────┬───────────┬──────────┐
+  │ Pop │   Task    │ Priority │
+  ├─────┼───────────┼──────────┤
+  │  1  │ deploy    │    1     │
+  │  2  │ test      │    2     │
+  │  3  │ debug     │    3     │
+  │  4  │ review    │    5     │
+  └─────┴───────────┴──────────┘
+```
+
 ---
 
 ## Example 10: Why Bottom-Up Heapify is O(n)
@@ -496,6 +846,37 @@ func main() {
 	}
 	// ratio approaches ~1.0, confirming O(n)
 }
+```
+
+**Textual Figure:**
+
+```
+Why Bottom-Up Heapify is O(n):
+
+  Heap of height h = log₂(n):
+
+  Level 0 (root):     ○                    1 node  × sift h levels
+                     / \
+  Level 1:          ○   ○                  2 nodes × sift h-1 levels
+                   /\ /\
+  Level 2:        ○ ○ ○ ○               4 nodes × sift h-2 levels
+                  ...   ...
+  Level h-1:    ○○○○○○○○             n/4 nodes × sift 1 level
+  Level h:      ●●●●●●●●●●●●●●●●   n/2 nodes × sift 0 levels!
+
+  Total work = Σ(k=0→h) 2ᵏ × (h-k)
+  ┌───────────┬────────┬─────────────┬─────────┐
+  │   n       │   h    │  total ops  │  ratio  │
+  ├───────────┼────────┼─────────────┼─────────┤
+  │     7     │   2    │      4      │  0.57   │
+  │    15     │   3    │     11      │  0.73   │
+  │    31     │   4    │     26      │  0.84   │
+  │    63     │   5    │     57      │  0.90   │
+  │   127     │   6    │    120      │  0.94   │
+  └───────────┴────────┴─────────────┴─────────┘
+  ratio → 1.0 as n → ∞  ∴ Total = O(n)
+
+  Key: n/2 leaves do ZERO work!
 ```
 
 ---

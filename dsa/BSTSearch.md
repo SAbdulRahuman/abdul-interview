@@ -43,6 +43,27 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Recursive BST Search:
+
+       4
+      / \
+     2   7
+    / \
+   1   3
+
+  Search for 2:                    Search for 5:
+  ┌─────────────────────┐      ┌─────────────────────┐
+  │ root=4, 2 < 4       │      │ root=4, 5 > 4       │
+  │  → go Left          │      │  → go Right         │
+  │ root=2, 2 == 2      │      │ root=7, 5 < 7       │
+  │  → FOUND! return 2  │      │  → go Left          │
+  │                     │      │ root=nil             │
+  │ Output: Found: 2    │      │  → NOT FOUND (nil)   │
+  └─────────────────────┘      └─────────────────────┘
+```
+
 ---
 
 ## Example 2: Iterative Search
@@ -83,6 +104,29 @@ func main() {
 		}
 	}
 }
+```
+
+**Textual Figure:**
+```
+Iterative BST Search:
+
+          10
+         / \
+        5   15
+       / \  / \
+      3  7 12  20
+
+  Search 7:              Search 12:            Search 99:
+  ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+  │ cur=10       │    │ cur=10       │    │ cur=10       │
+  │  7<10 → left │    │ 12>10→right │    │ 99>10→right │
+  │ cur=5        │    │ cur=15       │    │ cur=15       │
+  │  7>5  →right │    │ 12<15→ left │    │ 99>15→right │
+  │ cur=7        │    │ cur=12       │    │ cur=20       │
+  │  7==7 FOUND  │    │ 12==12 FOUND │    │ 99>20→right │
+  └───────────────┘    └───────────────┘    │ cur=nil      │
+                                      │  NOT FOUND   │
+                                      └───────────────┘
 ```
 
 ---
@@ -128,6 +172,29 @@ func main() {
 	found, path = searchWithPath(root, 55)
 	fmt.Println(found, path) // false [50 70 60]
 }
+```
+
+**Textual Figure:**
+```
+Search with Path Tracking:
+
+          50
+         / \
+        30   70
+       / \   / \
+      20 40 60  80
+
+  Search 40:                       Search 55:
+  ┌────────────────────────┐     ┌────────────────────────┐
+  │ cur=50 → path=[50]     │     │ cur=50 → path=[50]     │
+  │   40<50 → go left     │     │   55>50 → go right    │
+  │ cur=30 → path=[50,30]  │     │ cur=70 → path=[50,70]  │
+  │   40>30 → go right    │     │   55<70 → go left     │
+  │ cur=40 → path=[50,30,40]│    │ cur=60 → path=[50,70,60]│
+  │   40==40 → FOUND!     │     │   55<60 → go left     │
+  │                        │     │ cur=nil → NOT FOUND   │
+  └────────────────────────┘     └────────────────────────┘
+  Output: true [50 30 40]        Output: false [50 70 60]
 ```
 
 ---
@@ -199,6 +266,36 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Floor & Ceiling Search in BST:
+
+          10
+         / \
+        5   15
+       / \  / \
+      3  7 12  20
+
+  ┌── Floor(6): largest value ≤ 6 ───────────────┐
+  │  cur=10: 10>6 → go left                    │
+  │  cur=5:  5<6  → result=5, go right         │
+  │  cur=7:  7>6  → go left                    │
+  │  cur=nil → return result = 5                │
+  ├── Ceiling(6): smallest value ≥ 6 ──────────┤
+  │  cur=10: 10>6 → result=10, go left          │
+  │  cur=5:  5<6  → go right                   │
+  │  cur=7:  7>6  → result=7, go left           │
+  │  cur=nil → return result = 7                │
+  ├── Floor(10): exact match ─────────────────┤
+  │  cur=10: 10==10 → return 10                 │
+  ├── Ceiling(13): ───────────────────────────┤
+  │  cur=10: 10<13 → go right                   │
+  │  cur=15: 15>13 → result=15, go left         │
+  │  cur=12: 12<13 → go right                   │
+  │  cur=nil → return result = 15               │
+  └─────────────────────────────────────────────┘
+```
+
 ---
 
 ## Example 5: Closest Value in BST (LeetCode 270)
@@ -248,6 +345,32 @@ func main() {
 	fmt.Println("Closest to 13.0:", closestValue(root, 13.0)) // 12
 	fmt.Println("Closest to 10.0:", closestValue(root, 10.0)) // 10
 }
+```
+
+**Textual Figure:**
+```
+Closest Value in BST:
+
+          10
+         / \
+        5   15
+       / \  / \
+      3  7 12  20
+
+  Closest to 6.3:                    Closest to 13.0:
+  ┌─────────────────────────┐     ┌─────────────────────────┐
+  │ cur=10 |10-6.3|=3.7     │     │ cur=10 |10-13|=3      │
+  │   closest=10             │     │   closest=10           │
+  │   6.3<10 → go left      │     │   13>10 → go right    │
+  │ cur=5  |5-6.3|=1.3      │     │ cur=15 |15-13|=2      │
+  │   closest=5 (closer)    │     │   closest=15 (closer)  │
+  │   6.3>5 → go right     │     │   13<15 → go left     │
+  │ cur=7  |7-6.3|=0.7      │     │ cur=12 |12-13|=1      │
+  │   closest=7 (closer!)   │     │   closest=12 (closer!) │
+  │   6.3<7 → go left      │     │   13>12 → go right   │
+  │ cur=nil → done          │     │ cur=nil → done        │
+  │ Answer: 7               │     │ Answer: 12             │
+  └─────────────────────────┘     └─────────────────────────┘
 ```
 
 ---
@@ -300,6 +423,35 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Range Search [4, 12] — Collect all values in range:
+
+            10
+           / \
+          5   15
+         / \  / \
+        3  7 12  20
+       /\ /\
+      1 4 6 8
+
+  dfs(10):
+  ├── 10>4 → search left subtree
+  │   dfs(5):
+  │   ├── 5>4 → search left
+  │   │   dfs(3): 3<4 → skip left, search right
+  │   │     dfs(4): 4∈[4,12] → add 4, leaf
+  │   ├── 5∈[4,12] → add 5
+  │   └── 5<12 → search right
+  │       dfs(7): add 7; left→6 add 6; right→8 add 8
+  ├── 10∈[4,12] → add 10
+  └── 10<12 → search right
+      dfs(15): 15>12 → search left only
+        dfs(12): 12∈[4,12] → add 12
+
+  Result: [4 5 6 7 8 10 12]  (inorder within range)
+```
+
 ---
 
 ## Example 7: Count Nodes in Range
@@ -341,6 +493,33 @@ func main() {
 	fmt.Println("Count in [4,12]:", countInRange(root, 4, 12)) // 7
 	fmt.Println("Count in [1,5]:", countInRange(root, 1, 5))   // 4
 }
+```
+
+**Textual Figure:**
+```
+Count Nodes in Range:
+
+            10
+           / \
+          5   15
+         / \  / \
+        3  7 12  20
+       /\ /\
+      1 4 6 8
+
+  countInRange(root, 4, 12):            countInRange(root, 1, 5):
+  ┌─────────────────────────┐      ┌─────────────────────────┐
+  │ 10∈[4,12]: count 1      │      │ 10>5: prune right,    │
+  │  L: 5∈[4,12]: count 1  │      │   search left only    │
+  │    L: 3<4: prune left   │      │ 5∈[1,5]: count 1      │
+  │      R: 4∈[4,12]: +1   │      │  L: 3∈[1,5]: count 1  │
+  │    R: 7∈[4,12]: count 1│      │    L: 1∈[1,5]: +1     │
+  │      L: 6∈[4,12]: +1   │      │    R: 4∈[1,5]: +1     │
+  │      R: 8∈[4,12]: +1   │      │  R: 7>5: prune right  │
+  │  R: 15>12: prune right  │      │                        │
+  │    L: 12∈[4,12]: +1    │      │ Total: 4              │
+  │ Total: 7               │      │ {1, 3, 4, 5}          │
+  └─────────────────────────┘      └─────────────────────────┘
 ```
 
 ---
@@ -389,6 +568,30 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+Kth Smallest via Iterative Inorder (stack-based):
+
+         5
+        / \
+       3   6
+      / \
+     2   4
+    /
+   1
+
+  Stack simulation:
+  Step  Action              Stack (top→right)  Pop   count
+  ─────────────────────────────────────────────────────────
+   1    push 5,3,2,1        [5,3,2,1]          ─      ─
+   2    pop 1               [5,3,2]            1      1 → k=1? → 1
+   3    pop 2               [5,3]              2      2 → k=2? → 2
+   4    pop 3, push 4       [5,4]              3      3 → k=3? → 3
+   5    pop 4               [5]                4      4 → k=4? → 4
+   6    pop 5, push 6       [6]                5      5 → k=5? → 5
+   7    pop 6               []                 6      6 → k=6? → 6
+```
+
 ---
 
 ## Example 9: Two Sum in BST (LeetCode 653)
@@ -424,6 +627,32 @@ func main() {
 	fmt.Println("Two sum k=9:", findTarget(root, 9))  // true (2+7)
 	fmt.Println("Two sum k=28:", findTarget(root, 28)) // false
 }
+```
+
+**Textual Figure:**
+```
+Two Sum in BST (DFS + hash set):
+
+        5
+       / \
+      3   6
+     / \   \
+    2   4   7
+
+  Target k=9:
+  Step  Visit  Need(k-val)  Seen        Found?
+  ──────────────────────────────────────────
+   1     5      4          {}          no
+   2     3      6          {5}         no
+   3     2      7          {5,3}       no
+   4     4      5          {5,3,2}     5∈seen? YES!
+
+  → 2 + 7 = 9? Actually 4+5=9 ✓
+  Output: true
+
+  Target k=28:
+  Visit all nodes: {2,3,4,5,6,7}
+  No pair sums to 28 → false
 ```
 
 ---
@@ -480,6 +709,30 @@ func main() {
 	}
 	fmt.Println() // 3 7 9 15 20
 }
+```
+
+**Textual Figure:**
+```
+BST Iterator (controlled inorder via stack):
+
+       7
+      / \
+     3   15
+        / \
+       9   20
+
+  Initialize: pushLeft(7) → stack = [7, 3]
+
+  Call     Stack Before    Pop   pushLeft(right)  Stack After  Output
+  ───────────────────────────────────────────────────────────────
+  Next()   [7, 3]           3     pushLeft(nil)    [7]           3
+  Next()   [7]              7     pushLeft(15)     [15, 9]       7
+  Next()   [15, 9]          9     pushLeft(nil)    [15]          9
+  Next()   [15]            15     pushLeft(20)     [20]         15
+  Next()   [20]            20     pushLeft(nil)    []           20
+  HasNext? [] → false
+
+  Output: 3 7 9 15 20 (sorted inorder)
 ```
 
 ---

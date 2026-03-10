@@ -60,6 +60,28 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+          10 (h=3, bf=1)
+         /  \
+   5 (h=2, bf=0)   15 (h=1, bf=0)
+      /  \
+ 3 (h=1)  7 (h=1)
+
+ Balance Factor = height(left) - height(right)
+ ┌──────────┬────────┬────────┬────┐
+ │   Node   │ h(L)   │ h(R)   │ BF │
+ ├──────────┼────────┼────────┼────┤
+ │    10    │   2    │   1    │  1 │
+ │     5    │   1    │   1    │  0 │
+ │    15    │   0    │   0    │  0 │
+ │     3    │   0    │   0    │  0 │
+ │     7    │   0    │   0    │  0 │
+ └──────────┴────────┴────────┴────┘
+
+ Output → Root BF: 1, Left BF: 0, Right BF: 0
+```
+
 ---
 
 ## Example 2: AVL Insertion with Rotations
@@ -129,6 +151,36 @@ func main() {
 	}
 	fmt.Print("Inorder: "); inorder(root); fmt.Println()
 }
+```
+
+**Textual Figure:**
+```
+ Insert sequence: 10, 20, 30, 40, 50, 25
+
+ Step 1: Insert 10     Step 2: Insert 20     Step 3: Insert 30 (RR case)
+     10                   10                  10            20
+                            \                   \    LR    /  \
+                            20                  20  ───→ 10   30
+                                                  \
+                                                  30
+
+ Step 4: Insert 40        Step 5: Insert 50       Step 6: Insert 25
+       20                       20                       30
+      /  \                     /  \                     /  \
+    10    30                 10    30    LR            20    40
+            \                       \  ───→          /  \     \
+            40                      40             10    25   50
+                                      \
+                                      50
+
+ Final balanced AVL tree:
+          30
+         /  \
+       20    40
+      /  \     \
+    10    25   50
+
+ Inorder: 10 20 25 30 40 50
 ```
 
 ---
@@ -209,6 +261,31 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ Insert [9, 5, 10, 0, 6, 11, -1, 1, 2] then delete 10:
+
+ Before deletion:                 Delete 10:
+          5                        Step 1: Find node 10
+         / \                       Step 2: Has both children →
+        1    9                       replace with successor (11)
+       / \  / \                    Step 3: Delete 11 from right subtree
+      0   2 6  10                   Step 4: Rebalance upward
+     /           \
+    -1           11
+
+ After delete 10 (replace with successor 11, rebalance):
+          5
+         / \
+        1    9
+       / \  / \
+      0   2 6  11
+     /
+    -1
+
+ Inorder: -1 0 1 2 5 6 9 11
+```
+
 ---
 
 ## Example 4: AVL Tree — Verify Balance at Every Node
@@ -252,6 +329,35 @@ func main() {
 	fmt.Printf("100 sequential inserts: height=%d (log2(100)≈7)\n", root.Height)
 	fmt.Println("All nodes balanced:", verifyAVL(root))
 }
+```
+
+**Textual Figure:**
+```
+ 100 sequential inserts (1..100) into AVL:
+
+ Without AVL (plain BST):        With AVL balancing:
+  1                                      64
+   \                                   /    \
+    2                                32      80
+     \                             /    \   /  \
+      3                          16     48 72   96
+       \                        / \    / \
+        ...                    8  24  40  56  ...
+         \                    ...
+          100
+  Height = 100               Height ≈ 7
+
+ ┌──────────────────────────────────────────────┐
+ │ verifyAVL: checks |bf| ≤ 1 at every node    │
+ │                                              │
+ │  For each node:                              │
+ │    bf = height(left) - height(right)         │
+ │    if |bf| > 1 → VIOLATION                   │
+ │                                              │
+ │  Result: All nodes balanced = true ✓         │
+ │  Height = 7  (log₂(100) ≈ 6.64)             │
+ │  Max AVL height ≤ 1.44 × log₂(100) ≈ 9.6   │
+ └──────────────────────────────────────────────┘
 ```
 
 ---
@@ -307,6 +413,34 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ AVL tree with Size field:
+            20 (size=7)
+           /  \
+     10 (s=3)   30 (s=3)
+     /  \       /  \
+   5(1) 15(1) 25(1) 35(1)
+
+ Inorder: 5, 10, 15, 20, 25, 30, 35
+
+ kthSmallest(root, k):
+ ┌───┬───────┬──────────────────────────────────────────┐
+ │ k │ Value │ Path                                     │
+ ├───┼───────┼──────────────────────────────────────────┤
+ │ 1 │   5   │ leftSize=3, k≤3 → left; lS=1, k≤1 → left│
+ │ 2 │  10   │ leftSize=3, k≤3 → left; lS=1, k=2=1+1   │
+ │ 3 │  15   │ leftSize=3, k=3=3 → left; go right       │
+ │ 4 │  20   │ leftSize=3, k=4=3+1 → return root        │
+ │ 5 │  25   │ leftSize=3, k>4 → right(k=1); lS=1,k=1=1│
+ │ 6 │  30   │ go right(k=2); leftSize=1, k=2=1+1       │
+ │ 7 │  35   │ go right(k=3); go right(k=1)             │
+ └───┴───────┴──────────────────────────────────────────┘
+
+ rank(25): at 20 → 1+size(left)=4, go right
+           at 30 → size(left of 30)=1 → total=4+1=5 ✓
+```
+
 ---
 
 ## Example 6: AVL — Range Count
@@ -353,6 +487,33 @@ func main() {
 	fmt.Println("Count in [4,12]:", rangeCount(root, 4, 12)) // 7
 	fmt.Println("Count in [1,5]:", rangeCount(root, 1, 5))   // 4
 }
+```
+
+**Textual Figure:**
+```
+ AVL tree: insert [10, 5, 15, 3, 7, 12, 20, 1, 4, 6, 8]
+
+              10
+            /    \
+          5       15
+         / \     /  \
+        3   7   12   20
+       / \ / \
+      1  4 6  8
+
+ Inorder: 1, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20
+
+ rangeCount(lo, hi) = countLess(hi+1) - countLess(lo)
+
+ ┌─────────────┬───────────────────┬──────────────────┬────────┐
+ │   Range     │ countLess(hi+1) │ countLess(lo)  │ Result │
+ ├─────────────┼───────────────────┼──────────────────┼────────┤
+ │  [4, 12]    │ cntLess(13)=9   │ cntLess(4)=2   │   7    │
+ │  [1, 5]     │ cntLess(6)=4    │ cntLess(1)=0   │   4    │
+ └─────────────┴───────────────────┴──────────────────┴────────┘
+
+ [4,12] = {4,5,6,7,8,10,12} = 7 ✓
+ [1, 5] = {1,3,4,5}         = 4 ✓
 ```
 
 ---
@@ -410,6 +571,41 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ arr = [8, 4, 2, 1]  —  Count inversions via AVL insert
+
+ Insert 8: inversions += 0                    total = 0
+   8
+
+ Insert 4: 4 < 8 → count += 1+size(right)=1   total = 1
+     8
+    /
+   4
+
+ Insert 2: 2 < 8 → count += 1    (total=2)
+            2 < 4 → count += 1    (total=3)
+     8
+    /
+   4
+  /
+ 2
+
+ Insert 1: 1 < 8 → count += 1    (total=4)
+            1 < 4 → count += 1    (total=5)
+            1 < 2 → count += 1    (total=6)
+     8
+    /
+   4
+  /
+ 2
+ /
+ 1
+
+ All inversion pairs: (8,4)(8,2)(8,1)(4,2)(4,1)(2,1) = 6 ✓
+ Sorted array [1,2,3,4]: 0 inversions ✓
+```
+
 ---
 
 ## Example 8: AVL Tree Visualization
@@ -453,6 +649,28 @@ func main() {
 	}
 	printTree(root, "", false)
 }
+```
+
+**Textual Figure:**
+```
+ Insert [10, 20, 30, 40, 50, 25] into AVL tree:
+
+ printTree output (prefix notation):
+ └── 30 (h=3, bf=0)
+     ├── 20 (h=2, bf=0)
+     │   ├── 10 (h=1, bf=0)
+     │   └── 25 (h=1, bf=0)
+     └── 40 (h=2, bf=-1)
+         └── 50 (h=1, bf=0)
+
+ As a visual tree:
+          30
+         /  \
+       20    40
+      /  \     \
+    10    25   50
+
+ All balance factors are in {-1, 0, 1} → valid AVL ✓
 ```
 
 ---
@@ -520,6 +738,33 @@ func main() {
 }
 ```
 
+**Textual Figure:**
+```
+ AVL tree: [10, 20, 30, 40, 50]
+
+        30
+       /  \
+     20    40
+    /        \
+   10        50
+
+ lowerBound(target): smallest val ≥ target
+ ┌────────────┬──────┬───────────────────────────────────────┐
+ │ Query      │ Ans  │ Trace                                 │
+ ├────────────┼──────┼───────────────────────────────────────┤
+ │ LB(25)     │  30  │ 30≥25→res=30,L; 20<25→R; nil→ret 30 │
+ │ LB(30)     │  30  │ 30≥30→res=30,L; 20<30→R; nil→ret 30 │
+ └────────────┴──────┴───────────────────────────────────────┘
+
+ upperBound(target): smallest val > target
+ ┌────────────┬──────┬───────────────────────────────────────┐
+ │ Query      │ Ans  │ Trace                                 │
+ ├────────────┼──────┼───────────────────────────────────────┤
+ │ UB(30)     │  40  │ 30 not >30→R; 40>30→res=40,L; ret 40 │
+ │ UB(50)     │ none │ 30 not >50→R; 40 not >50→R; 50→R;nil│
+ └────────────┴──────┴───────────────────────────────────────┘
+```
+
 ---
 
 ## Example 10: AVL vs Unbalanced BST — Performance Comparison
@@ -584,6 +829,34 @@ func main() {
 	fmt.Printf("AVL search last: %v\n", avlSearchTime)
 	fmt.Printf("AVL height: %d (vs BST height: %d)\n", avlRoot.Height, n)
 }
+```
+
+**Textual Figure:**
+```
+ Sorted insertions 1..50,000 (worst case for BST):
+
+ BST (degenerate):           AVL (balanced):
+  1                                 ~25000
+   \                               /      \
+    2                          ~12500    ~37500
+     \                         /   \      /   \
+      3                      ...   ... ...    ...
+       \
+        ...                  Height ≈ 16
+         \
+         50000
+  Height = 50,000
+
+ ┌───────────────┬─────────────────┬─────────────────┐
+ │               │      BST        │      AVL        │
+ ├───────────────┼─────────────────┼─────────────────┤
+ │ Height        │    50,000       │     ~16         │
+ │ Insert time   │    O(n²)        │    O(n log n)   │
+ │ Search last   │    O(n)         │    O(log n)     │
+ │ Comparisons   │    50,000       │     ~16         │
+ └───────────────┴─────────────────┴─────────────────┘
+
+ AVL guarantees O(log n) even for pathological inputs ✓
 ```
 
 ---
