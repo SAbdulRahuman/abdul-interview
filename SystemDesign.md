@@ -24,6 +24,41 @@ Use the following structure in every interview:
 
 ---
 
+# Chapter 0 - Microservie Design interview QS 1
+
+Log forwarded service:
+
+Develop a service S on some cloud of your choice (like AWS, Azure, GCP, OCI). Functional requirements are following.  Do High level and Low level design of it.
+
+Input: 
+
+Reading log messages: 
+
+It has a location in an object store (for example S3) where lots of files are stored. 
+**Each log file is immutable (read only), it’s not getting modified by any other service.**
+It picks one log file at a time and then starts reading log messages from that file. It reads one log messages at a time. 
+Each log message starts with a new line and has format: 
+<timestamp>-<service-name>-<uniqueId>-<category>:   <message-content>
+The log message header <timestamp>-<service-name>-<uniqueId>-<category> makes every log message unique across all files.
+Output:
+
+Service S has output in two paths:
+
+Sending one single log messages (read by reader) to an external service A.  (HealthCheck & POST)
+It also accumulates log messages of 1 hr, computing some statistics and send it to external service B. (HealthCheck & POST)
+
+
+
+Important Requirement:
+
+The Service S should be scalable and fault tolerant. 
+If External services A or B slow down or goes offline, service S should adjust accordingly.
+S should not incur data loss. No log message or 1-hour summary should be lost.    
+
+
+
+
+
 # Category 1 — Core Distributed Systems
 
 These are the **most common questions** in Staff engineer interviews.
