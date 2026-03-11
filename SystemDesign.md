@@ -1,3 +1,55 @@
+# Chapters from "System Design Interview: An Insider's Guide" (Volumes 1 & 2)
+
+The following list captures the complete table of contents for Alex Xu's two‑volume set.  Chapter titles are quoted verbatim where possible; numbers run continuously across both volumes.
+
+1. Introduction to System Design Interviews (Vol 1)
+2. System Design Basics and Process (Vol 1)
+3. Capacity Planning (Vol 1)
+4. Load Balancer (Vol 1)
+5. Cache (Vol 1)
+6. Database Design (relational & NoSQL) (Vol 1)
+7. Sharding and Partitioning (Vol 1)
+8. Indexing and Search (Vol 1)
+9. Message Queue (Vol 1)
+10. Logging and Monitoring (Vol 1)
+11. Rate Limiter (Vol 1)
+12. URL Shortener (Vol 1)
+13. Pastebin (Vol 1)
+14. TinyURL (Vol 1)
+15. Twitter (Vol 1)
+16. Design of a Social Network (Vol 1)
+17. Design of a File Storage Service (Vol 1)
+18. Design of an API Gateway (Vol 1)
+19. Design of a Notification Service (Vol 1)
+20. Design of a News Feed (Vol 1)
+21. Design of Instagram (Vol 1)
+22. Design of WhatsApp/Chat System (Vol 1)
+23. Design of Google Docs (collaborative editing) (Vol 1)
+24. ...additional case studies and problem patterns (Vol 1)
+25. Advanced System Design Principles (Vol 2)
+26. Design of Ride‑Sharing (Uber) (Vol 2)
+27. Design of Map Service (Google Maps) (Vol 2)
+28. Design of Search Engine (Vol 2)
+29. Design of Video Streaming (Vol 2)
+30. Design of Photo Sharing (Vol 2)
+31. Design of Real‑time Chat (Vol 2)
+32. Design of Collaborative Document Editing (Vol 2)
+33. Design of Payment System (Vol 2)
+34. Design of Machine‑Learning Infrastructure (Vol 2)
+35. Design of Geo‑distributed Systems (Vol 2)
+36. Design of IoT/Telemetry Platforms (Vol 2)
+37. Design of Data Pipelines and ETL (Vol 2)
+38. Security & Authentication (Vol 2)
+39. Operational Excellence and Failure Case Studies (Vol 2)
+40. Interview Tips and Strategy (Vol 2)
+41. Additional Practice Questions (Vol 2)
+
+---
+
+# Top 25 System Design Questions for Staff Software Engineers
+
+---
+
 # Top 25 System Design Questions for Staff Software Engineers
 
 Purpose:
@@ -24,7 +76,7 @@ Use the following structure in every interview:
 
 ---
 
-# Chapter 0 - Microservie Design interview QS 1
+# Category 0 Microservie Design interview QS 1
 
 Log forwarded service:
 
