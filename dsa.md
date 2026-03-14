@@ -4,8 +4,17 @@ Data Structures and Algorithms Preparation Plan
 (Staff Software Engineer Interview)
 
 # pre-requisite
+
+* [Grokking Data Structures](https://learning.oreilly.com/library/view/grokking-data-structures/9781633436992/)
+* [Algorithmic Thinking, 2nd Edition](https://learning.oreilly.com/library/view/algorithmic-thinking-2nd/9781098168766/)
+
+OR 
+
+
 * [Data Structures the Fun Way](https://learning.oreilly.com/library/view/data-structures-the/9781098156602/)
-* [Data Structures the Fun Way](https://learning.oreilly.com/library/view/data-structures-the/9781098156602/)
+* [Graph Algorithms the Fun Way](https://learning.oreilly.com/library/view/graph-algorithms-the/9781098182519/)
+
+
 
 ---
 
@@ -254,6 +263,8 @@ Concepts
 * [Red-black trees overview](dsa/RedBlackTreesOverview.md)
 * [Inorder successor and predecessor](dsa/InorderSuccessorPredecessor.md)
 * [Self-balancing BST trade-offs](dsa/SelfBalancingBSTTradeoffs.md)
+* [Kth smallest in BST](dsa/KthSmallestInBST.md)
+* [LCA in BST](dsa/LCAInBST.md)
 
 Problems
 
@@ -280,6 +291,8 @@ Concepts
 * [Binary search on floating point](dsa/BinarySearchOnFloatingPoint.md)
 * [Bisecting an answer space](dsa/BisectingAnAnswerSpace.md)
 * [Minimize maximum / maximize minimum pattern](dsa/MinimizeMaximizePattern.md)
+* [Matrix binary search](dsa/MatrixBinarySearch.md)
+* [Peak finding](dsa/PeakFinding.md)
 
 Problems
 
@@ -380,6 +393,8 @@ Concepts
 * [Union by rank](dsa/UnionByRank.md)
 * [Union by size](dsa/UnionBySize.md)
 * [Weighted union find](dsa/WeightedUnionFind.md)
+* [Quick union / quick find](dsa/QuickUnionQuickFind.md)
+* [Union find applications](dsa/UnionFindApplications.md)
 
 Problems
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Chapters from "System Design Interview: An Insider's Guide" (Volumes 1 & 2)
 
 The following list captures the complete table of contents for Alex Xu's two‑volume set.  Chapter titles are quoted verbatim where possible; numbers run continuously across both volumes.
@@ -51,6 +52,20 @@ The following list captures the complete table of contents for Alex Xu's two‑v
 ---
 
 # Top 25 System Design Questions for Staff Software Engineers
+=======
+# System Design Questions for Staff Software Engineers
+
+# pre-requisite
+
+* [Head First Design Patterns](https://learning.oreilly.com/library/view/head-first-design/9781492077992/)
+
+* [System Design Guide for Software Professionals](https://learning.oreilly.com/library/view/system-design-guide/9781805124993/)
+
+* [Designing Data-Intensive Applications](https://learning.oreilly.com/library/view/designing-data-intensive-applications/9781098119058/)
+
+* [Alex Xu's System Design Interview book](https://www.amazon.in/System-Design-Interview-insiders-Colour/dp/9355426844/ref=sr_1_1?crid=4HQCCCODKX8Z&dib=eyJ2IjoiMSJ9.R5bQmrAqMOECpq1G6Tnx-G9y4Ugl_z2wdpzr-4ivPNdy9w3eqKhSG7x1lKe875b6X-wVnVe5hFf4IZfH8XttJ7L2A4p6APqaIuIPZNz6Of70CPjssyZDxqOOwwEI-zLVCdZ8z86cr6Xg7JDhk3cuUhMLI9itK7jg8nZBEWOa5jr20fofUHT8PPDc_hwGLihq1x_bW3oIVKRrWm7L0eLex1ZtZ5snxkAHsFfFzB0syDM.fZn0W1VLX6HZKG4ggXeVv9NNz637zmJmSkefwRpdcKs&dib_tag=se&keywords=Alex+Xu%27s+System+Design+Interview+book&qid=1773313743&sprefix=alex+xu%27s+system+design+interview+book%2Caps%2C907&sr=8-1) 
+
+>>>>>>> a3ee9ef (Linux & k8s)
 
 Purpose:
 This document lists common **system design questions asked in Staff / Senior Staff / Principal engineer interviews**. These questions test architectural thinking, scalability design, reliability engineering, and distributed systems knowledge.
@@ -76,6 +91,7 @@ Use the following structure in every interview:
 
 ---
 
+<<<<<<< HEAD
 # Category 0 Microservie Design interview QS 1
 
 Log forwarded service:
@@ -110,12 +126,65 @@ S should not incur data loss. No log message or 1-hour summary should be lost.
 
 
 
+=======
+# Back-of-the-Envelope Estimation
+
+Staff-level interviews almost always include capacity estimation. Memorise these numbers and practise quick calculations.
+
+## Key Numbers to Memorise
+
+| Resource | Approximate Value |
+|---|---|
+| QPS a single web server can handle | 1K–10K (depends on workload) |
+| QPS a single MySQL instance can handle | ~1K writes, ~10K reads |
+| QPS a single Redis instance can handle | ~100K |
+| Read latency — memory | ~100 ns |
+| Read latency — SSD random | ~100 µs |
+| Read latency — HDD random | ~10 ms |
+| Sequential read — SSD | ~1 GB/s |
+| Sequential read — HDD | ~100 MB/s |
+| Network bandwidth (1 Gbps link) | ~125 MB/s |
+| Network bandwidth (10 Gbps link) | ~1.25 GB/s |
+| Disk capacity — single HDD | ~10 TB |
+| Disk capacity — single SSD | ~1–4 TB |
+| 1 million seconds | ~11.6 days |
+| 1 billion seconds | ~31.7 years |
+
+## Estimation Template
+
+```
+DAU (Daily Active Users)           → X million
+Requests per user per day          → Y
+Total daily requests               → X × Y million
+Peak QPS                           → (X × Y) / 86400 × peak_factor (2–5×)
+Storage per request                → Z KB
+Daily storage                      → X × Y × Z KB
+Annual storage                     → Daily × 365 × replication_factor
+```
+
+## Example: YouTube-Scale Video Upload
+
+* 500 hours of video uploaded per minute
+* Average video: 1 GB per hour of footage
+* Storage per day: 500 × 60 × 24 × 1 GB = ~720 TB/day raw
+* With 3× replication: ~2.16 PB/day
+* Annual: ~790 PB/year (before compression/encoding)
+
+## Example: Twitter-Scale Timeline
+
+* 500 million tweets/day → ~5,800 tweets/sec
+* Average tweet with metadata: ~1 KB
+* Daily storage: 500 GB/day
+* Read amplification: 300M DAU × 200 tweets/timeline = 60 billion reads/day → ~700K reads/sec
+
+---
+>>>>>>> a3ee9ef (Linux & k8s)
 
 # Category 1 — Core Distributed Systems
 
 These are the **most common questions** in Staff engineer interviews.
 
-### 1. Design a Distributed Key-Value Store
+### 1. [Design a Distributed Key-Value Store](design/01-DistributedKeyValueStore.md)
 
 Examples: Redis, DynamoDB
 
@@ -129,7 +198,7 @@ Concepts tested:
 
 ---
 
-### 2. Design a Distributed Cache
+### 2. [Design a Distributed Cache](design/02-DistributedCache.md)
 
 Examples: Redis Cluster, Memcached
 
@@ -143,7 +212,7 @@ Concepts tested:
 
 ---
 
-### 3. Design a Distributed Message Queue
+### 3. [Design a Distributed Message Queue](design/03-DistributedMessageQueue.md)
 
 Examples: Kafka, RabbitMQ
 
@@ -157,7 +226,7 @@ Concepts tested:
 
 ---
 
-### 4. Design a Rate Limiter
+### 4. [Design a Rate Limiter](design/04-RateLimiter.md)
 
 Examples: API gateways
 
@@ -170,7 +239,7 @@ Concepts tested:
 
 ---
 
-### 5. Design a Job Scheduling System
+### 5. [Design a Job Scheduling System](design/05-JobSchedulingSystem.md)
 
 Examples: Kubernetes scheduler, Airflow
 
@@ -187,7 +256,7 @@ Concepts tested:
 
 Very important for companies working on **data infrastructure**.
 
-### 6. Design an Object Storage System (like Amazon S3)
+### 6. [Design an Object Storage System (like Amazon S3)](design/06-ObjectStorageSystem.md)
 
 Concepts tested:
 
@@ -199,7 +268,7 @@ Concepts tested:
 
 ---
 
-### 7. Design a Distributed File System
+### 7. [Design a Distributed File System](design/07-DistributedFileSystem.md)
 
 Examples: HDFS, CephFS
 
@@ -212,7 +281,7 @@ Concepts tested:
 
 ---
 
-### 8. Design a Backup and Snapshot System
+### 8. [Design a Backup and Snapshot System](design/08-BackupAndSnapshotSystem.md)
 
 Concepts tested:
 
@@ -223,7 +292,7 @@ Concepts tested:
 
 ---
 
-### 9. Design a Log Storage Platform
+### 9. [Design a Log Storage Platform](design/09-LogStoragePlatform.md)
 
 Examples: Elasticsearch
 
@@ -236,7 +305,7 @@ Concepts tested:
 
 ---
 
-### 10. Design a Time Series Database
+### 10. [Design a Time Series Database](design/10-TimeSeriesDatabase.md)
 
 Examples: Prometheus, InfluxDB
 
@@ -253,7 +322,7 @@ Concepts tested:
 
 Important for cloud platform and infrastructure engineers.
 
-### 11. Design a Container Orchestration System
+### 11. [Design a Container Orchestration System](design/11-ContainerOrchestrationSystem.md)
 
 Examples: Kubernetes
 
@@ -267,7 +336,7 @@ Concepts tested:
 
 ---
 
-### 12. Design a Multi-Region Cloud Architecture
+### 12. [Design a Multi-Region Cloud Architecture](design/12-MultiRegionCloudArchitecture.md)
 
 Concepts tested:
 
@@ -278,7 +347,7 @@ Concepts tested:
 
 ---
 
-### 13. Design an API Gateway
+### 13. [Design an API Gateway](design/13-APIGateway.md)
 
 Examples: Kong, Envoy
 
@@ -291,7 +360,7 @@ Concepts tested:
 
 ---
 
-### 14. Design a Service Mesh
+### 14. [Design a Service Mesh](design/14-ServiceMesh.md)
 
 Examples: Istio, Linkerd
 
@@ -304,7 +373,7 @@ Concepts tested:
 
 ---
 
-### 15. Design a Cloud Logging Platform
+### 15. [Design a Cloud Logging Platform](design/15-CloudLoggingPlatform.md)
 
 Examples: ELK stack
 
@@ -317,11 +386,131 @@ Concepts tested:
 
 ---
 
+### 16. [Design a Metrics Collection and Alerting System](design/16-MetricsAlertingSystem.md)
+
+Examples: Datadog, Prometheus + Alertmanager, Grafana Cloud, New Relic
+
+This is one of the most asked system design questions at Staff+ level because it crosses multiple domains: time-series data, streaming pipelines, distributed systems, and human-facing operational tooling.
+
+Concepts tested:
+
+* Metric types (counter, gauge, histogram, summary)
+* Push vs pull collection models (StatsD push vs Prometheus pull)
+* High-cardinality label management
+* Time-series storage engine design (LSM-based, compressed columnar)
+* Downsampling and rollup strategies (raw → 1m → 5m → 1h → 1d)
+* Distributed aggregation pipeline
+* Alert rule evaluation engine
+* Alert routing, deduplication, and grouping
+* Notification channels (PagerDuty, Slack, email, webhook)
+* Multi-tenancy with per-tenant quotas
+* Query language design (PromQL-style)
+
+High-level architecture:
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Agents /   │────▶│  Ingestion   │────▶│  Time-Series    │
+│  Exporters  │     │  Gateway     │     │  Storage Engine │
+└─────────────┘     └──────┬───────┘     └────────┬────────┘
+                           │                      │
+                    ┌──────▼───────┐        ┌─────▼──────┐
+                    │  Streaming   │        │  Query     │
+                    │  Aggregation │        │  Engine    │
+                    └──────┬───────┘        └─────┬──────┘
+                           │                      │
+                    ┌──────▼───────┐        ┌─────▼──────┐
+                    │  Alert Rule  │        │  Dashboard │
+                    │  Evaluator   │        │  / API     │
+                    └──────┬───────┘        └────────────┘
+                           │
+                    ┌──────▼───────┐
+                    │  Alert       │
+                    │  Manager     │
+                    │  (route,     │
+                    │   dedup,     │
+                    │   silence)   │
+                    └──────┬───────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+         PagerDuty      Slack        Email
+```
+
+Key design decisions:
+
+**Ingestion layer:**
+* Pull model (Prometheus): controller scrapes targets at intervals — simpler, but harder to scale past ~10M active series per instance
+* Push model (Datadog agent, StatsD): agents push metrics — better for ephemeral workloads (containers, serverless)
+* Hybrid: pull for infrastructure, push for application metrics
+* Ingestion gateway handles authentication, validation, rate limiting, and tenant routing
+
+**Storage engine:**
+* Time-series data is append-heavy, read-by-time-range — optimise for sequential writes
+* Gorilla-style compression: delta-of-delta timestamps, XOR'd float values → 12× compression
+* Partition by time (2-hour blocks) and by metric/tenant for parallel queries
+* Use LSM-tree or columnar format for on-disk storage
+* Implement downsampling pipeline: raw (15s) → 1m → 5m → 1h → 1d at configurable retention
+* Hot storage (SSD, last 48h), warm (SSD/HDD, 30d), cold (object store, 1y+)
+
+**Alert evaluation engine:**
+* Evaluate alert rules at regular intervals (15s–1m) against the query engine
+* Rule types: threshold, anomaly detection, rate-of-change, absence/staleness
+* Alert states: Pending → Firing → Resolved
+* Support "for" duration (alert must be true for X minutes before firing) to avoid flapping
+* Shard alert rules across evaluator instances by consistent hashing on rule ID
+* Each evaluator is stateful (tracks alert state) but state is checkpointed for failover
+
+**Alert manager:**
+* Grouping: batch related alerts (e.g., all alerts from same service) into one notification
+* Deduplication: suppress duplicate firings of the same alert
+* Silencing: temporarily mute alerts during maintenance windows
+* Routing: route alerts to different teams/channels based on labels (team, severity, service)
+* Escalation: if not acknowledged within X minutes, escalate to next on-call
+* Inhibition: suppress lower-severity alerts when a higher-severity alert is already firing
+
+**High-cardinality management:**
+* Labels like `user_id` or `request_id` explode series count — reject or aggregate at ingestion
+* Enforce per-tenant series limits and label cardinality limits
+* Use adaptive sampling for high-cardinality dimensions
+
+Scaling strategy:
+
+* Horizontal sharding of ingestion by tenant or metric namespace
+* Query federation: fan-out queries to multiple storage shards, merge results
+* Separate read and write paths (CQRS-style)
+* Alert evaluators scale independently from storage
+* Global view: use a query router that federates across regional storage clusters
+
+Fault tolerance:
+
+* Replicate ingestion across 2+ instances (write to 2, read from 1)
+* Alert evaluator HA: active-passive with shared state in etcd/ZooKeeper
+* Storage durability: WAL + periodic snapshots + replication to object store
+* Graceful degradation: if storage is overloaded, drop lowest-priority metrics (best-effort tier)
+
+Observability (meta):
+
+* Monitor the monitoring system — separate lightweight health checks
+* Track ingestion lag, query latency p99, alert evaluation duration
+* Dead man's switch: an alert that fires if the alerting system itself stops evaluating
+
+Key discussion points:
+
+* How do you handle clock skew between agents and the ingestion layer?
+* How do you prevent alert storms during a major outage (hundreds of alerts firing simultaneously)?
+* How do you design the system for 10M+ active time series with sub-second query latency?
+* How do you implement anomaly detection alerts without excessive false positives?
+* How do you design multi-region alerting with a global view?
+* How does this relate to SLO/SLI monitoring (error budgets, burn rate alerts)?
+
+---
+
 # Category 4 — Large Scale Platforms
 
 These questions test **internet scale architecture**.
 
-### 16. Design a URL Shortener
+### 17. [Design a URL Shortener](design/17-URLShortener.md)
 
 Examples: Bitly
 
@@ -334,7 +523,7 @@ Concepts tested:
 
 ---
 
-### 17. Design a Social Media Feed System
+### 18. [Design a Social Media Feed System](design/18-SocialMediaFeed.md)
 
 Examples: Twitter feed
 
@@ -347,7 +536,7 @@ Concepts tested:
 
 ---
 
-### 18. Design a Video Streaming Platform
+### 19. [Design a Video Streaming Platform](design/19-VideoStreamingPlatform.md)
 
 Examples: YouTube / Netflix
 
@@ -360,7 +549,7 @@ Concepts tested:
 
 ---
 
-### 19. Design a Real-Time Chat System
+### 20. [Design a Real-Time Chat System](design/20-RealTimeChatSystem.md)
 
 Examples: WhatsApp / Slack
 
@@ -373,7 +562,7 @@ Concepts tested:
 
 ---
 
-### 20. Design a Notification System
+### 21. [Design a Notification System](design/21-NotificationSystem.md)
 
 Examples: email / SMS / push notifications
 
@@ -386,11 +575,138 @@ Concepts tested:
 
 ---
 
+### 22. [Design a Search Engine / Autocomplete System](design/22-SearchEngine.md)
+
+Examples: Google Search, Elasticsearch, Algolia
+
+Concepts tested:
+
+* Inverted index construction and storage
+* Tokenisation, stemming, and stop-word removal
+* TF-IDF and BM25 ranking
+* PageRank or link-based signals
+* Query parsing and spelling correction
+* Autocomplete with trie or prefix index
+* Distributed index sharding (by document vs by term)
+* Index replication for read scalability
+* Crawler integration and index freshness
+* Caching of popular queries
+
+Key discussion points:
+
+* How do you update the index in near-real-time without affecting query latency?
+* How do you rank results when combining text relevance with popularity signals?
+* How do you handle multi-language search?
+* How do you implement typeahead with sub-50ms latency for billions of queries?
+
+---
+
+### 23. [Design a Payment System](design/23-PaymentSystem.md)
+
+Examples: Stripe, PayPal, Square
+
+Concepts tested:
+
+* Idempotency keys for exactly-once payment processing
+* Double-entry bookkeeping (ledger design)
+* Payment state machine (created → authorised → captured → settled → refunded)
+* Distributed transactions across payment gateway, ledger, and merchant account
+* Retry and reconciliation for failed/timed-out payments
+* Fraud detection pipeline (rules + ML)
+* PCI-DSS compliance and tokenisation
+* Multi-currency and exchange rate handling
+* Webhook delivery for async notifications
+* Audit trail and regulatory reporting
+
+Key discussion points:
+
+* How do you prevent double-charging when a network timeout occurs?
+* How do you design the ledger for auditability and correctness?
+* How do you handle partial failures in a payment flow spanning multiple services?
+* How do you implement real-time fraud detection without adding latency?
+
+---
+
+### 24. [Design a Web Crawler](design/24-WebCrawler.md)
+
+Examples: Googlebot, Scrapy at scale
+
+Concepts tested:
+
+* URL frontier and prioritisation (BFS vs best-first)
+* Politeness policies (per-domain rate limiting, robots.txt)
+* Distributed crawling with work partitioning
+* URL deduplication (Bloom filter, content fingerprinting)
+* Handling dynamic/JavaScript-rendered pages
+* Crawl scheduling (freshness vs efficiency)
+* Content extraction and normalisation
+* Storage of raw HTML and parsed data
+* Handling redirects, traps, and infinite loops
+
+Key discussion points:
+
+* How do you allocate crawl budget across billions of URLs?
+* How do you detect and avoid crawler traps?
+* How do you ensure near-real-time crawling for high-priority pages?
+* How do you scale to billions of pages with limited bandwidth?
+
+---
+
+### 25. [Design a Collaborative Editing System (Google Docs)](design/25-CollaborativeEditor.md)
+
+Examples: Google Docs, Notion, Figma
+
+Concepts tested:
+
+* Operational Transformation (OT) vs CRDTs (Conflict-free Replicated Data Types)
+* Real-time sync via WebSockets
+* Cursor and presence tracking
+* Document versioning and undo/redo
+* Conflict resolution strategies
+* Server-side vs peer-to-peer collaboration
+* Offline editing and sync on reconnect
+* Access control and permission propagation
+* Document storage and revision history
+
+Key discussion points:
+
+* What are the trade-offs between OT and CRDTs?
+* How do you handle concurrent edits to the same paragraph?
+* How do you implement undo that is scoped to a single user in a collaborative context?
+* How do you scale to thousands of concurrent editors on a single document?
+
+---
+
+### 26. [Design a Ride-Sharing System (Uber/Lyft)](design/26-RideSharingSystem.md)
+
+Examples: Uber, Lyft, Grab
+
+Concepts tested:
+
+* Geospatial indexing (geohash, S2 cells, R-tree, quad-tree)
+* Real-time location tracking and streaming
+* Driver-rider matching algorithms (proximity, ETA, surge pricing)
+* Dynamic pricing / surge pricing engine
+* ETA estimation using road network graphs
+* Trip state machine (requested → matched → en-route → in-progress → completed)
+* Payment integration and fare calculation
+* High-availability dispatch service
+* Event-driven architecture for real-time updates
+
+Key discussion points:
+
+* How do you efficiently find the nearest available drivers within a radius?
+* How do you handle dispatch under high load (New Year's Eve)?
+* How do you compute ETAs accurately with live traffic data?
+* How do you prevent double-dispatch of the same driver?
+
+---
+
 # Category 5 — AI / ML Infrastructure (Modern Interviews)
 
 Increasingly common in infrastructure teams.
 
-### 21. Design an LLM Inference Platform
+### 27. [Design an LLM Inference Platform](design/27-LLMInferencePlatform.md)
 
 Examples: OpenAI / Anthropic serving architecture
 
@@ -403,7 +719,7 @@ Concepts tested:
 
 ---
 
-### 22. Design a Multi-Model Gateway
+### 28. [Design a Multi-Model Gateway](design/28-MultiModelGateway.md)
 
 Concepts tested:
 
@@ -414,7 +730,7 @@ Concepts tested:
 
 ---
 
-### 23. Design a Vector Database
+### 29. [Design a Vector Database](design/29-VectorDatabase.md)
 
 Examples: Pinecone, Weaviate
 
@@ -426,7 +742,7 @@ Concepts tested:
 
 ---
 
-### 24. Design an AI Agent Platform
+### 30. [Design an AI Agent Platform](design/30-AIAgentPlatform.md)
 
 Concepts tested:
 
@@ -437,7 +753,7 @@ Concepts tested:
 
 ---
 
-### 25. Design a Model Training Platform
+### 31. [Design a Model Training Platform](design/31-ModelTrainingPlatform.md)
 
 Examples: Kubeflow
 
@@ -454,7 +770,7 @@ Concepts tested:
 
 These questions are **critical for NetApp interviews**. NetApp's core business is enterprise storage, data management, and hybrid cloud infrastructure.
 
-### 26. Design a Network Attached Storage (NAS) System
+### 32. [Design a Network Attached Storage (NAS) System](design/32-NetworkAttachedStorage.md)
 
 Examples: NetApp ONTAP NAS, Dell EMC Isilon
 
@@ -479,7 +795,7 @@ Key discussion points:
 
 ---
 
-### 27. Design a Storage Area Network (SAN) System
+### 33. [Design a Storage Area Network (SAN) System](design/33-StorageAreaNetwork.md)
 
 Examples: NetApp ONTAP SAN, Pure Storage
 
@@ -503,7 +819,7 @@ Key discussion points:
 
 ---
 
-### 28. Design a Data Replication System (like SnapMirror)
+### 34. [Design a Data Replication System (like SnapMirror)](design/34-DataReplicationSystem.md)
 
 Examples: NetApp SnapMirror, Zerto, Dell RecoverPoint
 
@@ -528,7 +844,7 @@ Key discussion points:
 
 ---
 
-### 29. Design a Hybrid Cloud Storage Platform
+### 35. [Design a Hybrid Cloud Storage Platform](design/35-HybridCloudStorage.md)
 
 Examples: NetApp Cloud Volumes ONTAP, Azure NetApp Files, Amazon FSx for NetApp ONTAP
 
@@ -553,7 +869,7 @@ Key discussion points:
 
 ---
 
-### 30. Design a Data Deduplication and Compression System
+### 36. [Design a Data Deduplication and Compression System](design/36-DataDeduplication.md)
 
 Examples: NetApp ONTAP inline/post-process dedup, ZFS dedup
 
@@ -578,7 +894,7 @@ Key discussion points:
 
 ---
 
-### 31. Design a Distributed Block Storage System
+### 37. [Design a Distributed Block Storage System](design/37-DistributedBlockStorage.md)
 
 Examples: Ceph RBD, NetApp SolidFire, Amazon EBS
 
@@ -603,7 +919,7 @@ Key discussion points:
 
 ---
 
-### 32. Design a Storage Monitoring and Analytics Platform
+### 38. [Design a Storage Monitoring and Analytics Platform](design/38-StorageMonitoringAnalytics.md)
 
 Examples: NetApp Active IQ, NetApp Cloud Insights, DataDog Infrastructure
 
@@ -628,7 +944,7 @@ Key discussion points:
 
 ---
 
-### 33. Design a Multi-Tenant Storage Platform
+### 39. [Design a Multi-Tenant Storage Platform](design/39-MultiTenantStorage.md)
 
 Examples: NetApp StorageGRID, cloud-based storage services
 
@@ -653,7 +969,7 @@ Key discussion points:
 
 ---
 
-### 34. Design a Data Migration Platform
+### 40. [Design a Data Migration Platform](design/40-DataMigrationPlatform.md)
 
 Examples: NetApp XCP, NetApp Cloud Sync, AWS DataSync
 
@@ -678,7 +994,7 @@ Key discussion points:
 
 ---
 
-### 35. Design a Snapshot and Clone Management System
+### 41. [Design a Snapshot and Clone Management System](design/41-SnapshotCloneManagement.md)
 
 Examples: NetApp Snapshot, NetApp FlexClone, ZFS snapshots
 
@@ -707,7 +1023,7 @@ Key discussion points:
 
 Staff-level interviews expect **deep understanding** of these foundational concepts, not just surface knowledge.
 
-### 36. Design a Consensus System
+### 42. [Design a Consensus System](design/42-ConsensusSystem.md)
 
 Examples: etcd (Raft), ZooKeeper (ZAB), Google Chubby (Paxos)
 
@@ -730,7 +1046,7 @@ Key discussion points:
 
 ---
 
-### 37. Design a Distributed Transaction System
+### 43. [Design a Distributed Transaction System](design/43-DistributedTransactionSystem.md)
 
 Examples: Google Spanner, CockroachDB, TiDB
 
@@ -754,7 +1070,7 @@ Key discussion points:
 
 ---
 
-### 38. Design a Consistent Hashing System
+### 44. [Design a Consistent Hashing System](design/44-ConsistentHashingSystem.md)
 
 Examples: DynamoDB ring, Cassandra token ring, Ceph CRUSH map
 
@@ -781,7 +1097,7 @@ Key discussion points:
 
 Critical for **storage infrastructure companies** like NetApp.
 
-### 39. Design a Disaster Recovery System
+### 45. [Design a Disaster Recovery System](design/45-DisasterRecoverySystem.md)
 
 Examples: NetApp MetroCluster, VMware SRM, Zerto
 
@@ -806,7 +1122,7 @@ Key discussion points:
 
 ---
 
-### 40. Design a WORM (Write Once Read Many) and Compliance Storage System
+### 46. [Design a WORM (Write Once Read Many) and Compliance Storage System](design/46-WORMComplianceStorage.md)
 
 Examples: NetApp SnapLock, Amazon S3 Object Lock
 
@@ -829,7 +1145,7 @@ Key discussion points:
 
 ---
 
-### 41. Design an Erasure Coding System
+### 47. [Design an Erasure Coding System](design/47-ErasureCodingSystem.md)
 
 Examples: NetApp RAID-TEC, Ceph EC, Amazon S3 storage classes
 
@@ -856,7 +1172,7 @@ Key discussion points:
 
 Relevant for NetApp and any storage infrastructure role.
 
-### 42. Design a Distributed Storage Networking Layer
+### 48. [Design a Distributed Storage Networking Layer](design/48-DistributedStorageNetworking.md)
 
 Examples: NFS server, SMB server, iSCSI target
 
@@ -880,7 +1196,7 @@ Key discussion points:
 
 ---
 
-### 43. Design a Software-Defined Networking (SDN) Layer for Storage
+### 49. [Design a Software-Defined Networking (SDN) Layer for Storage](design/49-SDNForStorage.md)
 
 Examples: NetApp ONTAP networking, VMware NSX
 
@@ -904,7 +1220,7 @@ Key discussion points:
 
 # Category 10 — Operational and Platform Design
 
-### 44. Design a Storage Operating System (like ONTAP)
+### 50. [Design a Storage Operating System (like ONTAP)](design/50-StorageOperatingSystem.md)
 
 Examples: NetApp ONTAP, Dell EMC OneFS
 
@@ -928,7 +1244,7 @@ Key discussion points:
 
 ---
 
-### 45. Design a Cloud-Native Storage Backend (CSI Driver / Trident)
+### 51. [Design a Cloud-Native Storage Backend (CSI Driver / Trident)](design/51-CloudNativeStorageBackend.md)
 
 Examples: NetApp Trident, Portworx, Rook-Ceph
 
@@ -1029,6 +1345,141 @@ These are not design questions but **conceptual building blocks** you must be ab
 
 ---
 
+## Common Design Patterns
+
+Recurring architectural patterns that appear across many system design questions.
+
+| Pattern | Description | When to Use |
+|---|---|---|
+| **CQRS** | Separate read and write models/stores | High read-to-write ratio, different scaling needs |
+| **Event Sourcing** | Store all state changes as immutable events | Audit trails, temporal queries, replay capability |
+| **Saga** | Distributed transaction via compensating actions | Cross-service workflows without 2PC |
+| **Circuit Breaker** | Stop calling a failing service, fail fast | Prevent cascade failures in microservices |
+| **Bulkhead** | Isolate resources per workload/tenant | Prevent noisy-neighbor; contain blast radius |
+| **Retry with Exponential Backoff + Jitter** | Retry failed ops with increasing delay + randomness | Transient failures (network, throttling) |
+| **Outbox Pattern** | Write event to DB outbox table + publish asynchronously | Reliable event publishing with DB consistency |
+| **Sidecar / Ambassador** | Co-located process handles cross-cutting concerns | Service mesh, logging, auth proxying |
+| **Strangler Fig** | Incrementally migrate from legacy to new system | Large-scale system migrations |
+| **Fan-out / Fan-in** | Distribute work to many workers, aggregate results | Parallel processing, timeline generation |
+| **Write-Ahead Log (WAL)** | Log mutations before applying | Crash recovery, replication |
+| **Change Data Capture (CDC)** | Stream database changes as events | Sync between systems, materialised views |
+
+---
+
+## Database Selection Guide
+
+Choosing the right database is a critical design decision. Use this decision framework.
+
+### SQL vs NoSQL Decision
+
+| Factor | Choose SQL | Choose NoSQL |
+|---|---|---|
+| Data model | Well-defined schema, relations | Flexible/evolving schema, denormalised |
+| Consistency | Strong consistency required (ACID) | Eventual consistency acceptable |
+| Query patterns | Complex joins, aggregations | Key-value lookups, wide-column scans |
+| Scale | Vertical (or sharded) | Horizontal (native sharding) |
+| Examples | PostgreSQL, MySQL, Spanner | DynamoDB, Cassandra, MongoDB |
+
+### NoSQL Sub-Type Guide
+
+| Type | Best For | Examples |
+|---|---|---|
+| **Key-Value** | Caching, sessions, simple lookups | Redis, DynamoDB, etcd |
+| **Wide-Column** | High write throughput, time-series, IoT | Cassandra, HBase, ScyllaDB |
+| **Document** | Content management, catalogs, flexible schemas | MongoDB, Couchbase |
+| **Graph** | Relationship-heavy queries (social, fraud, knowledge) | Neo4j, Amazon Neptune |
+| **Time-Series** | Metrics, monitoring, financial tick data | InfluxDB, TimescaleDB, Prometheus |
+| **Vector** | Similarity search, embeddings, RAG | Pinecone, Weaviate, Milvus |
+| **Search** | Full-text search, log analytics | Elasticsearch, OpenSearch |
+
+---
+
+## Load Balancing & API Design
+
+### Load Balancing
+
+| Strategy | Layer | Description |
+|---|---|---|
+| **Round Robin** | L4/L7 | Distribute evenly — simple, no intelligence |
+| **Least Connections** | L4/L7 | Route to server with fewest active connections |
+| **Weighted Round Robin** | L4/L7 | Assign more traffic to more powerful servers |
+| **Consistent Hashing** | L7 | Route by key (session, user) — good for caches |
+| **IP Hash** | L4 | Hash client IP for session affinity |
+
+**L4 vs L7:**
+* L4 (transport): Routes based on IP/port — fast, no request inspection
+* L7 (application): Routes based on URL, headers, cookies — smarter, can do content-based routing
+
+**Health checks:** Active (periodic probe) vs passive (watch for errors).
+
+### API Design
+
+| Protocol | Best For | Trade-offs |
+|---|---|---|
+| **REST** | Public APIs, CRUD, browser clients | Simple, cacheable; verbose, over/under-fetching |
+| **gRPC** | Internal microservices, streaming | Fast (Protobuf binary), streaming; harder debugging |
+| **GraphQL** | Frontend-driven queries, aggregation | Flexible queries; complexity, N+1 risk |
+
+**Key API design concepts:**
+* Idempotency keys — critical for payment, write APIs
+* Pagination — cursor-based (scalable) vs offset-based (simple)
+* Rate limiting — per-client, per-API-key
+* Versioning — URL path (`/v2/`) vs header (`Accept: application/vnd.api.v2+json`)
+
+---
+
+## Observability — Deep Dive
+
+The three pillars of observability:
+
+### 1. Metrics
+* **RED method** (request-scoped): Rate, Errors, Duration
+* **USE method** (resource-scoped): Utilisation, Saturation, Errors
+* SLI (Service Level Indicators) → SLO (Objectives) → SLA (Agreements)
+* Error budgets: If SLO is 99.9% → 0.1% error budget → ~43 min downtime/month
+* Burn rate alerts: "At the current error rate, we will exhaust the monthly error budget in X hours"
+
+### 2. Logging
+* Structured logging (JSON) vs unstructured — always prefer structured
+* Correlation IDs / trace IDs in every log line
+* Log levels: DEBUG → INFO → WARN → ERROR → FATAL
+* Centralised log aggregation: ELK (Elasticsearch + Logstash + Kibana), Loki + Grafana
+* Retention policies: hot (7d, fast queries), warm (30d), cold (1y+, object store)
+
+### 3. Distributed Tracing
+* Instrument with OpenTelemetry (vendor-neutral)
+* Trace = tree of spans across services
+* Sampling strategies: head-based (decide at start), tail-based (decide after seeing outcome — keeps error traces)
+* Backends: Jaeger, Zipkin, Tempo, Datadog APM
+* Key question: How do you trace a request that spans 20 microservices and takes 3 seconds?
+
+---
+
+## Security Design Patterns
+
+Staff-level interviews expect security awareness in system design.
+
+| Concept | Description |
+|---|---|
+| **AuthN (Authentication)** | Verify identity — OAuth2, OIDC, SAML, mTLS |
+| **AuthZ (Authorisation)** | Verify permissions — RBAC, ABAC, ReBAC |
+| **Zero Trust** | Never trust, always verify — authenticate every request, even internal |
+| **Encryption at Rest** | AES-256 for stored data; key management via KMS (AWS KMS, HashiCorp Vault) |
+| **Encryption in Transit** | TLS 1.3 for all network traffic, including internal service-to-service |
+| **Secrets Management** | Never hardcode secrets; use Vault, AWS Secrets Manager |
+| **Principle of Least Privilege** | Grant minimum permissions required |
+| **Threat Modeling** | STRIDE framework: Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation |
+| **Input Validation** | Prevent injection (SQL, XSS, command) at all entry points |
+| **Audit Logging** | Immutable log of who did what, when — critical for compliance |
+
+**Common interview security questions:**
+* How do you secure inter-service communication in a microservice architecture?
+* How do you implement per-tenant encryption with tenant-managed keys?
+* How do you handle key rotation without downtime?
+* How do you design an RBAC system that scales to thousands of roles and permissions?
+
+---
+
 # Staff-Level Interview Expectations
 
 At Staff level, interviewers expect you to demonstrate:
@@ -1100,9 +1551,28 @@ Strong preparation set for NetApp Staff SWE:
 10. Multi-region architecture
 11. Container orchestration platform — Kubernetes + CSI/Trident
 12. **Storage monitoring and analytics — Active IQ-like**
-13. LLM inference platform
-14. **Disaster recovery system — MetroCluster-like**
-15. **Deduplication and compression system — storage efficiency**
+13. **Metrics collection and alerting system — Datadog/Prometheus**
+14. LLM inference platform
+15. **Disaster recovery system — MetroCluster-like**
+16. **Deduplication and compression system — storage efficiency**
+
+Strong preparation set for general Staff SWE (non-storage companies):
+
+1. Distributed KV store
+2. Distributed cache
+3. Message queue
+4. Rate limiter
+5. URL shortener
+6. **Metrics collection and alerting system — Datadog/Prometheus**
+7. **Payment system — idempotency, ledger, distributed transactions**
+8. **Search engine / autocomplete — inverted index, ranking**
+9. Social media feed system
+10. Real-time chat system
+11. **Ride-sharing system — geospatial indexing, matching**
+12. **Collaborative editing system — CRDTs/OT**
+13. **Web crawler — URL frontier, politeness, dedup**
+14. LLM inference platform
+15. Multi-region architecture
 
 ---
 

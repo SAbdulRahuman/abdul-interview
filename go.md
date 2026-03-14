@@ -734,6 +734,64 @@
 
 ---
 
+## Chapter 36 — [CLI Tools & Cobra](go/CLIToolsCobra.md)
+
+- [ ] Why Go dominates CLI tooling — single binary, cross-compilation, fast startup
+- [ ] Standard library `flag` package and `os.Args` manual parsing
+- [ ] Cobra architecture — commands, subcommands, args, flags
+- [ ] Building a complete CLI app with Cobra (tutorial)
+- [ ] Argument validation and flags deep dive (persistent, local, required)
+- [ ] Run hooks lifecycle (PersistentPreRun → PreRun → Run → PostRun → PersistentPostRun)
+- [ ] Cobra + Viper integration for configuration management
+- [ ] Shell completion generation (bash, zsh, fish, PowerShell)
+- [ ] Testing Cobra commands
+- [ ] Production patterns — structured logging, error handling, graceful shutdown
+- [ ] Alternative CLI libraries overview (urfave/cli, charmbracelet/bubbletea)
+
+---
+
+## Chapter 37 — [gRPC & Protobuf (Deep Dive)](go/GRPCAndProtobuf.md)
+
+- [ ] REST vs gRPC comparison — when to use which
+- [ ] Protocol Buffers — proto3 syntax, scalar types, field numbers, nested messages
+- [ ] `repeated`, `optional`, `oneof`, `map` fields
+- [ ] Code generation — `protoc --go_out`, `protoc-gen-go`, `protoc-gen-go-grpc`
+- [ ] Backward compatibility rules (safe vs breaking changes), `reserved` fields
+- [ ] gRPC 4 patterns — Unary, Server streaming, Client streaming, Bidirectional
+- [ ] gRPC server and client implementation in Go
+- [ ] gRPC error handling — status codes (`codes.NotFound`, `codes.Internal`, etc.)
+- [ ] Interceptors (middleware) — `grpc.ChainUnaryInterceptor`, logging, auth
+- [ ] gRPC metadata (headers) — request/response metadata passing
+- [ ] gRPC health checking protocol
+- [ ] Testing gRPC services — `bufconn` for in-process testing
+- [ ] gRPC with TLS — mTLS for service-to-service authentication
+- [ ] gRPC-Gateway — REST + gRPC dual serving
+- [ ] Protobuf well-known types (`Timestamp`, `Duration`, `Any`, `Struct`)
+- [ ] Performance considerations — connection pooling, keep-alive, max message size
+
+---
+
+## Chapter 38 — [Debugging & Troubleshooting](go/DebuggingAndTroubleshooting.md)
+
+- [ ] Systematic debugging methodology (reproduce → isolate → instrument → root cause → fix → verify → prevent)
+- [ ] Delve debugger — breakpoints, stepping, conditional breakpoints, goroutine inspection
+- [ ] Remote debugging (containers, Kubernetes) — headless delve, port-forward
+- [ ] Debug build flags — `go build -gcflags="all=-N -l"`
+- [ ] Goroutine dumps — `SIGQUIT`, `runtime.Stack`, reading goroutine states
+- [ ] Race detector — `go run -race`, reading race reports, limitations
+- [ ] pprof profiles — CPU, heap, goroutine, mutex, block, allocs
+- [ ] Heap profile analysis — `inuse_space` vs `alloc_space`, memory leak detection
+- [ ] Execution tracer — `go tool trace`, goroutine scheduling, GC pauses
+- [ ] Core dump analysis — `GOTRACEBACK=crash`, `dlv core`
+- [ ] Runtime diagnostics — `GODEBUG=gctrace=1`, `GODEBUG=schedtrace=1000`
+- [ ] Network debugging — `httptrace`, connection lifecycle tracing
+- [ ] Distributed debugging — correlation IDs, structured logging, OpenTelemetry
+- [ ] Production playbooks — goroutine leak, deadlock, high latency, OOM, connection pool exhaustion
+- [ ] Linux tools for Go — `strace`, `ss`, `pidstat`, `/proc` filesystem, bpftrace
+- [ ] Debug build tags — conditional pprof endpoints
+
+---
+
 ## Quick Reference: Go Versions & Key Features
 
 | Version | Key Features |
@@ -793,3 +851,6 @@
 - [ ] Chapter 33: [Iota & Enum Patterns](go/IotaAndEnumPatterns.md)
 - [ ] Chapter 34: [Database Access (database/sql)](go/DatabaseAccess.md)
 - [ ] Chapter 35: [Race Conditions & Data Races](go/RaceConditions.md)
+- [ ] Chapter 36: [CLI Tools & Cobra](go/CLIToolsCobra.md)
+- [ ] Chapter 37: [gRPC & Protobuf (Deep Dive)](go/GRPCAndProtobuf.md)
+- [ ] Chapter 38: [Debugging & Troubleshooting](go/DebuggingAndTroubleshooting.md)
